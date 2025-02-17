@@ -1,0 +1,13 @@
+services:
+  web:
+    image: py-web-team-project-web:latest
+    ports:
+      - "8000:8000"
+    networks:
+      - default
+    volumes:
+      - .:/app
+
+networks:
+  default:
+    driver: bridge
