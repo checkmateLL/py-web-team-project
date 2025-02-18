@@ -15,7 +15,7 @@ class LoggerSetup:
             self.directory.mkdir(parents=True, exist_ok=True)
 
         if not self.log_file.exists():
-            self.log_file.touch
+            self.log_file.touch()
 
     def setup_logger(self) -> logging.Logger:
         if self.logger is None:
