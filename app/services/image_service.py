@@ -10,7 +10,7 @@ import cloudinary.api
 
 from app.database.models import Image, User
 from app.database.connection import get_db
-from app.schemas import ImageCreate, ImageResponseSchema
+from app.templates.schemas import ImageCreate, ImageResponseSchema
 from app.services.auth_service import get_current_user   #зробити корректн import!
 from app.templates.config import settings, RoleSet
 
