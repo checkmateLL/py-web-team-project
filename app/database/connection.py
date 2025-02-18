@@ -60,7 +60,7 @@ class DatabaseSessionManager:
 
 sessionmanager = DatabaseSessionManager(settings.PG_URL)
 
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+async def get_conn_db() -> AsyncGenerator[AsyncSession, None]:
     async with sessionmanager.lifespan():
         async with sessionmanager.session() as session:
             yield session
