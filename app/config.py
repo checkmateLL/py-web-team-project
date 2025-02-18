@@ -6,8 +6,8 @@ class Settings(BaseSettings):
     PG_PASSWORD : str = 'test'
     PG_DATABASE : str = 'db'
     PG_HOST : str =  'test'
-    PG_PORT : str = 'test'
-    PG_URL: str = "postgresql+asyncpg://postgres:000000@localhost:5432/test"
+    PG_PORT : int = 0000
+    PG_URL: str = "postgresql+asyncpg://test:000000@localhost:0000/test"
 
     model_config = SettingsConfigDict(
         extra="ignore", 

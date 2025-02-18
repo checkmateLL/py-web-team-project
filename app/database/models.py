@@ -28,7 +28,7 @@ class User(BaseModel):
     username: Mapped[str] = mapped_column(String, unique=False, nullable=False)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     password_hash : Mapped[str] = mapped_column(String, nullable=False)
-    role: Mapped[RoleSet] = mapped_column(Enum(RoleSet), default=RoleSet.user, nullable=True)
+    role: Mapped[RoleSet] = mapped_column(Enum(RoleSet), default=RoleSet.user, nullable=False)
     is_active : Mapped[bool] = mapped_column(Boolean, default=True)
     register_on : Mapped[datetime] = mapped_column(DateTime, default=func.now())
 
