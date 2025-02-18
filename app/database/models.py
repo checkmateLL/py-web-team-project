@@ -1,0 +1,1 @@
+# ORM models (users, images, comments, ratings)
