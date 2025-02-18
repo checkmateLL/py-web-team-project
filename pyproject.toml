@@ -10,6 +10,10 @@ python = "^3.11"
 fastapi = {extras = ["standard"], version = "^0.115.8"}
 pydantic-settings = "^2.7.1"
 pydantic = "^2.10.6"
+sqlalchemy = "^2.0.38"
+python-dotenv = "^1.0.1"
+asyncpg = "^0.30.0"
+greenlet = "^3.1.1"
 
 
 [build-system]
