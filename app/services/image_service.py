@@ -3,7 +3,7 @@ import cloudinary
 from cloudinary.uploader import upload
 import cloudinary.api
 from typing import List
-from fastapi import HTTPException
+from fastapi import HTTPException, File, UploadFile, Query
 
 from app.database.models import Image, User
 from app.services.auth_service import get_current_user #уточнить импорт!
