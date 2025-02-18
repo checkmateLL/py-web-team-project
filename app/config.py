@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     PG_PORT : int = 0000
     PG_URL: str = "postgresql+asyncpg://test:000000@localhost:0000/test"
 
+    CLD_NAME: str
+    CLD_API_KEY: str
+    CLD_API_SECRET: str
+
     model_config = SettingsConfigDict(
         extra="ignore", 
         env_file=".env", 
