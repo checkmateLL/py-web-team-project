@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from enum import Enum 
 
 class Settings(BaseSettings):
     PG_USER : str = 'test'
@@ -14,5 +15,8 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8"
     )
 
+class RoleSet(str, Enum):
+    admin = 'ADMIN'
+    user = 'USER'
 
 settings = Settings()
