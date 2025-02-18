@@ -8,6 +8,8 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 fastapi = {extras = ["standard"], version = "^0.115.8"}
+pydantic-settings = "^2.7.1"
+pydantic = "^2.10.6"
 
 
 [build-system]

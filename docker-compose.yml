@@ -3,26 +3,22 @@ services:
     image: py-web-team-project-web:latest
     ports:
       - "8000:8000"
-    networks:
-      - default
     volumes:
       - .:/app
+    env_file: .env
     depends_on:
       - db
-    environment:
-      DATABASE_URL: "postgresql://postgres:postgres@db:5432/postgres"
-
+  
   db:
     image: postgres:15
     restart: always
+    env_file: .env         
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DATABASE}
     volumes:
       - ./pgdata:/var/lib/postgresql/data
-    networks:
-      - default
 
 networks:
   default:
