@@ -8,11 +8,11 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 
-from app.database.models import Image, Role, User
+from app.database.models import Image, User
 from app.database.connection import get_db
 from app.schemas import ImageCreate, ImageResponseSchema
 from app.services.auth_service import get_current_user   #зробити корректн import!
-from app.config import settings
+from app.templates.config import settings, RoleSet
 
 router = APIRouter(tags=['images'])
 
@@ -23,7 +23,7 @@ cloudinary.config(
 )
 
 @router.post("/upload_image/",
-             dependencies=[Depends(RoleChecker([Role.user, Role.admin, Role.moderator]))], #change on correct name-import!
+             dependencies=[Depends(RoleChecker([RoleSet.user, RoleSet.admin, RoleSet.moderator]))], #change on correct name-import!
              response_model=ImageCreate,
              status_code=status.HTTP_201_CREATED)
 
