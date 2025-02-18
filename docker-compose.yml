@@ -1,26 +1,40 @@
 services:
   web:
+    build: .
+    container_name: photoshare_web
     image: py-web-team-project-web:latest
     ports:
       - "8000:8000"
     volumes:
       - .:/app
-    env_file: .env
+    env_file: 
+      - .env
     depends_on:
       - db
-  
+    networks:
+      - app_network
+
   db:
     image: postgres:15
     restart: always
-    environment:
-      POSTGRES_USER: ${PG_USER}
-      POSTGRES_PASSWORD: ${PG_PASSWORD}
-      POSTGRES_DB: ${PG_DATABASE}
+    container_name: postgres_container
+    env_file:
+      - .env
     ports:
-      - "${PG_PORT}:5432"
+      - "${PG_PORT:-5432}:5432"
     volumes:
-      - ./pgdata:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app_network
+    healthcheck:  
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER} -d ${PG_DATABASE}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
-  default:
+  app_network:
     driver: bridge
+
+volumes:
+  postgres-data:

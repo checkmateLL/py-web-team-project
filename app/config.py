@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     PG_DATABASE : str = 'db'
     PG_HOST : str =  'test'
     PG_PORT : str = 'test'
-    PG_URL : str = f"postgresql+asyncpg://{PG_USER}:{PG_PASSWORD}@{PG_HOST}:{PG_PORT}/{PG_DATABASE}"
+    PG_URL: str = "postgresql+asyncpg://postgres:000000@localhost:5432/test"
 
     model_config = SettingsConfigDict(
         extra="ignore", 
@@ -18,5 +18,6 @@ class Settings(BaseSettings):
 class RoleSet(str, Enum):
     admin = 'ADMIN'
     user = 'USER'
+    moderator = 'MODERATOR'
 
 settings = Settings()
