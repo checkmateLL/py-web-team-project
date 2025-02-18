@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     PG_PORT : int = 0000
     PG_URL: str = "postgresql+asyncpg://test:000000@localhost:0000/test"
 
+    SECRET_KEY_JWT:str = '**************************************'   
+    ALGORITHM: str = "******"  
+
     model_config = SettingsConfigDict(
         extra="ignore", 
         env_file=".env", 
