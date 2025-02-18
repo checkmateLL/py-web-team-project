@@ -23,7 +23,6 @@ cloudinary.config(
 )
 
 @router.post("/upload_image/",
-             dependencies=[Depends(RoleChecker([RoleSet.user, RoleSet.admin, RoleSet.moderator]))], #change on correct name-import!
              response_model=ImageCreate,
              status_code=status.HTTP_201_CREATED)
 
@@ -32,7 +31,10 @@ async def upload_file(description: str,
                       tags: Optional[List[str]] = Query([]),
                       db: AsyncSession = Depends(get_db),
                       current_user: User = Depends(get_current_user)) -> dict:
-    
+                          
+    if current_user.role not in [RoleSet.user, RoleSet.admin, RoleSet.moderator]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You don't have permission to upload images")
+
     if len(tags) > 5:
         raise HTTPException(status_code=400, detail="You can only add up to 5 tags.")
 
