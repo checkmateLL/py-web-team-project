@@ -55,6 +55,9 @@ class ITokenStrategy(ABC):
             token:str,
             scope:str
     ):
+        """
+        returned payload, mean {'sub':useremail}
+        """
         try:
             payload = jwt.decode(
                 token,

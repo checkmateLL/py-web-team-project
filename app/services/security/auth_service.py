@@ -1,13 +1,13 @@
 from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-import pytz
+from jose import JWTError
+
 from abc import ABC, abstractmethod
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.connection import get_conn_db
-# from app.repository.user import get_user
+from app.repository.users import crud_users
 from app.services.security.secure_token.manager import token_manager, TokenType
 from app.database.models import User
 
@@ -26,7 +26,7 @@ class AuthService(ConstructionAuthService):
     async def get_current_user(
         self,
         token: str = Depends(auth2scheme),
-        db: AsyncSession = Depends(get_conn_db),
+        session: AsyncSession = Depends(get_conn_db),
     ):
 
         credential_exeptions = HTTPException(
@@ -44,8 +44,11 @@ class AuthService(ConstructionAuthService):
                 raise credential_exeptions
         except JWTError:
             raise credential_exeptions
-        user = None
-        # user = await get_user(email, db)
+
+        user = await crud_users.get_user_by_email(
+            email=email,
+            session=session)
+        
         return user
 
 
