@@ -29,6 +29,7 @@ class ImageCrud:
                 public_id=public_id
             )
             session.add(image_record)
+
             await session.commit()
             await session.refresh(image_record)
 
@@ -49,29 +50,25 @@ class ImageCrud:
     ):
         try:
             result = await session.execute(select(Image).filter(Image.id == image_id))
-            image = result.scalar_one_or_none()
+            image_obj = result.scalar_one_or_none()
 
-            if image is None:
+            if image_obj is None:
                 raise HTTPException(
                     status_code=404, 
                     detail="Image not found."
                 )
 
-            if image.user_id != current_user.id:
+            if image_obj.user_id != current_user.id:
                 raise HTTPException(
                     status_code=403, 
                     detail="You don't have permission to update this image."
                 )
 
-            image.description = description
+            image_obj.description = description
             await session.commit()
-            await session.refresh(image)
+            await session.refresh(image_obj)
 
-            return {
-                        'url':image.image_url,
-                        'description':image.description,
-                        'owner_id':image.user_id
-                    }
+            return image_obj
         
         except Exception as e:
             raise HTTPException(

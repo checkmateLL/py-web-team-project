@@ -1,16 +1,8 @@
 import cloudinary  # type: ignore
 import cloudinary.uploader  # type: ignore
+from fastapi import HTTPException, UploadFile, status
 
-from typing import Optional
-from fastapi import HTTPException, File, UploadFile, Query, Depends, status
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.database.models import Image, User
-from app.services.security.auth_service import role_deps
-from app.database.connection import get_conn_db
-from app.repository.images import crud_images
 from app.config import settings
-
 
 class CloudinaryService:
     """
@@ -30,6 +22,23 @@ class CloudinaryService:
     ) -> dict:
         """
         Upload image to Cloudinary
+
+        Args:
+                file (UploadFile): ImageFile, with nead upload.
+                folder (str): Folder in Cloudinary, with well be upload image.
+
+        Returns:
+            dict: consistense URL uploaded image & publicID.
+                Excemple returned value:
+                {
+                    "secure_url": "https://res.cloudinary.com/.../image.jpg",
+                    "public_id": "folder/image"
+                }
+
+        Raises:
+            HTTPException: If hapen upload error file in Cloudinary.
+                StatusCode: 500 Internal Server Error.
+                Detail error have message about current error by Cloudinary.
         """
         try:
             result = cloudinary.uploader.upload(

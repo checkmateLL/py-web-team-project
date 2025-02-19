@@ -1,6 +1,6 @@
-from pydantic import BaseModel, EmailStr, constr
+from pydantic import BaseModel, EmailStr, Field, constr
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Annotated
 
 class RegisterUser(BaseModel):
     user_name: str
@@ -50,22 +50,23 @@ class CommentResponse(BaseModel):
     user_id: int
     post_id: int
 
+Tag = Annotated[str, constr(
+    min_length=1,
+    max_length=50
+)]
 
 class ImageCreate(BaseModel):
     url: str
     qr_code: str
     description: str
     owner_id: int
-    tags: Optional[list[constr(min_length=1, max_length=50)]] = []
-
+    tags: Optional[list[Tag]] = []
 
 class ImageResponseSchema(BaseModel):
     id: int
     description: str
-    file_url: str
-    tags: list[str]
-    comments: list[CommentResponse]  
-
+    file_url: str = Field(..., alias="image_url") 
+    owner_id: int = Field(..., alias="user_id")  
     class Config:
-        from_attributes = True 
-        #orm_mode = True   for  Pydantic v2
+
+        from_attributes = True  
