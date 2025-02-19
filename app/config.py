@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     CLD_NAME : str = 'test'
     CLD_API_KEY : str = 'test'
     CLD_API_SECRET : str = 'test'
+    
     model_config = SettingsConfigDict(
         extra="ignore", 
         env_file=".env", 
