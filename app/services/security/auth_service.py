@@ -24,7 +24,6 @@ class AuthService(ConstructionAuthService):
 
     oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-
     async def get_current_user(
         self,
         token: str = Depends(oauth2_scheme),
@@ -57,8 +56,36 @@ class AuthService(ConstructionAuthService):
             raise credentials_exception
 
 
+class IRokeProtect(ABC):
 
-class RoleProtect:
+    @abstractmethod
+    def role_required(self, required_role:list[RoleSet]):
+        """check role userObject"""
+        ...
+    
+    @abstractmethod
+    def all_users(self):
+        """access granted all roles"""
+        ...
+
+    @abstractmethod
+    def admin_moderator(self):
+        """access granted admin and moderator"""
+        ...
+    
+    @abstractmethod
+    def admin_only(self):
+        """access admin"""
+        ...
+    
+    @abstractmethod
+    def moderator_only(self):
+        """access granted moderator"""
+        ...
+        
+
+
+class RoleProtect(IRokeProtect):
 
     def __init__(self, auth_service:AuthService):
         self.auth_service = auth_service
@@ -106,6 +133,4 @@ class RoleProtect:
             ]
         )
 
-
-auth_service = AuthService()
-role_deps = RoleProtect(auth_service)
+role_deps = RoleProtect(AuthService())
