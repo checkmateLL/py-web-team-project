@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import func, select
 
+from app.config import RoleSet
 from app.services.security.secure_password import Hasher
 from app.database.models import User
 
@@ -20,12 +21,27 @@ class UserCrud:
             user_name : str,
             password : str,
             session: AsyncSession):
-        new_user = User(
-            email=email,
-            username=user_name,
-            password_hash=password,
-            is_active=True,
-        )
+        """
+        if userObject is first do admin role
+        else userObject exist in database do user role
+        """
+        if await self.is_no_users(session=
+                                 session):
+            new_user = User(
+                email=email,
+                username=user_name,
+                password_hash=password,
+                is_active=True,
+                role=RoleSet.admin
+            )
+        else:
+            new_user = User(
+                email=email,
+                username=user_name,
+                password_hash=password,
+                is_active=True,
+                role=RoleSet.user,
+            )
         session.add(new_user)
         await session.commit()
         await session.refresh(new_user)
@@ -49,5 +65,14 @@ class UserCrud:
         if not Hasher.verify_password(password, user.password_hash):
             return False
         return user
+    
+    async def is_no_users(self, session: AsyncSession) -> bool:
+        """
+        Check, userobject in database.
+        Returned True, if database empty.
+        """
+        result = await session.execute(select(func.count(User.id)))
+        count = result.scalar_one()
+        return count == 0
 
 crud_users = UserCrud()
