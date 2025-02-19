@@ -32,3 +32,22 @@ class ResponseLogin(BaseModel):
     access_token: str
     refresh_token:str
     token_type: str
+
+class CommentCreate(BaseModel):
+    text: str
+    user_id: int
+    image_id: int
+
+class CommentUpdate(BaseModel):
+    text: str
+
+class CommentResponse(BaseModel):
+    id: int
+    text: str
+    created_at: datetime
+    updated_at: datetime
+    user_id: int
+    image_id: int
+    
+    class Config:
+        from_attributes = True
