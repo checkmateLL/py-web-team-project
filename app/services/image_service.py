@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.models import Image, User, Tag
 from app.services.auth_service import get_current_user #уточнить импорт!
 from app.database.connection import  get_conn_db
-from app.templates.config import settings, RoleSet
+from app.config import settings, RoleSet
 
 
 # Настройка Cloudinary
