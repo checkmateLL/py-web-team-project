@@ -8,6 +8,7 @@ import cloudinary.api
 
 from app.database.models import Image, User
 from app.schemas import ImageResponseSchema
+from app.config import RoleSet
 
 
 async def update_image_description(image_id: int, description: str, db: AsyncSession, current_user: User) -> ImageResponseSchema:
@@ -55,11 +56,13 @@ async def delete_image(image_id: int, db: AsyncSession, current_user: User):
         if image is None:
             raise HTTPException(status_code=404, detail="Image not found.")
         
-        if image.user_id != current_user.id:
+        #видаляти тепер може власник або адмін
+        if image.user_id != current_user.id and current_user.role != RoleSet.admin:
             raise HTTPException(status_code=403, detail="You don't have permission to delete this image.")
         
-        # Delete image from Cloudinary
-        cloudinary.uploader.destroy(image.public_id)#при удалении фото из cloudinary вносить поле public_id в модель+migrations!
+        # Видалення з Cloudinary (додати public_id в модель Image!)
+        if image.public_id:
+            cloudinary.uploader.destroy(image.public_id)
 
         # Delete image record from database
         await db.delete(image)
