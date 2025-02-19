@@ -41,6 +41,7 @@ class Image(BaseModel):
     description: Mapped[str] = mapped_column(String)
     image_url: Mapped[str] = mapped_column(String, nullable=False)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
+    public_id: Mapped[str] = mapped_column(String, nullable=False, unique=True)
 
     user: Mapped['User'] = relationship('User', back_populates='images')
     tags: Mapped[list['Tag']] = relationship('Tag', secondary=image_tag_association, back_populates='images')

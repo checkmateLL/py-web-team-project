@@ -10,8 +10,12 @@ class Settings(BaseSettings):
     PG_URL: str = "postgresql+asyncpg://test:000000@localhost:0000/test"
 
     SECRET_KEY_JWT:str = '**************************************'   
-    ALGORITHM: str = "******"  
+    ALGORITHM: str = "******"
 
+    CLD_NAME : str = 'test'
+    CLD_API_KEY : str = 'test'
+    CLD_API_SECRET : str = 'test'
+    
     model_config = SettingsConfigDict(
         extra="ignore", 
         env_file=".env", 
