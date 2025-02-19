@@ -35,7 +35,7 @@ class ResponseLogin(BaseModel):
 
 class CommentCreate(BaseModel):
     text: str
-    user_id: int
+    user_id: int #maybe delete and leave only text
     image_id: int
 
 class CommentUpdate(BaseModel):
@@ -48,6 +48,6 @@ class CommentResponse(BaseModel):
     updated_at: datetime
     user_id: int
     image_id: int
-    
+
     class Config:
         from_attributes = True

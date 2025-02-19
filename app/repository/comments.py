@@ -1,4 +1,3 @@
-# crud from comments
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
@@ -7,7 +6,12 @@ from fastapi import HTTPException, status
 from app.database.models import Comment, User
 from app.config import RoleSet
 
+
 class CommentCrud:
+    """
+    Handles CRUD operations for comments, ensuring only authorized users can modify or delete.
+    """
+
     async def create_comment(
         self,
         text: str,
@@ -15,6 +19,18 @@ class CommentCrud:
         image_id: int,
         session: AsyncSession
     ) -> Comment:
+        """
+        Create a new comment associated with a user and an image.
+
+        Args:
+            text (str): The text content of the comment.
+            user_id (int): The ID of the user creating the comment.
+            image_id (int): The ID of the image being commented on.
+            session (AsyncSession): The database session.
+
+        Returns:
+            Comment: The newly created comment.
+        """
         new_comment = Comment(
             text=text,
             user_id=user_id,
@@ -31,14 +47,30 @@ class CommentCrud:
         text: str,
         user: User,
         session: AsyncSession
-    ) -> Comment | None:
+    ) -> Comment:
+        """
+        Updates an existing comment if the user is the owner.
+
+        Args:
+            comment_id (int): The ID of the comment to update.
+            text (str): The new text content for the comment.
+            user (User): The authenticated user attempting to update the comment.
+            session (AsyncSession): The database session.
+
+        Returns:
+            Comment: The updated comment.
+
+        Raises:
+            HTTPException: 404 if the comment is not found.
+            HTTPException: 403 if the user is not the owner of the comment.
+        """
         query = select(Comment).filter(Comment.id == comment_id)
         result = await session.execute(query)
         comment = result.scalar_one_or_none()
-        
+
         if not comment:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
-    
+
         if comment.user_id != user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot edit another user's comment")
 
@@ -53,23 +85,54 @@ class CommentCrud:
         user: User,
         session: AsyncSession
     ) -> bool:
+        """
+        Deletes a comment only if the user has admin or moderator privileges.
+
+        Args:
+            comment_id (int): The ID of the comment to delete.
+            user (User): The authenticated user attempting to delete the comment.
+            session (AsyncSession): The database session.
+
+        Returns:
+            bool: True if the comment was successfully deleted.
+
+        Raises:
+            HTTPException: 404 if the comment is not found.
+            HTTPException: 403 if the user lacks permission to delete.
+        """
         query = select(Comment).filter(Comment.id == comment_id)
         result = await session.execute(query)
         comment = result.scalar_one_or_none()
-        
-        if comment and (user.role in [RoleSet.admin, RoleSet.moderator]):
-            await session.delete(comment)
-            await session.commit()
-            return True
-        return False
+
+        if not comment:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+
+        if user.role not in [RoleSet.admin, RoleSet.moderator]:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins and moderators can delete comments")
+
+        await session.delete(comment)
+        await session.commit()
+        return True
 
     async def get_comment(
         self,
         comment_id: int,
         session: AsyncSession
     ) -> Comment | None:
+        """
+        Retrieves a single comment by ID, including the user relationship.
+
+        Args:
+            comment_id (int): The ID of the comment to retrieve.
+            session (AsyncSession): The database session.
+
+        Returns:
+            Comment | None: The retrieved comment or None if not found.
+        """
         query = select(Comment).options(joinedload(Comment.user)).filter(Comment.id == comment_id)
         result = await session.execute(query)
         return result.scalar_one_or_none()
 
+
+# Initialize the CRUD instance for comments
 crud_comments = CommentCrud()

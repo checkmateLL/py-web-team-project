@@ -1,4 +1,3 @@
-# routes by comment 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,56 +7,98 @@ from app.repository.comments import crud_comments
 from app.services.security.auth_service import role_deps
 import app.schemas as sch
 
-router = APIRouter(prefix="/api/comments")
+router = APIRouter(prefix="/api/comments", tags=["comments"])
 
-@router.post("/photos/{photo_id}/comments/", 
-             response_model=sch.CommentResponse,
-             status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/{photo_id}/", 
+    response_model=sch.CommentResponse,
+    status_code=status.HTTP_201_CREATED
+)
 async def create_comment(
     photo_id: int,
     body: sch.CommentCreate,
     current_user: User = Depends(role_deps.all_users()),
     session: AsyncSession = Depends(get_conn_db)
 ):
-    """Create a new comment for a photo"""
-    comment = await crud_comments.create_comment(
+    """
+    Creates a new comment for a specific photo.
+
+    Args:
+        photo_id (int): The ID of the image being commented on.
+        body (CommentCreate): The request body containing the comment text.
+        current_user (User): The authenticated user creating the comment.
+        session (AsyncSession): The database session.
+
+    Returns:
+        CommentResponse: The newly created comment.
+    """
+    return await crud_comments.create_comment(
         text=body.text,
         user_id=current_user.id,
         image_id=photo_id,
         session=session
     )
-    return comment
 
-@router.put("/photos/{comment_id}/",
-            response_model=sch.CommentResponse)
+
+@router.put(
+    "/{comment_id}/",
+    response_model=sch.CommentResponse
+)
 async def update_comment(
     comment_id: int,
     body: sch.CommentUpdate,
     current_user: User = Depends(role_deps.all_users()),
     session: AsyncSession = Depends(get_conn_db)
 ):
-    """Update user's own comment"""
-    comment = await crud_comments.update_comment(
+    """
+    Updates an existing comment if the user is the owner.
+
+    Args:
+        comment_id (int): The ID of the comment to update.
+        body (CommentUpdate): The request body containing the new comment text.
+        current_user (User): The authenticated user making the request.
+        session (AsyncSession): The database session.
+
+    Returns:
+        CommentResponse: The updated comment.
+
+    Raises:
+        HTTPException: 404 if the comment is not found.
+        HTTPException: 403 if the user is not the owner of the comment.
+    """
+    return await crud_comments.update_comment(
         comment_id=comment_id,
         text=body.text,
         user=current_user,
         session=session
     )
-    if not comment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Comment not found or you don't have permission to update it"
-        )
-    return comment
 
-@router.delete("/photos/{comment_id}/",
-               status_code=status.HTTP_204_NO_CONTENT)
+
+@router.delete(
+    "/{comment_id}/",
+    status_code=status.HTTP_204_NO_CONTENT
+)
 async def delete_comment(
     comment_id: int,
     current_user: User = Depends(role_deps.admin_moderator()),
     session: AsyncSession = Depends(get_conn_db)
 ):
-    """Delete comment (admin/moderator only)"""
+    """
+    Deletes a comment if the user is an admin or moderator.
+
+    Args:
+        comment_id (int): The ID of the comment to delete.
+        current_user (User): The authenticated user requesting the deletion.
+        session (AsyncSession): The database session.
+
+    Returns:
+        None: Returns 204 No Content on successful deletion.
+
+    Raises:
+        HTTPException: 404 if the comment does not exist.
+        HTTPException: 403 if the user does not have permission to delete.
+    """
     deleted = await crud_comments.delete_comment(
         comment_id=comment_id,
         user=current_user,
@@ -68,4 +109,3 @@ async def delete_comment(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Comment not found"
         )
-    return None
