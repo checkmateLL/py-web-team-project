@@ -15,6 +15,13 @@ python-dotenv = "^1.0.1"
 asyncpg = "^0.30.0"
 greenlet = "^3.1.1"
 alembic = "^1.14.1"
+bcrypt = "^4.2.1"
+pytest = "^8.3.4"
+python-jose = "^3.3.0"
+types-python-jose = "^3.3.4.20240106"
+pytz = "^2025.1"
+types-pytz = "^2025.1.0.20250204"
+pytest-asyncio = "^0.25.3"
 
 
 [build-system]

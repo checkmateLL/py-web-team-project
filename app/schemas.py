@@ -1,8 +1,38 @@
-# pydantic-schemas (validation request data)
-from pydantic import BaseModel, constr
+from pydantic import BaseModel, EmailStr, constr
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
+class RegisterUser(BaseModel):
+    user_name: str
+    email: EmailStr
+    password: str
+
+class ResponseUser(BaseModel):
+    id: int
+    username: str
+    email: EmailStr
+    is_active: bool
+    role: str  
+    created_at: datetime
+
+    @classmethod
+    def from_orm(cls, obj):
+        return cls(
+            id=obj.id,
+            username=obj.username,
+            email=obj.email,         
+            is_active=obj.is_active,
+            role=obj.role.value,    
+            created_at=obj.register_on 
+        )
+
+    class Config:
+        from_attributes = True
+    
+class ResponseLogin(BaseModel):
+    access_token: str
+    refresh_token:str
+    token_type: str
 
 class CommentCreate(BaseModel):
     text: str
@@ -26,15 +56,15 @@ class ImageCreate(BaseModel):
     qr_code: str
     description: str
     owner_id: int
-    tags: Optional[List[constr(min_length=1, max_length=50)]] = []
+    tags: Optional[list[constr(min_length=1, max_length=50)]] = []
 
 
 class ImageResponseSchema(BaseModel):
     id: int
     description: str
     file_url: str
-    tags: List[str]
-    comments: List[CommentResponse]  
+    tags: list[str]
+    comments: list[CommentResponse]  
 
     class Config:
         from_attributes = True 
