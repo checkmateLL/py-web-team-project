@@ -1,9 +1,10 @@
 [tool.poetry]
 name = "py-web-team-project"
 version = "0.1.0"
-description = ""
+description = "FastAPI project"
 authors = ["dima cheban <dimacheban23@gmail.com>"]
 readme = "README.md"
+packages = [{include = "app"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"

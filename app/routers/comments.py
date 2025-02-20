@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/comments", tags=["comments"])
 async def create_comment(
     photo_id: int,
     body: sch.CommentCreate,
-    current_user: User = Depends(role_deps.all_users()),
+    current_user: User = role_deps.all_users(),
     session: AsyncSession = Depends(get_conn_db)
 ):
     """
@@ -33,13 +33,21 @@ async def create_comment(
     Returns:
         CommentResponse: The newly created comment.
     """
-    return await crud_comments.create_comment(
+    new_comment = await crud_comments.create_comment(
         text=body.text,
         user_id=current_user.id,
         image_id=photo_id,
         session=session
     )
 
+    return {
+        "id": new_comment.id,
+        "text": new_comment.text,
+        "created_at": new_comment.created_at,
+        "updated_at": new_comment.updated_at,
+        "user_id": new_comment.user_id,
+        "image_id": new_comment.image_id,  
+    }
 
 @router.put(
     "/{comment_id}/",
@@ -48,7 +56,7 @@ async def create_comment(
 async def update_comment(
     comment_id: int,
     body: sch.CommentUpdate,
-    current_user: User = Depends(role_deps.all_users()),
+    current_user: User = role_deps.all_users(),
     session: AsyncSession = Depends(get_conn_db)
 ):
     """
@@ -81,7 +89,7 @@ async def update_comment(
 )
 async def delete_comment(
     comment_id: int,
-    current_user: User = Depends(role_deps.admin_moderator()),
+    current_user: User = role_deps.admin_moderator(),
     session: AsyncSession = Depends(get_conn_db)
 ):
     """

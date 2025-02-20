@@ -35,11 +35,11 @@ class ResponseLogin(BaseModel):
     token_type: str
 
 class CommentCreate(BaseModel):
-    text: str
+    text: constr(max_length=500)
 
 
 class CommentUpdate(BaseModel):
-    text: str
+    text: constr(max_length=500)
 
 
 class CommentResponse(BaseModel):
@@ -48,7 +48,7 @@ class CommentResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     user_id: int
-    post_id: int
+    image_id: int
 
     class Config:
         from_attributes = True
