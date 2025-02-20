@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     CLD_API_KEY : str = 'test'
     CLD_API_SECRET : str = 'test'
     
+    REDIS_HOST : str = 'test'
+    REDIS_PORT : int = 0000
+    REDIS_DB : int = 0
+    REDIS_DECODE_RESPONSES : bool = True
+    
     model_config = SettingsConfigDict(
         extra="ignore", 
         env_file=".env", 

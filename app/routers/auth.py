@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.repository.users import crud_users
 from app.services.security.secure_token.manager import TokenType, token_manager
 from app.services.security.secure_password import Hasher
+from app.services.security.auth_service import AuthService
+from app.services.user_service import TokenBlackList, get_token_blacklist
 from app.database.connection import get_conn_db
 import app.schemas as sch
 
@@ -63,3 +65,39 @@ async def login(
         "access_token": encode_access_token, 
         "refresh_token": encode_refresh_token,
         "token_type": "bearer"}
+
+@router.post("/logout")
+async def logout(
+    result: dict = Depends(AuthService().logout_set)
+):
+    """
+    Logout the current user by blacklist their access token.
+
+    Returns:
+        dict: A access message confirming logout.
+    """
+    return result
+
+@router.get("/check_blacklist")
+async def check_blacklist(
+    token: str = Depends(AuthService.get_token),
+    token_blacklist: TokenBlackList = Depends(get_token_blacklist)
+):
+    """
+    Check if the provided access token is in the blacklist.
+
+    Returns:
+        dict: Information on whether the token is blacklisted.
+    """
+    is_blacklisted = await token_blacklist.is_token_blacklisted(token)
+
+    if is_blacklisted:
+        return {
+             "message": "Token is blacklisted", 
+             "blacklisted": True
+             }
+    else:
+        return {
+             "message": "Token is not blacklisted", 
+             "blacklisted": False
+             }
