@@ -13,7 +13,7 @@ from app.services.image_service import CloudinaryService
 
 router = APIRouter(tags=['images'])
 
-@router.post("/upload_image", response_model=sch.ImageResponseSchema)
+@router.post("/upload_image")
 async def upload_image_endpoint(
     description: str,
     file: UploadFile = File(...),
@@ -21,7 +21,7 @@ async def upload_image_endpoint(
     session: AsyncSession = Depends(get_conn_db),
     current_user: User =  role_deps.all_users(),
     cloudinary_service: CloudinaryService = Depends(CloudinaryService)
-) -> dict:
+):
     
     if tags and len(tags) > 5:
         raise HTTPException(
@@ -42,6 +42,8 @@ async def upload_image_endpoint(
             detail="Cloudinary did not return required data."
         )
 
+    tags_object = await crud_images.handle_tags(tags,session)
+
     image_object = await crud_images.create_image(
         secure_url,
         description,
@@ -50,12 +52,22 @@ async def upload_image_endpoint(
         session
     )
     
-    return sch.ImageResponseSchema(
-        id=image_object.id,
-        description=image_object.description,
-        image_url=image_object.image_url,  
-        user_id=image_object.user_id
-    ).model_dump(by_alias=True)
+    await crud_images._added_tag_to_image(image_object,tags_object,session)
+
+    return {
+        'id':image_object.id,
+        'description':image_object.description,
+        'image_url':image_object.image_url,
+        'owner_id':image_object.user_id,
+        'tags':[tag.name for tag in tags_object]
+    }
+    # return sch.ImageResponseSchema(
+    #     id=image_object.id,
+    #     description=image_object.description,
+    #     image_url=image_object.image_url,  
+    #     user_id=image_object.user_id,
+    #     tags=image_object.tags
+    # ).model_dump(by_alias=True)
 
 @router.delete("/delete_image/{image_id}/", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_image(
@@ -84,12 +96,14 @@ async def update_image_description(
         session, 
         current_user
     )
-    return sch.ImageResponseSchema(
-        id=update_image_object.id,
-        description=update_image_object.description,
-        image_url=update_image_object.image_url,  
-        user_id=update_image_object.user_id
-    ).model_dump(by_alias=True)
+    return {}
+    # return sch.ImageResponseSchema(
+    #     id=update_image_object.id,
+    #     description=update_image_object.description,
+    #     image_url=update_image_object.image_url,  
+    #     user_id=update_image_object.user_id,
+    #     tags=update_image_object.tags
+    # ).model_dump(by_alias=True)
     
 
 @router.get("/get_image/{image_id}/")
