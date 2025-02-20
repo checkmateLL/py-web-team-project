@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import Sequence
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, SQLAlchemyError
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from fastapi import HTTPException, status
@@ -110,18 +110,25 @@ class CommentCrud:
             HTTPException: 404 if the comment is not found.
             HTTPException: 403 if the user lacks permission to delete.
         """
-        query = select(Comment).filter(Comment.id == comment_id)
-        result = await session.execute(query)
-        comment = result.scalar_one_or_none()
-
-        if not comment:
+        try:
+            query = select(Comment).filter(Comment.id == comment_id)
+            result = await session.execute(query)
+            comment = result.scalar_one_or_none()
+            if not comment:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail='Comment not found'
+                )
+    
+            await session.delete(comment)
+            await session.commit()
+            return comment
+        except SQLAlchemyError as e:
+            await session.rollback()
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='Comment not found'
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error occurred while deleting comment"
             )
-        
-        await session.delete(comment)
-        await session.commit()
 
 
     async def get_comment(
