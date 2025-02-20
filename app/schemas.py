@@ -69,7 +69,17 @@ class ImageResponseSchema(BaseModel):
     id: int
     description: str
     file_url: str = Field(..., alias="image_url") 
-    owner_id: int = Field(..., alias="user_id")  
+    owner_id: int = Field(..., alias="user_id")
+    tags: list  
     class Config:
 
+        from_attributes = True  
+
+class ImageResponseUpdateSchema(BaseModel):
+    id: int
+    description: str
+    file_url: str = Field(..., alias="image_url") 
+    owner_id: int = Field(..., alias="user_id")
+
+    class Config:
         from_attributes = True  

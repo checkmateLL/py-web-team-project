@@ -1,11 +1,14 @@
+from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from fastapi import HTTPException, status
 import cloudinary # type: ignore
 import cloudinary.uploader # type: ignore
 import cloudinary.api # type: ignore
+from sqlalchemy.orm import selectinload
+from sqlalchemy.exc import SQLAlchemyError
 
-from app.database.models import Image, User
+from app.database.models import Image, User, Tag
 
 class ImageCrud:
 
@@ -15,7 +18,7 @@ class ImageCrud:
             description:str,
             user_id:int,
             public_id,
-            session:AsyncSession
+            session:AsyncSession,
     )->Image:
         session
         """
@@ -26,7 +29,7 @@ class ImageCrud:
                 image_url=url,
                 description=description,
                 user_id=user_id,
-                public_id=public_id
+                public_id=public_id,
             )
             session.add(image_record)
 
@@ -120,4 +123,117 @@ class ImageCrud:
             )
         return image
 
+    async def _get_all_tags(
+            self,
+            session : AsyncSession
+    ) -> dict[str,Tag]:
+        """
+        Get all tags from database
+        # feature: use redis cache, optimisation process
+        """
+        try:
+            result = await session.execute(
+                select(Tag).options(selectinload(Tag.images))
+            )
+            tags = result.scalars().fetchall()
+            existing_tags = {
+                tag.name: tag for tag in tags
+            }
+            return existing_tags
+        
+        except SQLAlchemyError as err:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f'Database error {str(err)}'
+            )
+
+    async def _select_uniqal(
+            self,
+            tags_name : list[str],
+            existings_tags : dict[str, Tag]
+    ):
+        """
+        Return new tag with not find in database
+        """
+        if not isinstance(tags_name, list):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Tags must by a list of strings'
+            )
+        new_tags_name = set(tags_name) - set(existings_tags.keys())
+        return new_tags_name
+    
+    async def _create_new_tag(
+        self,
+        new_tag_names,
+        session,
+    ):
+        """
+        Create new tag in database and return it
+        """
+        if not new_tag_names:
+            return []
+        try:
+            query = (
+                insert(Tag)
+                .values(
+                    [
+                        {'name': name} for name in new_tag_names
+                    ]
+                ).returning(Tag.id)
+            )
+            result = await session.execute(query)
+            tag_ids = result.scalars().all()
+            if not tag_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail='Failed to create new tags'
+                )
+            new_tags = await session.execute(select(Tag).where(Tag.id.in_(tag_ids)))
+            return new_tags.scalars().all()
+        except SQLAlchemyError as err:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f'Database eror {str(err)}'
+            )
+        
+    async def handle_tags(
+            self,
+            tags_names:list[str], session:AsyncSession
+    ):
+        """
+        Work with list object Tag. Added new and return listTag
+        """
+        existing_tags = await self._get_all_tags(session)
+        new_tag_names = await self._select_uniqal(tags_names, existing_tags)
+        if new_tag_names:
+            new_tags = await self._create_new_tag(new_tag_names,session)
+            existing_tags.update(
+                {tag.name:tag for tag in new_tags}
+            )
+
+        return [existing_tags[name] for name in tags_names if name in existing_tags]
+    
+    async def _add_tag_to_image(
+            self,
+            image_object,
+            tags_object,
+            session
+    ):
+        """
+        Bind tag to image
+        """
+        if not isinstance(tags_object, list):
+            tags_object = [tags_object]
+        try:
+            image_object.tags = list(set(image_object.tags + tags_object))
+            session.add(image_object)
+            await session.commit()
+            await session.refresh(image_object)
+        except SQLAlchemyError as error:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f'Failed to update image tags: {str(error)}'
+            )
+    
 crud_images = ImageCrud()

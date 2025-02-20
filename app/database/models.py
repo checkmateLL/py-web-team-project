@@ -16,7 +16,6 @@ from datetime import datetime
 class BaseModel(DeclarativeBase): ...
 
 
-#asscotiative table [Table-images<-->Table-tags]
 image_tag_association = Table('image_tag', BaseModel.metadata,
     Column('image_id', Integer, ForeignKey('images.id')),
     Column('tag_id', Integer, ForeignKey('tags.id'))
@@ -32,8 +31,8 @@ class User(BaseModel):
     is_active : Mapped[bool] = mapped_column(Boolean, default=True)
     register_on : Mapped[datetime] = mapped_column(DateTime, default=func.now())
 
-    images : Mapped[list['Image']] = relationship('Image', back_populates='user')
-    comments : Mapped[list['Comment']] = relationship('Comment', back_populates='user')
+    images : Mapped[list['Image']] = relationship('Image', back_populates='user', lazy='selectin')
+    comments : Mapped[list['Comment']] = relationship('Comment', back_populates='user', lazy='selectin')
 
 class Image(BaseModel):
     __tablename__ = 'images'
@@ -43,16 +42,16 @@ class Image(BaseModel):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
     public_id: Mapped[str] = mapped_column(String, nullable=False, unique=True)
 
-    user: Mapped['User'] = relationship('User', back_populates='images')
-    tags: Mapped[list['Tag']] = relationship('Tag', secondary=image_tag_association, back_populates='images')
-    comments: Mapped[list['Comment']] = relationship('Comment', back_populates='image')
-    transformations: Mapped[list['Transformation']] = relationship('Transformation', back_populates='image')
+    user: Mapped['User'] = relationship('User', back_populates='images', lazy='selectin')
+    tags: Mapped[list['Tag']] = relationship('Tag', secondary=image_tag_association, back_populates='images', lazy='selectin')
+    comments: Mapped[list['Comment']] = relationship('Comment', back_populates='image', lazy='selectin')
+    transformations: Mapped[list['Transformation']] = relationship('Transformation', back_populates='image',lazy='selectin')
 
 class Tag(BaseModel):
     __tablename__ = 'tags'
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    images: Mapped[list['Image']] = relationship('Image', secondary=image_tag_association, back_populates='tags')
+    images: Mapped[list['Image']] = relationship('Image', secondary=image_tag_association, back_populates='tags', lazy='selectin')
 
 class Comment(BaseModel):
     __tablename__ = 'comments'
@@ -63,8 +62,8 @@ class Comment(BaseModel):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
     image_id: Mapped[int] = mapped_column(Integer, ForeignKey('images.id'))
 
-    user: Mapped['User'] = relationship('User', back_populates='comments')
-    image: Mapped['Image'] = relationship('Image', back_populates='comments')
+    user: Mapped['User'] = relationship('User', back_populates='comments', lazy='selectin')
+    image: Mapped['Image'] = relationship('Image', back_populates='comments', lazy='selectin')
 
 class Transformation(BaseModel):
     __tablename__ = 'transformations'
@@ -73,4 +72,4 @@ class Transformation(BaseModel):
     qr_code_url: Mapped[str] = mapped_column(String, nullable=False)
     image_id: Mapped[int] = mapped_column(Integer, ForeignKey('images.id'))
 
-    image: Mapped['Image'] = relationship('Image', back_populates='transformations')
+    image: Mapped['Image'] = relationship('Image', back_populates='transformations', lazy='selectin')
