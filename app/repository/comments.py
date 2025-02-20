@@ -92,8 +92,7 @@ class CommentCrud:
 
     async def delete_comment(
         self,
-        comment_id: int,
-        user: User,
+        comment_id: int,       
         session: AsyncSession
     ) -> bool:
         """
@@ -116,9 +115,7 @@ class CommentCrud:
         comment = result.scalar_one_or_none()
 
         if not comment:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Comment not found")
+            return False
         
         await session.delete(comment)
         await session.commit()
