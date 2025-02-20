@@ -1,5 +1,6 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, constr
 from datetime import datetime
+from typing import Optional, Annotated
 
 class RegisterUser(BaseModel):
     user_name: str
@@ -35,11 +36,11 @@ class ResponseLogin(BaseModel):
 
 class CommentCreate(BaseModel):
     text: str
-    user_id: int #maybe delete and leave only text
-    image_id: int
+
 
 class CommentUpdate(BaseModel):
     text: str
+
 
 class CommentResponse(BaseModel):
     id: int
@@ -47,7 +48,28 @@ class CommentResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     user_id: int
-    image_id: int
+    post_id: int
 
     class Config:
         from_attributes = True
+
+Tag = Annotated[str, constr(
+    min_length=1,
+    max_length=50
+)]
+
+class ImageCreate(BaseModel):
+    url: str
+    qr_code: str
+    description: str
+    owner_id: int
+    tags: Optional[list[Tag]] = []
+
+class ImageResponseSchema(BaseModel):
+    id: int
+    description: str
+    file_url: str = Field(..., alias="image_url") 
+    owner_id: int = Field(..., alias="user_id")  
+    class Config:
+
+        from_attributes = True  
