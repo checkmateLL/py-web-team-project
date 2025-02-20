@@ -89,7 +89,7 @@ async def update_comment(
 )
 async def delete_comment(
     comment_id: int,
-    current_user: User = role_deps.admin_moderator(),
+    _: User = role_deps.admin_moderator(),
     session: AsyncSession = Depends(get_conn_db)
 ):
     """
@@ -108,8 +108,7 @@ async def delete_comment(
         HTTPException: 403 if the user does not have permission to delete.
     """
     deleted = await crud_comments.delete_comment(
-        comment_id=comment_id,
-        user=current_user,
+        comment_id=comment_id,        
         session=session
     )
     if not deleted:
