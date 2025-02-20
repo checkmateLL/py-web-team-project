@@ -16,7 +16,6 @@ from datetime import datetime
 class BaseModel(DeclarativeBase): ...
 
 
-#asscotiative table [Table-images<-->Table-tags]
 image_tag_association = Table('image_tag', BaseModel.metadata,
     Column('image_id', Integer, ForeignKey('images.id')),
     Column('tag_id', Integer, ForeignKey('tags.id'))

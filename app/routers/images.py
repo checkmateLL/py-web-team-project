@@ -52,14 +52,14 @@ async def upload_image_endpoint(
         session
     )
     
-    await crud_images._added_tag_to_image(image_object,tags_object,session)
+    await crud_images._add_tag_to_image(image_object,tags_object,session)
 
     return {
         'id':image_object.id,
         'description':image_object.description,
         'image_url':image_object.image_url,
         'owner_id':image_object.user_id,
-        'tags':[tag.name for tag in tags_object]
+        'tags':[tag for tag in tags_object]
     }
     # return sch.ImageResponseSchema(
     #     id=image_object.id,

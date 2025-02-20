@@ -1,3 +1,4 @@
+from sqlalchemy import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from fastapi import HTTPException, status
@@ -124,14 +125,14 @@ class ImageCrud:
     async def _get_all_tags(
             self,
             session : AsyncSession
-    ):
+    ) -> dict[str,Tag]:
         
         result = await session.execute(select(Tag).options(selectinload(Tag.images)))
-        tags = result.scalars().all()
+        tags = result.scalars().fetchall()
         existing_tags = {tag.name: tag for tag in tags}
         return existing_tags
     
-    async def _selec_unical(
+    async def _select_uniqal(
             self,
             tags_name,
             existings_tags
@@ -140,31 +141,38 @@ class ImageCrud:
         return new_tags_name
     
     async def _create_new_tag(
-            self,
-            new_tag_names,
-            session,
+        self,
+        new_tag_names,
+        session,
     ):
-        new_tags = [Tag(name=name) for name in new_tag_names]
-        session.add_all(new_tags)
-        await session.commit()
-        # await session.refresh(*new_tags)
-        result = await self._get_all_tags(session)
-        return result
-    
+        query = (
+            insert(Tag)
+            .values(
+                [
+                    {'name': name} for name in new_tag_names
+                ]
+            ).returning(Tag.id)
+        )
+        result = await session.execute(query)
+        tag_ids = result.scalars().all()
+        re = await session.execute(select(Tag).where(Tag.id.in_(tag_ids)))
+        return re.scalars().all()
+        
     async def handle_tags(
             self,
             tags_names:list[str], session:AsyncSession
     ):
         existing_tags = await self._get_all_tags(session)
-        new_tag_names = await self._selec_unical(tags_names, existing_tags)
+        new_tag_names = await self._select_uniqal(tags_names, existing_tags)
         if new_tag_names:
-            await self._create_new_tag(new_tag_names,session)
+            new_tags = await self._create_new_tag(new_tag_names,session)
+            existing_tags.update(
+                {tag.name:tag for tag in new_tags}
+            )
 
-        result = await session.execute(select(Tag).where(Tag.name.in_(tags_names)))
-        tags = result.scalars().all()
-        return tags
+        return [existing_tags[name] for name in tags_names if name in existing_tags]
     
-    async def _added_tag_to_image(
+    async def _add_tag_to_image(
             self,
             image_object,
             tags_object,
@@ -172,7 +180,9 @@ class ImageCrud:
     ):
         if not isinstance(tags_object, list):
             tags_object = [tags_object]
-        image_object.tags.extend(tags_object)
+
+        image_object.tags = list(set(image_object.tags + tags_object))
+        session.add(image_object)
         await session.commit()
         await session.refresh(image_object)
 
