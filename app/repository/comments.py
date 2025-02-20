@@ -69,13 +69,19 @@ class CommentCrud:
         comment = result.scalar_one_or_none()
 
         if not comment:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Comment not found")
 
         if comment.user_id != user.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot edit another user's comment")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot edit another user's comment")
 
         if not text.strip():  # Double check to prevent empty comments
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Comment text cannot be empty")
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Comment text cannot be empty")
 
         comment.text = text
         comment.updated_at = datetime.utcnow()
@@ -110,10 +116,14 @@ class CommentCrud:
         comment = result.scalar_one_or_none()
 
         if not comment:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Comment not found")
 
         if user.role not in [RoleSet.admin, RoleSet.moderator]:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admins and moderators can delete comments")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only admins and moderators can delete comments")
 
         await session.delete(comment)
         await session.commit()
