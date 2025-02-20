@@ -119,12 +119,7 @@ class CommentCrud:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Comment not found")
-
-        if user.role not in [RoleSet.admin, RoleSet.moderator]:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only admins and moderators can delete comments")
-
+        
         await session.delete(comment)
         await session.commit()
         return {"message": "Comment deleted successfully"}
