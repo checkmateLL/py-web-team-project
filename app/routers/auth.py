@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.database.models import User
+from app.services.security.auth_service import role_deps
 from app.repository.users import crud_users
 from app.services.security.secure_token.manager import TokenType, token_manager
 from app.services.security.secure_password import Hasher
@@ -77,27 +79,3 @@ async def logout(
         dict: A access message confirming logout.
     """
     return result
-
-@router.get("/check_blacklist")
-async def check_blacklist(
-    token: str = Depends(AuthService.get_token),
-    token_blacklist: TokenBlackList = Depends(get_token_blacklist)
-):
-    """
-    Check if the provided access token is in the blacklist.
-
-    Returns:
-        dict: Information on whether the token is blacklisted.
-    """
-    is_blacklisted = await token_blacklist.is_token_blacklisted(token)
-
-    if is_blacklisted:
-        return {
-             "message": "Token is blacklisted", 
-             "blacklisted": True
-             }
-    else:
-        return {
-             "message": "Token is not blacklisted", 
-             "blacklisted": False
-             }
