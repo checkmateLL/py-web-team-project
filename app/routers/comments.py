@@ -107,20 +107,15 @@ async def delete_comment(
         HTTPException: 404 if the comment does not exist.
         HTTPException: 403 if the user does not have permission to delete.
     """
-    deleted = await crud_comments.delete_comment(
-        comment_id=comment_id,        
+    await crud_comments.delete_comment(
+        comment_id=comment_id,
         session=session
     )
-    if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Comment not found"
-        )
     
 @router.get("/comments/{comment_id}/", response_model=sch.CommentResponse)
 async def get_comment(
     comment_id: int,
-    current_user: User = role_deps.all_users(),
+    _: User = role_deps.all_users(),
     session: AsyncSession = Depends(get_conn_db)
 ):
     """
@@ -139,7 +134,10 @@ async def get_comment(
     comment = await crud_comments.get_comment(comment_id, session)
 
     if not comment:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Comment not found"
+        )
 
     return {
         "id": comment.id,
@@ -150,10 +148,13 @@ async def get_comment(
         "image_id": comment.image_id,
     }
 
-@router.get("/comments/image/{image_id}/", response_model=list[sch.CommentResponse])
+@router.get(
+        "/comments/image/{image_id}/", 
+        response_model=list[sch.CommentResponse]
+    )
 async def get_comments_for_image(
     image_id: int,
-    current_user: User = role_deps.all_users(),
+    _: User = role_deps.all_users(),
     session: AsyncSession = Depends(get_conn_db)
 ):
     """
@@ -172,7 +173,10 @@ async def get_comments_for_image(
     comments = await crud_comments.get_comments_for_image(image_id, session)
 
     if not comments:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No comments found for this image")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="No comments found for this image"
+        )
 
     return [
         {
