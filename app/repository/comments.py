@@ -1,11 +1,11 @@
+from datetime import datetime, timezone
+from typing import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from fastapi import HTTPException, status
 
 from app.database.models import Comment, User
-from app.config import RoleSet
-
 
 class CommentCrud:
     """
@@ -84,7 +84,7 @@ class CommentCrud:
                 detail="Comment text cannot be empty")
 
         comment.text = text
-        comment.updated_at = datetime.utcnow()
+        comment.updated_at = datetime.now(timezone.utc).replace(tzinfo=None)
 
         await session.commit()
         await session.refresh(comment)
@@ -94,7 +94,7 @@ class CommentCrud:
         self,
         comment_id: int,       
         session: AsyncSession
-    ) -> bool:
+    ):
         """
         Deletes a comment only if the user has admin or moderator privileges.
 
@@ -115,11 +115,14 @@ class CommentCrud:
         comment = result.scalar_one_or_none()
 
         if not comment:
-            return False
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Comment not found'
+            )
         
         await session.delete(comment)
         await session.commit()
-        return {"message": "Comment deleted successfully"}
+
 
     async def get_comment(
         self,
@@ -136,7 +139,10 @@ class CommentCrud:
         Returns:
             Comment | None: The retrieved comment or None if not found.
         """
-        query = select(Comment).options(joinedload(Comment.user)).filter(Comment.id == comment_id)
+        query = select(Comment).options(
+            joinedload(Comment.user)
+        ).filter(Comment.id == comment_id)
+        
         result = await session.execute(query)
         return result.scalar_one_or_none()
 
@@ -144,7 +150,7 @@ class CommentCrud:
         self,
         image_id: int,
         session: AsyncSession
-    ) -> list[Comment]:
+    ) -> Sequence[Comment]:
         """
         Retrieves all comments for a given image ID.
 
@@ -155,7 +161,10 @@ class CommentCrud:
         Returns:
             list[Comment]: A list of comments for the given image.
         """
-        query = select(Comment).options(joinedload(Comment.user)).filter(Comment.image_id == image_id)
+        query = select(Comment).options(
+            joinedload(Comment.user)
+        ).filter(Comment.image_id == image_id)
+
         result = await session.execute(query)
         return result.scalars().all()
 
