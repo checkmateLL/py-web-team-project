@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -5,6 +6,7 @@ from jose import JWTError
 from abc import ABC, abstractmethod
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.services.user_service import TokenBlackList, get_token_blacklist
 from app.config import RoleSet
 from app.database.connection import get_conn_db
 from app.repository.users import crud_users
@@ -19,6 +21,8 @@ class ConstructionAuthService(ABC):
         self, token: str, session:AsyncSession
     ) -> Optional['User']: ...
 
+    @abstractmethod
+    async def get_token(self) -> str: ...
 
 class AuthService(ConstructionAuthService):
 
@@ -55,6 +59,41 @@ class AuthService(ConstructionAuthService):
         except JWTError:
             raise credentials_exception
 
+    async def logout_set(
+            self,
+            token:str = Depends(oauth2_scheme),
+            token_blacklist:TokenBlackList = Depends(get_token_blacklist)
+    ):
+        try:
+            pyload = await token_manager.decode_token(
+                token_type=TokenType.ACCESS,
+                token=token
+            )
+            exp_timestamp = pyload.get('exp')
+            if not exp_timestamp:
+                raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+            expires_in = max(exp_timestamp - int(datetime.now(timezone.utc).timestamp()), 0)
+
+            await token_blacklist.blacklist_access_token(token, expires_in)
+            return {
+                'message':'Logged out successfully'
+            }
+        
+        except JWTError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+        
+    @staticmethod
+    async def get_token(
+            token:str = Depends(oauth2_scheme)
+    ):
+        """return access token"""
+        return token
 
 class IRokeProtect(ABC):
 
