@@ -74,7 +74,12 @@ class CommentCrud:
         if comment.user_id != user.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot edit another user's comment")
 
+        if not text.strip():  # Double check to prevent empty comments
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Comment text cannot be empty")
+
         comment.text = text
+        comment.updated_at = datetime.utcnow()
+
         await session.commit()
         await session.refresh(comment)
         return comment
@@ -112,7 +117,7 @@ class CommentCrud:
 
         await session.delete(comment)
         await session.commit()
-        return True
+        return {"message": "Comment deleted successfully"}
 
     async def get_comment(
         self,
@@ -133,6 +138,24 @@ class CommentCrud:
         result = await session.execute(query)
         return result.scalar_one_or_none()
 
+    async def get_comments_for_image(
+        self,
+        image_id: int,
+        session: AsyncSession
+    ) -> list[Comment]:
+        """
+        Retrieves all comments for a given image ID.
+
+        Args:
+            image_id (int): The ID of the image to retrieve comments for.
+            session (AsyncSession): The database session.
+
+        Returns:
+            list[Comment]: A list of comments for the given image.
+        """
+        query = select(Comment).options(joinedload(Comment.user)).filter(Comment.image_id == image_id)
+        result = await session.execute(query)
+        return result.scalars().all()
 
 # Initialize the CRUD instance for comments
 crud_comments = CommentCrud()

@@ -117,3 +117,72 @@ async def delete_comment(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Comment not found"
         )
+    
+@router.get("/comments/{comment_id}/", response_model=sch.CommentResponse)
+async def get_comment(
+    comment_id: int,
+    current_user: User = role_deps.all_users(),
+    session: AsyncSession = Depends(get_conn_db)
+):
+    """
+    Retrieves a single comment by ID.
+
+    Args:
+        comment_id (int): The ID of the comment to retrieve.
+        session (AsyncSession): The database session.
+
+    Returns:
+        CommentResponse: The retrieved comment.
+
+    Raises:
+        HTTPException: 404 if the comment is not found.
+    """
+    comment = await crud_comments.get_comment(comment_id, session)
+
+    if not comment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
+
+    return {
+        "id": comment.id,
+        "text": comment.text,
+        "created_at": comment.created_at,
+        "updated_at": comment.updated_at,
+        "user_id": comment.user_id,
+        "image_id": comment.image_id,
+    }
+
+@router.get("/comments/image/{image_id}/", response_model=list[sch.CommentResponse])
+async def get_comments_for_image(
+    image_id: int,
+    current_user: User = role_deps.all_users(),
+    session: AsyncSession = Depends(get_conn_db)
+):
+    """
+    Retrieves all comments for a specific image.
+
+    Args:
+        image_id (int): The ID of the image to retrieve comments for.
+        session (AsyncSession): The database session.
+
+    Returns:
+        list[CommentResponse]: A list of comments for the given image.
+
+    Raises:
+        HTTPException: 404 if no comments are found.
+    """
+    comments = await crud_comments.get_comments_for_image(image_id, session)
+
+    if not comments:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No comments found for this image")
+
+    return [
+        {
+            "id": comment.id,
+            "text": comment.text,
+            "created_at": comment.created_at,
+            "updated_at": comment.updated_at,
+            "user_id": comment.user_id,
+            "image_id": comment.image_id,
+        }
+        for comment in comments
+    ]

@@ -35,11 +35,11 @@ class ResponseLogin(BaseModel):
     token_type: str
 
 class CommentCreate(BaseModel):
-    text: constr(max_length=500)
+    text: constr(min_length=1, max_length=500)
 
 
 class CommentUpdate(BaseModel):
-    text: constr(max_length=500)
+    text: constr(min_length=1, max_length=500)
 
 
 class CommentResponse(BaseModel):
