@@ -1140,6 +1140,25 @@ files = [
 
 [[package]]
 name = "qrcode"
+version = "8.0"
+description = "QR Code image generator"
+optional = false
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "qrcode-8.0-py3-none-any.whl", hash = "sha256:9fc05f03305ad27a709eb742cf3097fa19e6f6f93bb9e2f039c0979190f6f1b1"},
+    {file = "qrcode-8.0.tar.gz", hash = "sha256:025ce2b150f7fe4296d116ee9bad455a6643ab4f6e7dce541613a4758cbce347"},
+]
+
+[package.dependencies]
+colorama = {version = "*", markers = "sys_platform == \"win32\""}
+
+[package.extras]
+all = ["pillow (>=9.1.0)", "pypng"]
+pil = ["pillow (>=9.1.0)"]
+png = ["pypng"]
+
+[[package]]
+name = "qrcode"
 version = "7.4.2"
 description = "QR Code image generator"
 optional = false
@@ -1427,6 +1446,20 @@ files = [
 ]
 
 [[package]]
+name = "types-qrcode"
+version = "8.0.0.20241004"
+description = "Typing stubs for qrcode"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "types-qrcode-8.0.0.20241004.tar.gz", hash = "sha256:a64761d332025df0a6009e39a2f3f8fd6a3c08bbe98e13420708b918486f0600"},
+    {file = "types_qrcode-8.0.0.20241004-py3-none-any.whl", hash = "sha256:24455a0fbffaaac5be473b4ffcfdfa7149b0474f0aa39ba983fe86bdbd978101"},
+]
+
+[package.dependencies]
+Pillow = ">=10.3.0"
+
+[[package]]
 name = "typing-extensions"
 version = "4.12.2"
 description = "Backported and Experimental Type Hints for Python 3.8+"
@@ -1694,4 +1727,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "0a8a2f8cf440ca7eaacbc70faba189a3be25e25e1e61e6760a69fc6f11e296e8"
+content-hash = "1773bdd39c601c31d9c89f6ed4ae38067ce4f6eadd834382bd481ac9380f713a"
