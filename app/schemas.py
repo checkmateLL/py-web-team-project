@@ -111,5 +111,13 @@ class ImageResponseUpdateSchema(BaseModel):
     owner_id: int = Field(..., alias="user_id")
 
     class Config:
-        from_attributes = True 
+        from_attributes = True  
 
+
+class TransformationResponseSchema(BaseModel):
+    transformation_url: str
+    qr_code_url: str
+    image_id: int
+
+    class Config:
+        from_attributes = True
