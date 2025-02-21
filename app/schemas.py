@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, constr, HttpUrl, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, constr, HttpUrl, ConfigDict, validator
 from datetime import datetime
 from typing import Optional, Annotated
 
@@ -50,8 +50,14 @@ class UserProfileEdit(BaseModel):
     username: Optional[constr(min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")] = None
     email: Optional[EmailStr] = None
     bio: Optional[constr(max_length=500)] = None
-    avatar_url: Optional[HttpUrl] = None 
+    avatar_url: Optional[str] = None 
 
+    @validator("avatar_url", pre=True, always=True)
+    def validate_avatar_url(cls, value):
+        if value is not None:
+            return str(value)  # ✅ Ensure it's always stored as a string
+        return value
+    
     class Config:
         json_schema_extra = {
             "example": {

@@ -148,6 +148,9 @@ class UserCrud:
             query = select(User).filter(User.id == user_id)
             result = await session.execute(query)
             user = result.scalar_one_or_none()
+
+            if not user:
+                return None 
             
             if user:
                 if username:
@@ -159,10 +162,10 @@ class UserCrud:
                 if avatar_url is not None:
                     user.avatar_url = avatar_url
                     
-                await session.commit()
-                await session.refresh(user)
-                
+            await session.commit()
+            await session.refresh(user)                
             return user
+        
         except SQLAlchemyError as e:
             await session.rollback()
             raise HTTPException(
