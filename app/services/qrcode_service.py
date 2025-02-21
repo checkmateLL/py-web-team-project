@@ -27,8 +27,6 @@ class QRCodeGeneration:
         qr.make(fit=True)
 
         img = qr.make_image(fill_color="black", back_color="white")
-
-        
         return img
 
 class ImageSaver:

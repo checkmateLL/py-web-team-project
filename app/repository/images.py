@@ -258,19 +258,34 @@ class ImageCrud:
             image_id,
             session:AsyncSession):
         
-        new_transformation = Transformation(
+        try:
+
+            new_transformation = Transformation(
                 transformation_url=transformed_url,
                 qr_code_url=qr_code_url,
                 image_id=image_id
             )
-        session.add(new_transformation)
-        await session.commit()
-        await session.refresh(new_transformation)
 
-        return {
-            "transformation_url":transformed_url,
-            "qr_code_url":qr_code_url,
-            "image_id":image_id
-        }
+            session.add(new_transformation)
+            await session.commit()
+            await session.refresh(new_transformation)
+
+            return {
+                "transformation_url": transformed_url,
+                "qr_code_url": qr_code_url,
+                "image_id": image_id
+            }
+        
+        except SQLAlchemyError as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error occurred: {str(e)}"
+            )
+    
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"An unexpected error occurred: {str(e)}"
+            )
     
 crud_images = ImageCrud()
