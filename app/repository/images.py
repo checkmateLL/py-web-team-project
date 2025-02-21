@@ -106,6 +106,7 @@ class ImageCrud:
 
             await session.delete(image)
             await session.commit()
+            return True
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 

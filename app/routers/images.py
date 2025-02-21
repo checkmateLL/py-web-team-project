@@ -94,7 +94,10 @@ async def upload_image_endpoint(
         tags=[tag.name for tag in tags_object] 
     )
 
-@router.delete("/delete_image/{image_id}/", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+        "/delete_image/{image_id}/", 
+        status_code=status.HTTP_204_NO_CONTENT
+    )
 async def delete_image(
     image_id: int, 
     session: AsyncSession = Depends(get_conn_db), 
@@ -104,6 +107,7 @@ async def delete_image(
     """
     try:
         deleted = await crud_images.delete_image(image_id, session, current_user)
+
         if not deleted:
             raise HTTPException(
                 status_code=404, 
