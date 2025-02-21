@@ -53,7 +53,9 @@ class CloudinaryService:
                 type="upload",
                 eager=[transformation_params]
             )
-            transformed_url = transformed_image.get("eager", [{}])[0].get("secure_url")
+            eager_transformations = transformed_image.get("eager", [])
+            transformed_url = eager_transformations[0].get("secure_url") if eager_transformations else None
+            
             if not transformed_url:
                 raise HTTPException(
                     status_code=500, 
