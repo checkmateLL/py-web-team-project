@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, constr, HttpUrl, ConfigDict, validator
+from pydantic import BaseModel, EmailStr, Field, constr, HttpUrl, ConfigDict, field_validator, StringConstraints
 from datetime import datetime
 from typing import Optional, Annotated
 
@@ -47,15 +47,16 @@ class UserProfileResponse(BaseModel):
         from_attributes = True
 
 class UserProfileEdit(BaseModel):
-    username: Optional[constr(min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")] = None
+    username: Optional[Annotated[str, StringConstraints(min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")]] = None
     email: Optional[EmailStr] = None
-    bio: Optional[constr(max_length=500)] = None
+    bio: Optional[Annotated[str, StringConstraints(max_length=500)]] = None
     avatar_url: Optional[str] = None 
 
-    @validator("avatar_url", pre=True, always=True)
+    @field_validator("avatar_url", mode="before")
+    @classmethod
     def validate_avatar_url(cls, value):
         if value is not None:
-            return str(value)  # ✅ Ensure it's always stored as a string
+            return str(value)  
         return value
     
     class Config:
@@ -80,11 +81,11 @@ class ResponseLogin(BaseModel):
     token_type: str
 
 class CommentCreate(BaseModel):
-    text: constr(min_length=1, max_length=500)
+    text: Annotated[str, StringConstraints(min_length=1, max_length=500)]
 
 
 class CommentUpdate(BaseModel):
-    text: constr(min_length=1, max_length=500)
+    text: Annotated[str, StringConstraints(min_length=1, max_length=500)]
 
 
 class CommentResponse(BaseModel):
@@ -150,3 +151,7 @@ class RatingResponse(BaseModel):
     image_id: int
 
     model_config = ConfigDict(from_attributes=True)
+
+class UserProfileWithLogout(UserProfileFull):    
+    require_logout: bool = False
+    message: Optional[str] = None

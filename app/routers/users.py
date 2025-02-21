@@ -7,8 +7,9 @@ import logging
 
 from app.database.connection import get_conn_db
 from app.repository.users import crud_users
-from app.schemas import UserProfileResponse, UserProfileEdit, UserProfileFull
-from app.services.security.auth_service import role_deps
+from app.schemas import UserProfileResponse, UserProfileEdit, UserProfileFull, UserProfileWithLogout
+from app.services.security.auth_service import role_deps, AuthService
+from app.services.user_service import get_token_blacklist
 from app.database.models import User
 
 logger = logging.getLogger(__name__)
@@ -67,18 +68,23 @@ async def get_my_profile(
         )
     return profile
 
-@router.put("/me/profile", response_model=UserProfileFull)
+@router.put("/me/profile", response_model=UserProfileWithLogout)
 async def update_my_profile(
     profile_update: UserProfileEdit,
     response: Response,
     current_user: User = role_deps.all_users(),
-    db: AsyncSession = Depends(get_conn_db)    
+    db: AsyncSession = Depends(get_conn_db),
+    token: str = Depends(AuthService.get_token),
+    token_blacklist = Depends(get_token_blacklist)   
 ):
-    """Update authenticated user's profile with auto-logout on email change"""
+    """
+    Update authenticated user's profile.
+    If the email is changed, the current access token is blacklisted to force a logout.
+    """
     try:
         email_changed = False
         
-        # Check if username is taken if trying to change it
+        # Check if username is changing and if the new username is available.
         if profile_update.username and profile_update.username != current_user.username:
             existing_user = await crud_users.get_user_by_username(profile_update.username, db)
             if existing_user:
@@ -86,8 +92,8 @@ async def update_my_profile(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Username already taken"
                 )
-
-        # Check if email is changing
+        
+        # Check if email is changing and ensure the new email is not already registered.
         if profile_update.email and profile_update.email != current_user.email:
             existing_user = await crud_users.exist_user(profile_update.email, db)
             if existing_user:
@@ -97,7 +103,7 @@ async def update_my_profile(
                 )
             email_changed = True
 
-        # Attempt to update the profile
+        # Update the user profile in the database.
         updated_user = await crud_users.update_user_profile(
             user_id=current_user.id,
             username=profile_update.username,
@@ -113,25 +119,16 @@ async def update_my_profile(
                 detail="User not found or update failed"
             )
 
-        # Get full profile data
+        # Retrieve the updated profile data.
         profile = await crud_users.get_user_profile(updated_user.username, db)
         
-        # If email was changed, set header to trigger logout
         if email_changed:
-            # Add a custom header to indicate logout is needed
+            # Blacklist the current access token to enforce logout.
+            await AuthService().logout_set(token=token, token_blacklist=token_blacklist)
             response.headers["X-Require-Logout"] = "true"
-            
-            # Add a message to the profile response
-            if hasattr(profile, "__dict__"):
-                profile_dict = dict(profile.__dict__)
-            else:
-                # Handle Pydantic models or regular dicts
-                profile_dict = profile.dict() if hasattr(profile, 'dict') else dict(profile)
-                
-            profile_dict["require_logout"] = True
-            profile_dict["message"] = "Your email was updated. Please log in again with your new credentials."
-            return profile_dict
-            
+            profile["require_logout"] = True
+            profile["message"] = "Your email was updated. Please log in again with your new credentials."
+        
         return profile
     
     except SQLAlchemyError as e:
