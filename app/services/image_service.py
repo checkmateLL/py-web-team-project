@@ -41,13 +41,12 @@ class CloudinaryService:
     async def transform_image(
         self, 
         image:Image,
-        transformation_params : dict,
+        transformation_params : dict
     ) -> TransformationResponseSchema:
         """
         Transforms an image using Cloudinary, generates a QR code, 
         and saves the transformation to the database.
         """
-    
         try:
             transformed_image = cloudinary.uploader.explicit(
                 image.public_id,
@@ -68,5 +67,3 @@ class CloudinaryService:
                 status_code=500, 
                 detail=f"Cloudinary transformation error: {str(e)}"
             )
-           
-        
