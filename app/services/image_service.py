@@ -43,7 +43,8 @@ class CloudinaryService:
 
     async def transform_image(
         self, 
-        image_id: int, transformation_params: dict, 
+        image_id: int, 
+        transformation_params: dict, 
         session: AsyncSession, 
         current_user
     ) -> TransformationResponseSchema:
@@ -68,18 +69,25 @@ class CloudinaryService:
 
         try:
             transformed_image = cloudinary.uploader.explicit(
-                image.public_id,  #використовую public_id
+                image.public_id,
                 type="upload",
                 eager=[transformation_params]
             )
+            transformed_url = transformed_image.get("secure_url")
+
+            if not transformed_url:
+                raise HTTPException(
+                    status_code=500, 
+                    detail="Cloudinary did not return a transformed image"
+                )
+    
         except Exception as e:
             raise HTTPException(
                 status_code=500, 
                 detail=f"Cloudinary transformation error: {str(e)}"
             )
 
-        transformed_url = transformed_image["eager"][0]["secure_url"]
-
+        
         qr = qrcode.make(transformed_url)
         qr_io = io.BytesIO()
         qr.save(qr_io, format="PNG")

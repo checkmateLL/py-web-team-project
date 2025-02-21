@@ -130,10 +130,13 @@ async def delete_image(
 @router.post('/{image_id}/add_tags')
 async def add_tags_to_image(
     image_id:int,
-    tags: list[str] = Query(default_factory=list),
+    tags:list[str] = Body(..., embed=True),
     session:AsyncSession = Depends(get_conn_db),
     current_user = role_deps.all_users()
 ):
+    """
+    add extra tag
+    """
     user_image = await crud_images.get_image_obj(
         image_id=image_id,
         current_user_id=current_user.id,
@@ -166,6 +169,9 @@ async def get_image_info(
     session:AsyncSession = Depends(get_conn_db),
     current_user:User = role_deps.all_users(),
 ):
+    """
+    get info about image
+    """
     image_object = await crud_images.get_image_obj(
         image_id=image_id,
         current_user_id=current_user.id,
@@ -204,8 +210,6 @@ async def update_image_description(
         user_id=update_image_object.user_id,
         
     )
-
-@router.get('/')
 
 @router.get("/get_image/{image_id}/")
 async def get_image_by_id(
