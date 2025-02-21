@@ -124,6 +124,20 @@ class ImageCrud:
             )
         return image
 
+    async def get_image_obj(
+            self,
+            image_id:int,
+            current_user_id,
+            session:AsyncSession
+    ):
+        image = await session.get(Image, image_id)
+        if not image or image.user_id != current_user_id:
+            raise HTTPException(
+                status_code=404, 
+                detail="Image not found"
+            )
+        return image
+
     async def _get_all_tags(
             self,
             session : AsyncSession

@@ -74,7 +74,7 @@ async def upload_image_endpoint(
             detail="Cloudinary did not return required data."
         )
 
-    tags_object = await crud_images.handle_tags(tags,session)
+    tags_object = await crud_images.handle_tags(tags, session)
 
     image_object = await crud_images.create_image(
         secure_url,
@@ -127,6 +127,59 @@ async def delete_image(
             detail=f"Unexpected error: {str(e)}"
         )
 
+@router.post('/{image_id}/add_tags')
+async def add_tags_to_image(
+    image_id:int,
+    tags: list[str] = Query(default_factory=list),
+    session:AsyncSession = Depends(get_conn_db),
+    current_user = role_deps.all_users()
+):
+    user_image = await crud_images.get_image_obj(
+        image_id=image_id,
+        current_user_id=current_user.id,
+        session=session
+        )
+    
+    existing_tags = {tag.name for tag in user_image.tags}
+    new_tags = set(tags) - existing_tags
+    if len(existing_tags) + len(new_tags) > 5:
+        raise HTTPException(
+            status_code=400, 
+            detail="An image can have up to 5 tags"
+        )
+
+    tags_object = await crud_images.handle_tags(tags, session)
+    await crud_images._add_tag_to_image(user_image, tags_object,session)
+
+    return sch.ImageResponseSchema(
+        id=user_image.id,
+        description=user_image.description,
+        image_url=user_image.image_url,
+        user_id=user_image.user_id,
+        tags=[tag.name for tag in user_image.tags] 
+    )
+
+
+@router.get('/image-info')
+async def get_image_info(
+    image_id:int,
+    session:AsyncSession = Depends(get_conn_db),
+    current_user:User = role_deps.all_users(),
+):
+    image_object = await crud_images.get_image_obj(
+        image_id=image_id,
+        current_user_id=current_user.id,
+        session=session,
+    )
+    
+    return sch.ImageResponseSchema(
+        id=image_object.id,
+        description=image_object.description,
+        image_url=image_object.image_url,
+        user_id=image_object.user_id,
+        tags=[tag.name for tag in image_object.tags] 
+    )
+
 @router.put(
         "/update_image_description/{image_id}/",
         response_model=sch.ImageResponseUpdateSchema
@@ -151,7 +204,9 @@ async def update_image_description(
         user_id=update_image_object.user_id,
         
     )
-    
+
+@router.get('/')
+
 @router.get("/get_image/{image_id}/")
 async def get_image_by_id(
     image_id: int, 
