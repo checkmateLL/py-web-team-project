@@ -1,8 +1,7 @@
 import cloudinary  # type: ignore
 import cloudinary.uploader  # type: ignore
 from fastapi import HTTPException, UploadFile, status
-import qrcode
-import io
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.config import settings, RoleSet
