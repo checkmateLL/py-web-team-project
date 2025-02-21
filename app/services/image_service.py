@@ -2,10 +2,8 @@ import cloudinary  # type: ignore
 import cloudinary.uploader  # type: ignore
 from fastapi import HTTPException, UploadFile, status
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from app.config import settings, RoleSet
-from app.database.models import Image, Transformation
+from app.config import settings
+from app.database.models import Image
 from app.schemas import TransformationResponseSchema
 
 class CloudinaryService:
