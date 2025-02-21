@@ -14,6 +14,8 @@ class ResponseUser(BaseModel):
     is_active: bool
     role: str  
     created_at: datetime
+    bio: Optional[str] = None
+    avatar_url: Optional[str] = None
 
     @classmethod
     def from_orm(cls, obj):
@@ -23,11 +25,38 @@ class ResponseUser(BaseModel):
             email=obj.email,         
             is_active=obj.is_active,
             role=obj.role.value,    
-            created_at=obj.register_on 
+            created_at=obj.register_on,
+            bio=obj.bio,
+            avatar_url=obj.avatar_url
         )
 
     class Config:
         from_attributes = True
+
+class UserProfileResponse(BaseModel):
+    username: str
+    created_at: datetime
+    total_images: int
+    total_comments: int
+    total_ratings_given: int
+    member_since: str  # Human readable format
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class UserProfileEdit(BaseModel):
+    username: Optional[str] = None
+    email: Optional[EmailStr] = None
+    bio: Optional[str] = Field(None, max_length=500)
+    avatar_url: Optional[str] = None
+
+class UserProfileFull(ResponseUser):
+    total_images: int
+    total_comments: int
+    total_ratings_given: int
+    member_since: str
     
 class ResponseLogin(BaseModel):
     access_token: str
@@ -82,4 +111,5 @@ class ImageResponseUpdateSchema(BaseModel):
     owner_id: int = Field(..., alias="user_id")
 
     class Config:
-        from_attributes = True  
+        from_attributes = True 
+

@@ -30,7 +30,9 @@ class User(BaseModel):
     role: Mapped[RoleSet] = mapped_column(Enum(RoleSet), default=RoleSet.user, nullable=False)
     is_active : Mapped[bool] = mapped_column(Boolean, default=True)
     register_on : Mapped[datetime] = mapped_column(DateTime, default=func.now())
-
+    bio: Mapped[str] = mapped_column(String(500), nullable=True)
+    avatar_url: Mapped[str] = mapped_column(String, nullable=True)
+    
     images : Mapped[list['Image']] = relationship('Image', back_populates='user', lazy='selectin')
     comments : Mapped[list['Comment']] = relationship('Comment', back_populates='user', lazy='selectin')
 
