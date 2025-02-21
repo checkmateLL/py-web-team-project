@@ -166,3 +166,14 @@ async def get_image_by_id(
     return RedirectResponse(url=image_object.image_url)
 
 
+@router.post("/transform_image/{image_id}/", response_model=sch.TransformationResponseSchema)
+async def transform_image(
+    image_id: int, 
+    transformation_params: dict = Body(...),
+    session: AsyncSession = Depends(get_conn_db), 
+    current_user: User = role_deps.all_users(),
+    cloudinary_service: CloudinaryService = Depends(CloudinaryService)
+):
+
+    return await cloudinary_service.transform_image(image_id, transformation_params, session, current_user)
+
