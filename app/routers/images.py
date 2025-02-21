@@ -166,3 +166,44 @@ async def get_image_by_id(
     return RedirectResponse(url=image_object.image_url)
 
 
+@router.post("/transform_image/")
+async def transform_image(
+        public_id: str,  # public ID of the image to be transformed
+        crop: bool = False,
+        blur: bool = False,
+        circular : bool = False,
+        grayscale: bool = False,
+        cloudinary_service: CloudinaryService = Depends()
+):
+    """
+    Apply transformations to an image based on the provided options.
+    
+    Args:
+        public_id (str): The public ID of the image to transform.
+        crop (bool): Whether to apply crop transformation.
+        blur (bool): Whether to apply blur effect.
+        round (bool): Whether to apply round effect (circular crop).
+        grayscale (bool): Whether to apply grayscale effect.
+
+    Returns:
+        dict: Contains the URL and public ID of the transformed image.
+    """
+    try:
+        # Generate transformation string based on parameters
+        transformation_string = cloudinary_service.generate_transformation_string(
+            crop=crop, blur=blur, circular=circular, grayscale=grayscale
+        )
+
+        # Apply transformations
+        result = await cloudinary_service.transform_image(
+            public_id=public_id, transformations=transformation_string
+        )
+
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+

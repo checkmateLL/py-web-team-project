@@ -54,3 +54,69 @@ class CloudinaryService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Error uploading file to Cloudinary: " + str(e)
             )
+
+
+    async def transform_image(
+                self,
+                public_id: str,
+                transformations: str
+        ) -> dict:
+            """
+            Transform an image in Cloudinary based on the public ID with specific transformations.
+
+            Args:
+                    public_id (str): The Cloudinary public ID of the image to be transformed.
+                    transformations (str): The transformation string to apply.
+
+            Returns:
+                dict: Contains the transformed image URL and public ID.
+                    
+            Raises:
+                HTTPException: If there's an error applying transformations.
+            """
+            try:
+                # Generate the URL with transformations
+                url = cloudinary.CloudinaryImage(public_id).build_url(transformation=transformations)
+
+                return {
+                    "secure_url": url,
+                    "public_id": public_id
+                }
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Error transforming image in Cloudinary: " + str(e)
+                )
+
+    @staticmethod
+    def generate_transformation_string(
+                crop: bool = False,
+                blur: bool = False,
+                circular: bool = False,
+                grayscale: bool = False
+        ) -> str:
+            """
+            Generate transformation string for Cloudinary based on requested options.
+
+            Args:
+                crop (bool): Apply crop transformation.
+                blur (bool): Apply blur effect.
+                round (bool): Make image round (circular crop).
+                grayscale(bool): Apply a grayscale.
+
+            Returns:
+                str: Transformation string to use in Cloudinary upload.
+            """
+            transformations = []
+
+            if crop:
+                transformations.append("crop")
+            if blur:
+                transformations.append("blur:500")  # Set blur level (0-1000)
+            if circular:
+                transformations.append("radius_max")
+            if grayscale:
+                transformations.append("effect:grayscale")  # Example: could be other effects
+
+            return ",".join(transformations)    
+            
