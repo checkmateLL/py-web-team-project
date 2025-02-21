@@ -7,7 +7,8 @@ from sqlalchemy import (
     DateTime, 
     ForeignKey, 
     func, 
-    Enum
+    Enum,
+    Float
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column, DeclarativeBase
 from app.config import RoleSet
@@ -32,7 +33,7 @@ class User(BaseModel):
     register_on : Mapped[datetime] = mapped_column(DateTime, default=func.now())
     bio: Mapped[str] = mapped_column(String(500), nullable=True)
     avatar_url: Mapped[str] = mapped_column(String, nullable=True)
-    
+
     images : Mapped[list['Image']] = relationship('Image', back_populates='user', lazy='selectin')
     comments : Mapped[list['Comment']] = relationship('Comment', back_populates='user', lazy='selectin')
 
@@ -75,3 +76,17 @@ class Transformation(BaseModel):
     image_id: Mapped[int] = mapped_column(Integer, ForeignKey('images.id'))
 
     image: Mapped['Image'] = relationship('Image', back_populates='transformations', lazy='selectin')
+
+class Rating(BaseModel):
+    __tablename__ = 'ratings'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    value: Mapped[float] = mapped_column(Float, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
+    image_id: Mapped[int] = mapped_column(Integer, ForeignKey('images.id'))
+
+    user: Mapped['User'] = relationship('User', back_populates='ratings', lazy='selectin')
+    image: Mapped['Image'] = relationship('Image', back_populates='ratings', lazy='selectin')
+
+User.ratings = relationship('Rating', back_populates='user', lazy='selectin')
+Image.ratings = relationship('Rating', back_populates='image', lazy='selectin')

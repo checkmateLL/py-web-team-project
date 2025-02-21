@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, constr
+from pydantic import BaseModel, EmailStr, Field, constr, HttpUrl, ConfigDict
 from datetime import datetime
 from typing import Optional, Annotated
 
@@ -39,7 +39,7 @@ class UserProfileResponse(BaseModel):
     total_images: int
     total_comments: int
     total_ratings_given: int
-    member_since: str  # Human readable format
+    member_since: str 
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
 
@@ -47,10 +47,20 @@ class UserProfileResponse(BaseModel):
         from_attributes = True
 
 class UserProfileEdit(BaseModel):
-    username: Optional[str] = None
+    username: Optional[constr(min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")] = None
     email: Optional[EmailStr] = None
-    bio: Optional[str] = Field(None, max_length=500)
-    avatar_url: Optional[str] = None
+    bio: Optional[constr(max_length=500)] = None
+    avatar_url: Optional[HttpUrl] = None 
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "username": "john_doe",
+                "email": "john@example.com",
+                "bio": "Python developer and photographer",
+                "avatar_url": "https://example.com/avatar.jpg"
+            }
+        }
 
 class UserProfileFull(ResponseUser):
     total_images: int
@@ -121,3 +131,16 @@ class TransformationResponseSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+class RatingCreate(BaseModel):
+    value: float = Field(ge=1, le=5, description="Rating value between 1 and 5")
+    image_id: int
+
+class RatingResponse(BaseModel):
+    id: int
+    value: float
+    created_at: datetime
+    user_id: int
+    image_id: int
+
+    model_config = ConfigDict(from_attributes=True)
