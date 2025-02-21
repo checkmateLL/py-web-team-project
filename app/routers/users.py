@@ -1,7 +1,8 @@
 # endponint from profile users and managment
-from fastapi import APIRouter, Depends, HTTPException, status, Path
+from fastapi import APIRouter, Depends, HTTPException, status, Path, Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Annotated
+from sqlalchemy.exc import SQLAlchemyError
+from typing import Annotated, Optional
 import logging
 
 from app.database.connection import get_conn_db
@@ -69,11 +70,14 @@ async def get_my_profile(
 @router.put("/me/profile", response_model=UserProfileFull)
 async def update_my_profile(
     profile_update: UserProfileEdit,
+    response: Response,
     current_user: User = role_deps.all_users(),
-    db: AsyncSession = Depends(get_conn_db)
+    db: AsyncSession = Depends(get_conn_db)    
 ):
-    """Update authenticated user's profile"""
+    """Update authenticated user's profile with auto-logout on email change"""
     try:
+        email_changed = False
+        
         # Check if username is taken if trying to change it
         if profile_update.username and profile_update.username != current_user.username:
             existing_user = await crud_users.get_user_by_username(profile_update.username, db)
@@ -83,7 +87,7 @@ async def update_my_profile(
                     detail="Username already taken"
                 )
 
-        # Check if email is taken if trying to change it
+        # Check if email is changing
         if profile_update.email and profile_update.email != current_user.email:
             existing_user = await crud_users.exist_user(profile_update.email, db)
             if existing_user:
@@ -91,6 +95,7 @@ async def update_my_profile(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Email already registered"
                 )
+            email_changed = True
 
         # Attempt to update the profile
         updated_user = await crud_users.update_user_profile(
@@ -110,6 +115,23 @@ async def update_my_profile(
 
         # Get full profile data
         profile = await crud_users.get_user_profile(updated_user.username, db)
+        
+        # If email was changed, set header to trigger logout
+        if email_changed:
+            # Add a custom header to indicate logout is needed
+            response.headers["X-Require-Logout"] = "true"
+            
+            # Add a message to the profile response
+            if hasattr(profile, "__dict__"):
+                profile_dict = dict(profile.__dict__)
+            else:
+                # Handle Pydantic models or regular dicts
+                profile_dict = profile.dict() if hasattr(profile, 'dict') else dict(profile)
+                
+            profile_dict["require_logout"] = True
+            profile_dict["message"] = "Your email was updated. Please log in again with your new credentials."
+            return profile_dict
+            
         return profile
     
     except SQLAlchemyError as e:
