@@ -267,14 +267,14 @@ async def transform_image(
         current_user_id=current_user.id,
         session=session
     )
-    ts_url = await cloudinary_service.transform_image(
+    transf_result = await cloudinary_service.transform_image(
         image=current_image,
         transformation_params=transformation_params,
     )
-    qrcode_url = qr_service.generate_qr_code(current_image.image_url)
+    qrcode_url = qr_service.generate_qr_code(transf_result.get('transformed_url'))
 
     data = await crud_images.create_transformed_images(
-        transformed_url=ts_url,
+        transformed_url=transf_result.get('transformed_url'),
         qr_code_url=qrcode_url,
         image_id=current_image.id,
         session=session
