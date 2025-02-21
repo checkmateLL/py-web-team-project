@@ -42,30 +42,14 @@ class CloudinaryService:
 
     async def transform_image(
         self, 
-        image_id: int, 
-        transformation_params: dict, 
-        session: AsyncSession, 
-        current_user
+        image:Image,
+        transformation_params : dict,
     ) -> TransformationResponseSchema:
         """
         Transforms an image using Cloudinary, generates a QR code, 
         and saves the transformation to the database.
         """
-        result = await session.execute(select(Image).filter(Image.id == image_id))
-        image = result.scalar_one_or_none()
-
-        if not image:
-            raise HTTPException(
-                status_code=404, 
-                detail="Image not found."
-            )
-
-        if image.user_id != current_user.id and current_user.role != RoleSet.admin:
-            raise HTTPException(
-                status_code=403, 
-                detail="You don't have permission to transform this image."
-            )
-
+    
         try:
             transformed_image = cloudinary.uploader.explicit(
                 image.public_id,
@@ -79,30 +63,12 @@ class CloudinaryService:
                     status_code=500, 
                     detail="Cloudinary did not return a transformed image"
                 )
-    
+            return transformed_url
+        
         except Exception as e:
             raise HTTPException(
                 status_code=500, 
                 detail=f"Cloudinary transformation error: {str(e)}"
             )
-
+           
         
-        qr = qrcode.make(transformed_url)
-        qr_io = io.BytesIO()
-        qr.save(qr_io, format="PNG")
-        qr_code_url = f"data:image/png;base64,{qr_io.getvalue().hex()}"
-
-        new_transformation = Transformation(
-            transformation_url=transformed_url,
-            qr_code_url=qr_code_url,
-            image_id=image_id
-        )
-        session.add(new_transformation)
-        await session.commit()
-        await session.refresh(new_transformation)
-
-        return TransformationResponseSchema(
-            transformation_url=transformed_url,
-            qr_code_url=qr_code_url,
-            image_id=image_id
-        )
