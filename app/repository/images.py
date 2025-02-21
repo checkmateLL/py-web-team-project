@@ -258,6 +258,12 @@ class ImageCrud:
             image_id,
             session:AsyncSession):
         
+        if not transformed_url or not qr_code_url:
+            raise HTTPException(
+                status_code=400,
+                detail="Transformed URL or QR code URL is missing"
+            )
+        
         try:
 
             new_transformation = Transformation(

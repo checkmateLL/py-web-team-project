@@ -42,7 +42,7 @@ class CloudinaryService:
         self, 
         image:Image,
         transformation_params : dict
-    ) -> TransformationResponseSchema:
+    ):
         """
         Transforms an image using Cloudinary, generates a QR code, 
         and saves the transformation to the database.
@@ -53,14 +53,17 @@ class CloudinaryService:
                 type="upload",
                 eager=[transformation_params]
             )
-            transformed_url = transformed_image.get("secure_url")
-
+            transformed_url = transformed_image.get("eager", [{}])[0].get("secure_url")
             if not transformed_url:
                 raise HTTPException(
                     status_code=500, 
                     detail="Cloudinary did not return a transformed image"
                 )
-            return transformed_url
+            return {
+                "transformed_url": transformed_url,
+                "public_id": transformed_image.get("public_id"),
+                "original_image_id": image.id
+            }
         
         except Exception as e:
             raise HTTPException(
