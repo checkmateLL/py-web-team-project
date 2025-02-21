@@ -15,6 +15,7 @@ from fastapi.responses import RedirectResponse
 import app.schemas as sch
 from app.database.connection import get_conn_db
 from app.services.security.auth_service import role_deps
+from app.services.qrcode_service import ImageGenerator, get_image_generator
 from app.database.models import User
 from app.repository.images import crud_images
 from app.services.image_service import CloudinaryService
@@ -229,14 +230,53 @@ async def get_image_by_id(
     return RedirectResponse(url=image_object.image_url)
 
 
-@router.post("/transform_image/{image_id}/", response_model=sch.TransformationResponseSchema)
+@router.post(
+        "/transform_image/{image_id}/", 
+        response_model=sch.TransformationResponseSchema,
+        status_code=status.HTTP_200_OK
+    )
 async def transform_image(
     image_id: int, 
     transformation_params: dict = Body(...),
     session: AsyncSession = Depends(get_conn_db), 
     current_user: User = role_deps.all_users(),
-    cloudinary_service: CloudinaryService = Depends(CloudinaryService)
+    cloudinary_service: CloudinaryService = Depends(CloudinaryService),
+    qr_service: ImageGenerator = Depends(get_image_generator)
 ):
+    """
+    Transform image using given transformation parameters and generate QR code.
 
-    return await cloudinary_service.transform_image(image_id, transformation_params, session, current_user)
+    Args:
+        image_id (int): ID of the image to transform.
+        transformation_params (dict): Dictionary with parameters for the 
+        image transformation.
+        session (AsyncSession): The database session to interact with the database.
+        current_user (User): The user making the request.
+        cloudinary_service (CloudinaryService): Service for image transformation.
+        qr_service (ImageGenerator): Service for generating a QR code for the image.
 
+    Returns:
+        TransformationResponseSchema: Contains transformation URL, QR code URL,
+        and image ID.
+
+    Raises:
+        HTTPException: If the image cannot be found or the transformation fails.
+    """
+    current_image = await crud_images.get_image_obj(
+        image_id=image_id,
+        current_user_id=current_user.id,
+        session=session
+    )
+    ts_url = await cloudinary_service.transform_image(
+        image=current_image,
+        transformation_params=transformation_params,
+    )
+    qrcode_url = qr_service.generate_qr_code(current_image.image_url)
+
+    data = await crud_images.create_transformed_images(
+        transformed_url=ts_url,
+        qr_code_url=qrcode_url,
+        image_id=current_image.id,
+        session=session
+    )
+    return sch.TransformationResponseSchema(**data)
