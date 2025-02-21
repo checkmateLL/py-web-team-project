@@ -106,6 +106,7 @@ class ImageCrud:
 
             await session.delete(image)
             await session.commit()
+            return True
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
@@ -117,6 +118,20 @@ class ImageCrud:
         result = await session.execute(select(Image).filter(Image.id == image_id))
         image = result.scalar_one_or_none()
         if image is None:
+            raise HTTPException(
+                status_code=404, 
+                detail="Image not found"
+            )
+        return image
+
+    async def get_image_obj(
+            self,
+            image_id:int,
+            current_user_id,
+            session:AsyncSession
+    ):
+        image = await session.get(Image, image_id)
+        if not image or image.user_id != current_user_id:
             raise HTTPException(
                 status_code=404, 
                 detail="Image not found"
