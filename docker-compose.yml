@@ -32,9 +32,20 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:latest
+    container_name: redis_container
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - app_network
+
 networks:
   app_network:
     driver: bridge
 
 volumes:
   postgres-data:
+  redis-data:

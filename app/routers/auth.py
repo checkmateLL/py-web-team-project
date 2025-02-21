@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.repository.users import crud_users
 from app.services.security.secure_token.manager import TokenType, token_manager
 from app.services.security.secure_password import Hasher
+from app.services.security.auth_service import AuthService
 from app.database.connection import get_conn_db
 import app.schemas as sch
 
@@ -63,3 +64,15 @@ async def login(
         "access_token": encode_access_token, 
         "refresh_token": encode_refresh_token,
         "token_type": "bearer"}
+
+@router.post("/logout")
+async def logout(
+    result: dict = Depends(AuthService().logout_set)
+):
+    """
+    Logout the current user by blacklist their access token.
+
+    Returns:
+        dict: A access message confirming logout.
+    """
+    return result
