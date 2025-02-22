@@ -51,7 +51,10 @@ async def upload_image_endpoint(
         HTTPException: IF file not image.
     """
     if tags and len(tags) > 5:
-        raise HTTPException(status_code=400, detail="You can only add up to 5 tags.")
+        raise HTTPException(
+            status_code=400, 
+            detail="You can only add up to 5 tags."
+        )
 
     allowed_types = {"image/jpeg", "image/png", "image/gif"}
     if file.content_type not in allowed_types:
@@ -60,7 +63,10 @@ async def upload_image_endpoint(
             detail="Invalid file type. Only JPG, PNG and GIF",
         )
 
-    upload_result = await cloudinary_service.upload_image(file, current_user.email)
+    upload_result = await cloudinary_service.upload_image(
+        file=file, 
+        folder=current_user.email
+    )
     secure_url = upload_result.get("secure_url")
     public_id = upload_result.get("public_id")
 
@@ -70,10 +76,17 @@ async def upload_image_endpoint(
             detail="Cloudinary did not return required data.",
         )
 
-    tags_object = await crud_images.handle_tags(tags, session)
+    tags_object = await crud_images.handle_tags(
+        tags_names=tags, 
+        session=session
+    )
 
     image_object = await crud_images.create_image(
-        secure_url, description, current_user.id, public_id, session
+        url=secure_url,
+        description=description,
+        user_id=current_user.id,
+        public_id=public_id,
+        session=session
     )
 
     await crud_images._add_tag_to_image(image_object, tags_object, session)
@@ -103,13 +116,22 @@ async def delete_image(
 
         if not deleted:
             raise HTTPException(
-                status_code=404, detail="Image not found or access denied"
+                status_code=404, 
+                detail="Image not found or access denied"
             )
-        return {"message": "Image deleted successfully"}
+        return {
+            "message": "Image deleted successfully"
+        }
     except SQLAlchemyError as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Database error: {str(e)}"
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Unexpected error: {str(e)}"
+        )
 
 
 @router.post('/{image_id}/add_tags')
@@ -124,10 +146,14 @@ async def add_tags_to_image(
     """
     user_image = await crud_images.get_image_obj(
         image_id=image_id,
-        current_user_id=current_user.id,
         session=session
         )
     
+    crud_images.check_permission(
+        image_obj=user_image, #+
+        current_user_id=current_user.id #+
+    )
+
     existing_tags = {tag.name for tag in user_image.tags}
     new_tags = set(tags) - existing_tags
     if len(existing_tags) + len(new_tags) > 5:
@@ -157,10 +183,15 @@ async def get_image_info(
     """
     get info about image
     """
+
+
     image_object = await crud_images.get_image_obj(
         image_id=image_id,
-        current_user_id=current_user.id,
         session=session,
+    )
+    crud_images.check_permission(
+        image_obj=image_object, #+
+        current_user_id=current_user.id #+
     )
     
     return sch.ImageResponseSchema(
@@ -182,7 +213,10 @@ async def update_image_description(
     current_user: User = role_deps.all_users(),
 ):
     update_image_object = await crud_images.update_image_description(
-        image_id, description, session, current_user
+        image_id, 
+        description, 
+        session, 
+        current_user
     )
 
     return sch.ImageResponseUpdateSchema(
@@ -196,7 +230,7 @@ async def update_image_description(
 async def get_image_by_id(
     image_id: int,
     session: AsyncSession = Depends(get_conn_db),
-    current_user: User = role_deps.all_users(),
+    _: User = role_deps.all_users(),
 ):
     """find url by ImageId"""
     image_object = await crud_images.get_image_url(image_id, session)
@@ -245,9 +279,14 @@ async def transform_image(
     """
     current_image = await crud_images.get_image_obj(
         image_id=image_id,
-        current_user_id=current_user.id,
         session=session
     )
+
+    crud_images.check_permission(
+        image_obj=current_image,
+        current_user_id=current_user.id
+    )
+
     transf_result = await cloudinary_service.transform_image(
         image=current_image,
         transformation_params=transformation_params,

@@ -96,11 +96,11 @@ class TransformationGenerator:
             dict: Combined transformation paramerers
         """
         transformations: dict = {}
-        
-        self.transformations_chain.apply(transformations, grayscale)
-        self.transformations_chain.apply(transformations, circular)
-        self.transformations_chain.apply(transformations, blur)
-        self.transformations_chain.apply(transformations, crop)
+
+        transformations = self.transformations_chain.apply({}, grayscale)
+        transformations = self.transformations_chain.apply(transformations, circular)
+        transformations = self.transformations_chain.apply(transformations, blur)
+        transformations = self.transformations_chain.apply(transformations, crop)
 
         return transformations
 
@@ -198,20 +198,25 @@ class CloudinaryService(IcloudinaryService):
             HTTPException: If transformation fails or Cloudinary returns an error
         """
         try:
-            # If no custom params provided, generate from boolean flags
-            if transformation_params is None:
+            if not transformation_params and not any([crop, blur, circular, grayscale]):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Not transformations were applied."
+                )
+            
+            if not transformation_params:
                 transformation_params = self.transformation_generator.generate_transformation_string(
-                    crop=crop,
-                    blur=blur,
-                    circular=circular,
+                    crop=crop, 
+                    blur=blur, 
+                    circular=circular, 
                     grayscale=grayscale
                 )
 
-            transformed_image = cloudinary.uploader.explicit(
+                transformed_image = cloudinary.uploader.explicit(
                 image.public_id,
                 type="upload",
-                eager=[transformation_params]
-            )
+                eager=[transformation_params]      
+                )
             eager_transformations = transformed_image.get("eager", [])
             transformed_url = eager_transformations[0].get("secure_url") if eager_transformations else None
             
