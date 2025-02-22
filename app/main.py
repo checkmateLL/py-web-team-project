@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
 from app.services.security.auth_service import role_deps
-from app.routers import auth, images, comments
+from app.routers import auth, images, comments, admin_panel
 from app.database.connection import get_conn_db
 
 app = FastAPI()
@@ -21,6 +21,11 @@ app.include_router(
 app.include_router(
     comments.router,
     tags=['comments'])
+
+app.include_router(
+    admin_panel.router,
+    tags=['admin-panel']
+)
 
 @app.get("/")
 async def index():

@@ -15,6 +15,7 @@ from fastapi.responses import RedirectResponse
 import app.schemas as sch
 from app.database.connection import get_conn_db
 from app.services.security.auth_service import role_deps
+from app.services.qrcode_service import ImageGenerator, get_image_generator
 from app.database.models import User
 from app.repository.images import crud_images
 from app.services.image_service import CloudinaryService
@@ -85,8 +86,10 @@ async def upload_image_endpoint(
         tags=[tag.name for tag in tags_object],
     )
 
-
-@router.delete("/delete_image/{image_id}/", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+        "/delete_image/{image_id}/", 
+        status_code=status.HTTP_204_NO_CONTENT
+    )
 async def delete_image(
     image_id: int,
     session: AsyncSession = Depends(get_conn_db),
@@ -97,6 +100,7 @@ async def delete_image(
     """
     try:
         deleted = await crud_images.delete_image(image_id, session, current_user)
+
         if not deleted:
             raise HTTPException(
                 status_code=404, detail="Image not found or access denied"
@@ -107,6 +111,65 @@ async def delete_image(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
+
+@router.post('/{image_id}/add_tags')
+async def add_tags_to_image(
+    image_id:int,
+    tags:list[str] = Body(..., embed=True),
+    session:AsyncSession = Depends(get_conn_db),
+    current_user = role_deps.all_users()
+):
+    """
+    add extra tag
+    """
+    user_image = await crud_images.get_image_obj(
+        image_id=image_id,
+        current_user_id=current_user.id,
+        session=session
+        )
+    
+    existing_tags = {tag.name for tag in user_image.tags}
+    new_tags = set(tags) - existing_tags
+    if len(existing_tags) + len(new_tags) > 5:
+        raise HTTPException(
+            status_code=400, 
+            detail="An image can have up to 5 tags"
+        )
+
+    tags_object = await crud_images.handle_tags(tags, session)
+    await crud_images._add_tag_to_image(user_image, tags_object,session)
+
+    return sch.ImageResponseSchema(
+        id=user_image.id,
+        description=user_image.description,
+        image_url=user_image.image_url,
+        user_id=user_image.user_id,
+        tags=[tag.name for tag in user_image.tags] 
+    )
+
+
+@router.get('/image-info')
+async def get_image_info(
+    image_id:int,
+    session:AsyncSession = Depends(get_conn_db),
+    current_user:User = role_deps.all_users(),
+):
+    """
+    get info about image
+    """
+    image_object = await crud_images.get_image_obj(
+        image_id=image_id,
+        current_user_id=current_user.id,
+        session=session,
+    )
+    
+    return sch.ImageResponseSchema(
+        id=image_object.id,
+        description=image_object.description,
+        image_url=image_object.image_url,
+        user_id=image_object.user_id,
+        tags=[tag.name for tag in image_object.tags] 
+    )
 
 @router.put(
     "/update_image_description/{image_id}/",
@@ -129,7 +192,6 @@ async def update_image_description(
         user_id=update_image_object.user_id,
     )
 
-
 @router.get("/get_image/{image_id}/")
 async def get_image_by_id(
     image_id: int,
@@ -142,24 +204,59 @@ async def get_image_by_id(
         raise HTTPException(status_code=404, detail="Image not found")
     return RedirectResponse(url=image_object.image_url)
 
-
-@router.get("/transform_image/")
-async def transform_image(
-    public_id: str = Query(...),
-    crop: bool = Query(False),
-    blur: bool = Query(False),
-    circular: bool = Query(False),
-    grayscale: bool = Query(False),
-    cloudinary_service: CloudinaryService = Depends(CloudinaryService),
-):
-   
-    transformations = cloudinary_service.generate_transformation_string(
-        crop=crop, 
-        blur=blur, 
-        circular=circular, 
-        grayscale=grayscale
+@router.post(
+        "/transform_image/{image_id}/", 
+        response_model=sch.TransformationResponseSchema,
+        status_code=status.HTTP_200_OK
     )
-    url = cloudinary_service.generate_transformed_url(public_id, transformations)
-    return RedirectResponse(url=url)
+async def transform_image(
+    image_id: int, 
+    transformation_params: dict = Body(...),
+    session: AsyncSession = Depends(get_conn_db), 
+    current_user: User = role_deps.all_users(),
+    cloudinary_service: CloudinaryService = Depends(CloudinaryService),
+    qr_service: ImageGenerator = Depends(get_image_generator)
+):
+    """
+    Transform image using given transformation parameters and generate QR code.
 
-   
+    Args:
+        image_id (int): ID of the image to transform.
+        transformation_params (dict): Dictionary with parameters for image transformation.
+            Supported parameters:
+            {
+                "crop": bool,          # Enable/disable cropping
+                "blur": bool,          # Apply blur effect
+                "circular": bool,      # Create circular mask
+                "grayscale": bool,     # Convert to grayscale
+                
+        session (AsyncSession): The database session to interact with the database.
+        current_user (User): The user making the request.
+        cloudinary_service (CloudinaryService): Service for image transformation.
+        qr_service (ImageGenerator): Service for generating a QR code for the image.
+
+    Returns:
+        TransformationResponseSchema: Contains transformation URL, QR code URL,
+        and image ID.
+
+    Raises:
+        HTTPException: If the image cannot be found or the transformation fails.
+    """
+    current_image = await crud_images.get_image_obj(
+        image_id=image_id,
+        current_user_id=current_user.id,
+        session=session
+    )
+    transf_result = await cloudinary_service.transform_image(
+        image=current_image,
+        transformation_params=transformation_params,
+    )
+    qrcode_url = qr_service.generate_qr_code(transf_result.get('transformed_url'))
+
+    data = await crud_images.create_transformed_images(
+        transformed_url=transf_result.get('transformed_url'),
+        qr_code_url=qrcode_url,
+        image_id=current_image.id,
+        session=session
+    )
+    return sch.TransformationResponseSchema(**data)

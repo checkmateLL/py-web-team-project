@@ -45,17 +45,27 @@ class AuthService(ConstructionAuthService):
                 token=token
             )
             email = pyload.get('sub')
+            
             if email is None:
                 raise credentials_exception
             user = await crud_users.get_user_by_email(
                 email=email,
                 session=session)
+            
             if not user:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail='User not found'
                 )
+            
+            if not user.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail='User is banned'
+                )
+            
             return user
+        
         except JWTError:
             raise credentials_exception
 

@@ -111,8 +111,9 @@ async def delete_comment(
         comment_id=comment_id,
         session=session
     )
+    return None
     
-@router.get("/comments/{comment_id}/", response_model=sch.CommentResponse)
+@router.get("/{comment_id}/", response_model=sch.CommentResponse)
 async def get_comment(
     comment_id: int,
     _: User = role_deps.all_users(),
@@ -149,7 +150,7 @@ async def get_comment(
     }
 
 @router.get(
-        "/comments/image/{image_id}/", 
+        "/image/{image_id}/", 
         response_model=list[sch.CommentResponse]
     )
 async def get_comments_for_image(

@@ -8,7 +8,7 @@ import cloudinary.api # type: ignore
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.database.models import Image, User, Tag
+from app.database.models import Image, Transformation, User, Tag
 
 class ImageCrud:
 
@@ -106,6 +106,7 @@ class ImageCrud:
 
             await session.delete(image)
             await session.commit()
+            return True
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
@@ -117,6 +118,20 @@ class ImageCrud:
         result = await session.execute(select(Image).filter(Image.id == image_id))
         image = result.scalar_one_or_none()
         if image is None:
+            raise HTTPException(
+                status_code=404, 
+                detail="Image not found"
+            )
+        return image
+
+    async def get_image_obj(
+            self,
+            image_id:int,
+            current_user_id,
+            session:AsyncSession
+    ):
+        image = await session.get(Image, image_id)
+        if not image or image.user_id != current_user_id:
             raise HTTPException(
                 status_code=404, 
                 detail="Image not found"
@@ -234,6 +249,49 @@ class ImageCrud:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f'Failed to update image tags: {str(error)}'
+            )
+    
+    async def create_transformed_images(
+            self, 
+            transformed_url,
+            qr_code_url,
+            image_id,
+            session:AsyncSession):
+        
+        if not transformed_url or not qr_code_url:
+            raise HTTPException(
+                status_code=400,
+                detail="Transformed URL or QR code URL is missing"
+            )
+        
+        try:
+
+            new_transformation = Transformation(
+                transformation_url=transformed_url,
+                qr_code_url=qr_code_url,
+                image_id=image_id
+            )
+
+            session.add(new_transformation)
+            await session.commit()
+            await session.refresh(new_transformation)
+
+            return {
+                "transformation_url": transformed_url,
+                "qr_code_url": qr_code_url,
+                "image_id": image_id
+            }
+        
+        except SQLAlchemyError as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Database error occurred: {str(e)}"
+            )
+    
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"An unexpected error occurred: {str(e)}"
             )
     
 crud_images = ImageCrud()
