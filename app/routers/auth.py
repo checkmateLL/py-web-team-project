@@ -50,6 +50,11 @@ async def login(
             detail="Incorrect username or password",
         )
     
+    if user.is_active == False:
+         raise HTTPException(
+              status_code=status.HTTP_403_FORBIDDEN,
+              detail='You dont have access'
+         )
 
     encode_access_token = await token_manager.create_token(
         token_type=TokenType.ACCESS,
