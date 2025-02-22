@@ -138,7 +138,22 @@ class ImageResponseUpdateSchema(BaseModel):
     class Config:
         from_attributes = True  
 
+class TransformationParameters(BaseModel):
+    crop: bool = False
+    blur: bool = False
+    circular: bool = False
+    grayscale: bool = False
 
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "crop": True,
+                "blur": False,
+                "circular": True,
+                "grayscale": False
+            }
+        }
+        
 class TransformationResponseSchema(BaseModel):
     transformation_url: str
     qr_code_url: str
