@@ -10,134 +10,22 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.database.models import Image, Transformation, User, Tag
 
-class ImageCrud:
-
-    async def create_image(
-            self,
-            url:str,
-            description:str,
-            user_id:int,
-            public_id,
-            session:AsyncSession,
-    )->Image:
-        session
-        """
-        Create record images in database
-        """
-        try:
-            image_record = Image(
-                image_url=url,
-                description=description,
-                user_id=user_id,
-                public_id=public_id,
+class CrudTags:
+    """
+    Spesial class from Tag operations.
+    """
+    @staticmethod
+    def check_permission(
+        image_obj: 'Image',
+        current_user_id: int,
+        detail: str = 'You dont have permission to perform this action'
+    ):
+        if image_obj.user_id != current_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=detail
             )
-            session.add(image_record)
-
-            await session.commit()
-            await session.refresh(image_record)
-
-            return image_record
         
-        except Exception as err:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f'Error creating image record in database {str(err)}'
-            )
-
-    async def update_image_description(
-            self,
-            image_id,
-            description,
-            session:AsyncSession,
-            current_user:User,
-    ):
-        try:
-            result = await session.execute(select(Image).filter(Image.id == image_id))
-            image_obj = result.scalar_one_or_none()
-
-            if image_obj is None:
-                raise HTTPException(
-                    status_code=404, 
-                    detail="Image not found."
-                )
-
-            if image_obj.user_id != current_user.id:
-                raise HTTPException(
-                    status_code=403, 
-                    detail="You don't have permission to update this image."
-                )
-
-            image_obj.description = description
-            await session.commit()
-            await session.refresh(image_obj)
-
-            return image_obj
-        
-        except Exception as e:
-            raise HTTPException(
-                status_code=500, 
-                detail=str(e)
-            )
-            
-    async def delete_image(
-            self,
-            image_id: int, 
-            session: AsyncSession, 
-            current_user: User
-        ):
-        try:
-            
-            result = await session.execute(select(Image).filter(Image.id == image_id))
-            image = result.scalar_one_or_none()
-
-            if image is None:
-                raise HTTPException(
-                    status_code=404, 
-                    detail="Image not found."
-                )
-            
-            if image.user_id != current_user.id:
-                raise HTTPException(
-                    status_code=403, 
-                    detail="You don't have permission to delete this image."
-                )
-            
-            cloudinary.uploader.destroy(image.public_id)
-
-            await session.delete(image)
-            await session.commit()
-            return True
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-    async def get_image_url(
-            self,
-            image_id:int,
-            session:AsyncSession
-    ):
-        result = await session.execute(select(Image).filter(Image.id == image_id))
-        image = result.scalar_one_or_none()
-        if image is None:
-            raise HTTPException(
-                status_code=404, 
-                detail="Image not found"
-            )
-        return image
-
-    async def get_image_obj(
-            self,
-            image_id:int,
-            current_user_id,
-            session:AsyncSession
-    ):
-        image = await session.get(Image, image_id)
-        if not image or image.user_id != current_user_id:
-            raise HTTPException(
-                status_code=404, 
-                detail="Image not found"
-            )
-        return image
-
     async def _get_all_tags(
             self,
             session : AsyncSession
@@ -251,6 +139,114 @@ class ImageCrud:
                 detail=f'Failed to update image tags: {str(error)}'
             )
     
+class ImageCrud(CrudTags):
+    """
+    Spesial class from Image CRUD operations.
+    """
+
+    async def create_image(
+            self,
+            url:str,
+            description:str,
+            user_id:int,
+            public_id,
+            session:AsyncSession,
+    )->Image:
+        session
+        """
+        Create record images in database
+        """
+        try:
+            image_record = Image(
+                image_url=url,
+                description=description,
+                user_id=user_id,
+                public_id=public_id,
+            )
+            session.add(image_record)
+
+            await session.commit()
+            await session.refresh(image_record)
+
+            return image_record
+        
+        except Exception as err:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f'Error creating image record in database {str(err)}'
+            )
+
+    async def update_image_description(
+            self,
+            image_id,
+            description,
+            session:AsyncSession,
+            current_user:User,
+    ):
+        try:
+            image_obj = await self.get_image_obj(image_id, session)
+           
+            self.check_permission(
+                image_obj=image_obj, #+
+                current_user_id=current_user.id #+
+            )
+            
+            image_obj.description = description
+            await session.commit()
+            await session.refresh(image_obj)
+
+            return image_obj
+        
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, 
+                detail=str(e)
+            )
+            
+    async def delete_image(
+            self,
+            image_id: int, 
+            session: AsyncSession, 
+            current_user: User
+        ):
+        try:
+            
+            image_obj = await self.get_image_obj(image_id,session)
+
+            self.check_permission(
+                image_obj=image_obj, #+
+                current_user_id=current_user.id #+
+            )
+            
+            cloudinary.uploader.destroy(image_obj.public_id)
+
+            await session.delete(image_obj)
+            await session.commit()
+            return True
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    async def get_image_url(
+            self,
+            image_id:int,
+            session:AsyncSession
+    ):
+        image_obj = await self.get_image_obj(image_id,session)
+        return image_obj
+
+    async def get_image_obj(
+            self,
+            image_id:int,
+            session:AsyncSession
+    ):
+        image = await session.get(Image, image_id)
+        if not image:
+            raise HTTPException(
+                status_code=404, 
+                detail="Image not found"
+            )
+        return image
+    
     async def create_transformed_images(
             self, 
             transformed_url,
@@ -265,7 +261,6 @@ class ImageCrud:
             )
         
         try:
-
             new_transformation = Transformation(
                 transformation_url=transformed_url,
                 qr_code_url=qr_code_url,
@@ -293,5 +288,5 @@ class ImageCrud:
                 status_code=500,
                 detail=f"An unexpected error occurred: {str(e)}"
             )
-    
+
 crud_images = ImageCrud()

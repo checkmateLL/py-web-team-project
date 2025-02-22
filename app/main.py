@@ -3,29 +3,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
 from app.services.security.auth_service import role_deps
-from app.routers import auth, images, comments, admin_panel
+from app.routers.routers import api_router
+from app.config import settings
 from app.database.connection import get_conn_db
 
-app = FastAPI()
-
-app.include_router(
-    auth.router,
-    prefix='',
-    tags=['auth'])
-
-app.include_router(
-    images.router,
-    prefix='',
-    tags=['images'])
-
-app.include_router(
-    comments.router,
-    tags=['comments'])
-
-app.include_router(
-    admin_panel.router,
-    tags=['admin-panel']
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version=settings.PROJECT_VERSION
 )
+app.include_router(router=api_router)
 
 @app.get("/")
 async def index():
