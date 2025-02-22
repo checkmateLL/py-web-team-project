@@ -55,7 +55,36 @@ async def get_user_profile(
         )
     return profile
 
-@router.get("/me/profile", response_model=UserProfileFull)
+@router.get(
+        "/me/profile",
+        response_model=UserProfileFull,
+        responses={
+            200: {
+            "description": "Successful response",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "username": "john_doe",
+                        "email": "john@example.com",
+                        "created_at": "2024-02-21T12:00:00",
+                        "total_images": 42,
+                        "total_comments": 156,
+                        "total_ratings_given": 89,
+                        "member_since": "1 year and 3 months",
+                        "avatar_url": "https://example.com/avatar.jpg",
+                        "bio": "Python developer and photographer",
+                        "is_active": True,
+                        "role": "user",
+                        "id": 1
+                    }
+                }
+            }
+        },
+        404: {"description": "Profile not found"},
+        401: {"description": "Not authenticated"}
+    }
+)
+
 async def get_my_profile(
     current_user: User = role_deps.all_users(),
     db: AsyncSession = Depends(get_conn_db)
@@ -69,7 +98,54 @@ async def get_my_profile(
         )
     return profile
 
-@router.put("/me/profile", response_model=UserProfileWithLogout)
+@router.put(
+        "/me/profile",
+        response_model=UserProfileWithLogout,
+        responses={
+        200: {
+            "description": "Profile updated successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "username": "john_doe",
+                        "email": "john@example.com",
+                        "created_at": "2024-02-21T12:00:00",
+                        "total_images": 42,
+                        "total_comments": 156,
+                        "total_ratings_given": 89,
+                        "member_since": "1 year and 3 months",
+                        "avatar_url": "https://example.com/avatar.jpg",
+                        "bio": "Python developer and photographer",
+                        "is_active": True,
+                        "role": "user",
+                        "id": 1,
+                        "require_logout": True,
+                        "message": "Your email was updated. Please log in again with your new credentials."
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "username_taken": {
+                            "value": {"detail": "Username already taken"}
+                        },
+                        "email_taken": {
+                            "value": {"detail": "Email already registered"}
+                        }
+                    }
+                }
+            }
+        },
+        404: {"description": "User not found or update failed"},
+        401: {"description": "Not authenticated"},
+        500: {"description": "Internal server error"}
+    }
+)
+
 async def update_my_profile(
     profile_update: UserProfileEdit,
     response: Response,
