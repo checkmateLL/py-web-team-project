@@ -84,6 +84,23 @@ class UserCrud:
         result = await session.execute(select(User).filter(User.username == username))
         return result.scalar_one_or_none()
     
+    def _calculate_member_duration(self, register_date: datetime) -> str:
+        """Calculate duration of membership"""
+        days_since = (datetime.now() - register_date).days
+        years = days_since // 365
+        months = (days_since % 365) // 30
+        
+        if years > 0:
+            member_since = f"{years} year{'s' if years != 1 else ''}"
+            if months > 0:
+                member_since += f" and {months} month{'s' if months != 1 else ''}"
+        else:
+            member_since = f"{months} month{'s' if months != 1 else ''}"
+            if months == 0:
+                member_since = "Less than a month"
+                
+        return member_since
+
     async def get_user_profile(self, username: str, session: AsyncSession):
         """Get user profile with statistics"""
         # Get user with related counts
@@ -106,19 +123,7 @@ class UserCrud:
             
         user, total_images, total_comments, total_ratings = user_data
         
-        # Calculate member_since in general format
-        days_since = (datetime.now() - user.register_on).days
-        years = days_since // 365
-        months = (days_since % 365) // 30
-        
-        if years > 0:
-            member_since = f"{years} year{'s' if years != 1 else ''}"
-            if months > 0:
-                member_since += f" and {months} month{'s' if months != 1 else ''}"
-        else:
-            member_since = f"{months} month{'s' if months != 1 else ''}"
-            if months == 0:
-                member_since = "Less than a month"
+        member_since = self._calculate_member_duration(user.register_on)        
 
         return {
             "username": user.username,
@@ -154,28 +159,23 @@ class UserCrud:
             if not user:
                 return None 
             
-            if user:
-                if username:
-                    user.username = username
-                if email:
-                    user.email = email
-                if bio is not None:
-                    user.bio = bio
-                if avatar_url is not None:
-                    user.avatar_url = avatar_url
-                if password_hash is not None:
-                    user.password_hash = password_hash
+            update_data = {
+                "username": username,
+                "email": email,
+                "bio": bio,
+                "avatar_url": avatar_url,
+                "password_hash": password_hash
+            }
+            
+            for key, value in update_data.items():
+                if value is not None:
+                    setattr(user, key, value)
                     
             await session.commit()
             await session.refresh(user)                
             return user
         
         except SQLAlchemyError as e:
-            await session.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Database error occurred"
-            ) from e
-
+            raise
 
 crud_users = UserCrud()
