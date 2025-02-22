@@ -1,0 +1,16 @@
+# Ignore Git history
+.git
+
+# Ignore virtual environment (Poetry, venv, pip)
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.log
+
+# Ignore cache and OS-specific files
+*.tar
+*.zip
+*.db
+node_modules/
+.env
