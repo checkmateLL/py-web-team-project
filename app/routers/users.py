@@ -9,6 +9,7 @@ from app.database.connection import get_conn_db
 from app.repository.users import crud_users
 from app.schemas import UserProfileResponse, UserProfileEdit, UserProfileFull, UserProfileWithLogout
 from app.services.security.auth_service import role_deps, AuthService
+from app.services.security.secure_password import Hasher
 from app.services.user_service import get_token_blacklist
 from app.database.models import User
 
@@ -83,6 +84,8 @@ async def update_my_profile(
     """
     try:
         email_changed = False
+        password_changed = False
+        password_hash = None
         
         # Check if username is changing and if the new username is available.
         if profile_update.username and profile_update.username != current_user.username:
@@ -103,14 +106,19 @@ async def update_my_profile(
                 )
             email_changed = True
 
+        if profile_update.password:
+            password_hash = Hasher.get_password_hash(profile_update.password)
+            password_changed = True
+
         # Update the user profile in the database.
         updated_user = await crud_users.update_user_profile(
             user_id=current_user.id,
+            session=db,
             username=profile_update.username,
             email=profile_update.email,
+            password_hash=password_hash,
             bio=profile_update.bio,
-            avatar_url=profile_update.avatar_url,
-            session=db
+            avatar_url=profile_update.avatar_url
         )
         
         if not updated_user:
@@ -122,17 +130,23 @@ async def update_my_profile(
         # Retrieve the updated profile data.
         profile = await crud_users.get_user_profile(updated_user.username, db)
         
-        if email_changed:
-            # Blacklist the current access token to enforce logout.
+        # Handle logout requirements
+        if email_changed or password_changed:
             await AuthService().logout_set(token=token, token_blacklist=token_blacklist)
             response.headers["X-Require-Logout"] = "true"
             profile["require_logout"] = True
-            profile["message"] = "Your email was updated. Please log in again with your new credentials."
+            
+            # message based on what changed
+            if email_changed and password_changed:
+                profile["message"] = "Your email and password were updated. Please log in again with your new credentials."
+            elif email_changed:
+                profile["message"] = "Your email was updated. Please log in again with your new credentials."
+            else:  
+                profile["message"] = "Your password was updated. Please log in again with your new credentials."
         
         return profile
     
     except SQLAlchemyError as e:
-        await db.rollback()
         logger.error(f"Database error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

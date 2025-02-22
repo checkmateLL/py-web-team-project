@@ -49,8 +49,16 @@ class UserProfileResponse(BaseModel):
 class UserProfileEdit(BaseModel):
     username: Optional[Annotated[str, StringConstraints(min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")]] = None
     email: Optional[EmailStr] = None
+    password: Optional[str] = None
     bio: Optional[Annotated[str, StringConstraints(max_length=500)]] = None
-    avatar_url: Optional[str] = None 
+    avatar_url: Optional[str] = None
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: Optional[str]) -> Optional[str]:
+        if value and len(value) < 6:
+            raise ValueError("Password must be at least 6 characters long")
+        return value
 
     @field_validator("avatar_url", mode="before")
     @classmethod

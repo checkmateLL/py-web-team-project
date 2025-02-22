@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select, distinct
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
+from typing import Optional
 
 from app.config import RoleSet
 from app.services.security.secure_password import Hasher
@@ -140,6 +141,7 @@ class UserCrud:
         session: AsyncSession,
         username: str | None = None,
         email: str | None = None,
+        password_hash: Optional[str] = None,
         bio: str | None = None,
         avatar_url: str | None = None        
     ) -> User:
@@ -161,6 +163,8 @@ class UserCrud:
                     user.bio = bio
                 if avatar_url is not None:
                     user.avatar_url = avatar_url
+                if password_hash is not None:
+                    user.password_hash = password_hash
                     
             await session.commit()
             await session.refresh(user)                
