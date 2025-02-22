@@ -1,16 +1,126 @@
 import cloudinary  # type: ignore
 import cloudinary.uploader  # type: ignore
-import cloudinary.api
-import cloudinary.exceptions
-import cloudinary.utils
+import cloudinary.api # type: ignore
+import cloudinary.exceptions # type: ignore
+import cloudinary.utils # type: ignore
 from fastapi import HTTPException, UploadFile, status
+from abc import ABC, abstractmethod
 
 from app.config import settings
 from app.database.models import Image
-from app.schemas import TransformationResponseSchema
 
+class Transformation:
+    """
+    Base class for tarnsformation
+    """
+    def __init__(self, next_transformations=None):
+        self.next_transformations = next_transformations
+    
+    def apply(self, transformations: dict, active: bool) -> dict:
+        """
+        Apply transormation if active and pass request to the next
+        transformtaions in the chain.
+        """
+        if active:
+            transformations.update(
+                self._get_transformation_params()
+            )
+        if self.next_transformations:
+            return self.next_transformations.apply(
+                transformations, active
+            )
+        return transformations
+    
+    def _get_transformation_params(self) -> dict:
+        """
+        Returns transformation parameters. Must be implemented by subclasses.
+        """
+        raise NotImplementedError('Subclass must be implemented this method')
 
-class CloudinaryService:
+class CropTransformation(Transformation):
+    def _get_transformation_params(self) -> dict:
+        return {
+            'width': 200,
+            'height': 200,
+            'crop': 'crop',
+        }
+
+class BlurTransformation(Transformation):
+    def _get_transformation_params(self) -> dict:
+        return {
+            'effect': 'blur:800'
+        }
+
+class CircularTransformation(Transformation):
+    def _get_transformation_params(self) -> dict:
+        return {
+            "radius": "max"
+        }
+
+class GrayscaleTransformation(Transformation):
+    def _get_transformation_params(self) -> dict:
+        return {
+            "effect": "grayscale"
+        }
+
+class TransformationGenerator:
+    """
+    Class for generationg tranformation parameters for Cloudinry
+    """
+    def __init__(self):
+        self.transformations_chain = GrayscaleTransformation(
+            CircularTransformation(
+                BlurTransformation(
+                    CropTransformation()
+                )
+            )
+        )
+    
+    def generate_transformation_string(
+            self,
+            crop: bool = False,
+            blur: bool = False, 
+            circular: bool = False, 
+            grayscale: bool = False
+    ) -> dict:
+        """
+        Generate a transformation dictionary for Cloudinary
+
+        Args:
+            crop (bool): Apply crop transformation
+            blur (bool): Apply blur transformation
+            circular (bool): Apply circular transformation
+            grayscale (bool): Apply grayscale transformation
+        
+        Returns:
+            dict: Combined transformation paramerers
+        """
+        transformations: dict = {}
+        
+        self.transformations_chain.apply(transformations, grayscale)
+        self.transformations_chain.apply(transformations, circular)
+        self.transformations_chain.apply(transformations, blur)
+        self.transformations_chain.apply(transformations, crop)
+
+        return transformations
+
+class IcloudinaryService(ABC):
+
+    @abstractmethod
+    async def upload_image(self, file, folder) -> dict: ...
+
+    @abstractmethod
+    async def transform_image(
+        self, 
+        image: Image,
+        transformation_params: dict | None = None,
+        crop: bool = False,
+        blur: bool = False,
+        circular: bool = False,
+        grayscale: bool = False
+    ) -> dict: ...
+
+class CloudinaryService(IcloudinaryService):
     """
     Service for working with Cloudinary
     """
@@ -21,36 +131,8 @@ class CloudinaryService:
             api_key=settings.CLD_API_KEY,
             api_secret=settings.CLD_API_SECRET,
         )
+        self.transformation_generator = TransformationGenerator()
 
-    def generate_transformation_string(
-        self, 
-        crop=False, 
-        blur=False, 
-        circular=False, 
-        grayscale=False
-    ) -> dict:
-        """
-        Generate a transformation dictionary for Cloudinary.
-        
-        Args:
-            crop (bool): Apply 200x200 crop
-            blur (bool): Apply blur effect
-            circular (bool): Make image circular
-            grayscale (bool): Convert to grayscale
-            
-        Returns:
-            dict: Combined transformation parameters
-        """
-        transformations = {}
-        if crop:
-            transformations.update({"width": 200, "height": 200, "crop": "crop"})
-        if blur:
-            transformations.update({"effect": "blur:800"})
-        if circular:
-            transformations.update({"radius": "max"})
-        if grayscale:
-            transformations.update({"effect": "grayscale"})
-        return transformations
 
     async def upload_image(
         self, 
@@ -118,7 +200,7 @@ class CloudinaryService:
         try:
             # If no custom params provided, generate from boolean flags
             if transformation_params is None:
-                transformation_params = self.generate_transformation_string(
+                transformation_params = self.transformation_generator.generate_transformation_string(
                     crop=crop,
                     blur=blur,
                     circular=circular,
