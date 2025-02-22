@@ -7,7 +7,7 @@ from app.repository.comments import crud_comments
 from app.services.security.auth_service import role_deps
 import app.schemas as sch
 
-router = APIRouter(prefix="/api/comments", tags=["comments"])
+router = APIRouter(prefix="/comments", tags=["comments"])
 
 
 @router.post(
