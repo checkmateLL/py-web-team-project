@@ -6,9 +6,9 @@ from typing import Optional
 
 from app.config import RoleSet
 from app.services.security.secure_password import Hasher
-from app.database.models import User, Image, Comment, Rating
+from app.database.models import User
 from fastapi import HTTPException, status
-
+from sqlalchemy.exc import SQLAlchemyError
 
 class UserCrud:
 
@@ -57,6 +57,11 @@ class UserCrud:
         user = result.scalars().first()
         return user
 
+    async def get_user_by_id(self, user_id, session:AsyncSession):
+        result = await session.execute(select(User).filter(User.id == user_id))
+        user = result.scalar_one_or_none()
+        return user
+    
     async def autenticate_user(
             self, 
             email: str, 
@@ -178,4 +183,68 @@ class UserCrud:
         except SQLAlchemyError as e:
             raise
 
+    async def desactivate_user(self, user_id, session:AsyncSession):
+        """
+        Ban user crud operation
+        """
+        user = await self.get_user_by_id(user_id, session)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='User not found'
+            )
+        if user.is_active == False:
+            return {
+                'message': 'User is already deactivated',
+                'user': {
+                    'id':user.id,
+                    'username':user.username,
+                    'email':user.email,
+                    'is-active-profile':user.is_active}
+            }
+        try:
+            user.is_active = False
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
+
+        except SQLAlchemyError as err:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error occurred"
+            ) from err
+
+    async def activate_user(self, user_id, session:AsyncSession):
+        """
+        Unban user crud operation
+        """
+        user = await self.get_user_by_id(user_id, session)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='User not found'
+            )
+        
+        if user.is_active == True:
+            return {
+                'message': 'User is already activated',
+                'user': {
+                    'id':user.id,
+                    'username':user.username,
+                    'email':user.email,
+                    'is-active-profile':user.is_active}
+            }
+        
+        try:
+            user.is_active = True
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
+            
+        except SQLAlchemyError as err:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error occurred"
+            ) from err
+        
 crud_users = UserCrud()
