@@ -1,6 +1,7 @@
-# py-web-team-project
-Team project for GoIT PYTHON SOFTWARE ENGINEERING
-# Start project
+# | PhotoShare ~~~~~~
+
+![alt text](app/templates/static/logo.webp)
+## Start project
 ```
 git clone https://github.com/checkmateLL/py-web-team-project.git
 ```
