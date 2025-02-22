@@ -184,14 +184,13 @@ async def get_image_info(
     get info about image
     """
 
-
     image_object = await crud_images.get_image_obj(
         image_id=image_id,
         session=session,
     )
     crud_images.check_permission(
-        image_obj=image_object, #+
-        current_user_id=current_user.id #+
+        image_obj=image_object, 
+        current_user_id=current_user.id 
     )
     
     return sch.ImageResponseSchema(
