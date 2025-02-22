@@ -210,9 +210,13 @@ async def get_image_by_id(
         status_code=status.HTTP_200_OK
     )
 async def transform_image(
-    image_id: int, 
-    transformation_params: dict = Body(...),
-    session: AsyncSession = Depends(get_conn_db), 
+    image_id: int,
+    crop: bool = Body(False),
+    blur: bool = Body(False),
+    circular: bool = Body(False),
+    grayscale: bool = Body(False),
+    transformation_params: dict | None = Body(default=None),
+    session: AsyncSession = Depends(get_conn_db),
     current_user: User = role_deps.all_users(),
     cloudinary_service: CloudinaryService = Depends(CloudinaryService),
     qr_service: ImageGenerator = Depends(get_image_generator)
@@ -221,19 +225,16 @@ async def transform_image(
     Transform image using given transformation parameters and generate QR code.
 
     Args:
-        image_id (int): ID of the image to transform.
-        transformation_params (dict): Dictionary with parameters for image transformation.
-            Supported parameters:
-            {
-                "crop": bool,          # Enable/disable cropping
-                "blur": bool,          # Apply blur effect
-                "circular": bool,      # Create circular mask
-                "grayscale": bool,     # Convert to grayscale
-                
-        session (AsyncSession): The database session to interact with the database.
-        current_user (User): The user making the request.
-        cloudinary_service (CloudinaryService): Service for image transformation.
-        qr_service (ImageGenerator): Service for generating a QR code for the image.
+        image_id (int): ID of the image to transform
+        crop (bool): Apply 200x200 crop
+        blur (bool): Apply blur effect
+        circular (bool): Make image circular
+        grayscale (bool): Convert to grayscale
+        transformation_params (dict, optional): Custom transformation parameters that override individual flags
+        session (AsyncSession): Database session
+        current_user (User): Current authenticated user
+        cloudinary_service (CloudinaryService): Service for image transformation
+        qr_service (ImageGenerator): Service for QR code generation
 
     Returns:
         TransformationResponseSchema: Contains transformation URL, QR code URL,
@@ -250,6 +251,10 @@ async def transform_image(
     transf_result = await cloudinary_service.transform_image(
         image=current_image,
         transformation_params=transformation_params,
+        crop=crop,
+        blur=blur,
+        circular=circular,
+        grayscale=grayscale
     )
     qrcode_url = qr_service.generate_qr_code(transf_result.get('transformed_url'))
 
