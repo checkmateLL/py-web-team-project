@@ -6,9 +6,9 @@ from typing import Optional
 
 from app.config import RoleSet
 from app.services.security.secure_password import Hasher
-from app.database.models import User
+from app.database.models import User, Image, Comment, Rating
+from app.services.email_service import EmailService
 from fastapi import HTTPException, status
-from sqlalchemy.exc import SQLAlchemyError
 
 class UserCrud:
 

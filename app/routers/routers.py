@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.routers import auth, images, comments, admin_panel
+from app.routers import auth, images, comments, admin_panel, users
 
 api_router = APIRouter(prefix='/app')
 
@@ -22,3 +22,7 @@ api_router.include_router(
     admin_panel.router,
     tags=['admin-panel']
 )
+
+api_router.include_router(
+    users.router,
+    tags=['users'])

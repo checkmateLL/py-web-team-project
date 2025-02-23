@@ -1,9 +1,14 @@
 # endponint from profile users and managment
-from fastapi import APIRouter, Depends, HTTPException, status, Path, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Path, Response, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 from typing import Annotated, Optional
+from pydantic import EmailStr
 import logging
+import magic
+from jose import jwt, JWTError
+from datetime import datetime, timedelta
+
 
 from app.database.connection import get_conn_db
 from app.repository.users import crud_users
@@ -11,11 +16,22 @@ from app.schemas import UserProfileResponse, UserProfileEdit, UserProfileFull, U
 from app.services.security.auth_service import role_deps, AuthService
 from app.services.security.secure_password import Hasher
 from app.services.user_service import get_token_blacklist
+from app.services.image_service import CloudinaryService
 from app.database.models import User
+from app.services.email_service import EmailService
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+cloudinary_service = CloudinaryService()
+
+SECRET_KEY = "your_secret_key"
+ALGORITHM = "HS256"
+RESET_TOKEN_EXPIRE_HOURS = 1
+
+email_service = EmailService()
 
 @router.get(
     "/{username}", 
@@ -233,4 +249,126 @@ async def update_my_profile(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred"
+        )
+    
+async def validate_image_file(file: UploadFile):
+    """Validate that the uploaded file is an image"""
+    # Read first 2048 bytes for MIME detection
+    first_bytes = await file.read(2048)
+    # Reset file pointer
+    await file.seek(0)
+    
+    mime = magic.Magic(mime=True)
+    mime_type = mime.from_buffer(first_bytes)
+    
+    if not mime_type.startswith('image/'):
+        raise HTTPException(
+            status_code=400,
+            detail="File must be an image"
+        )
+    
+    # Limit file size to 5MB
+    if len(first_bytes) > 5 * 1024 * 1024:  # 5MB
+        raise HTTPException(
+            status_code=400,
+            detail="File size too large. Maximum size is 5MB"
+        )
+
+@router.put("me/avatar")
+async def update_avatar(
+    file: UploadFile,
+    current_user: User = role_deps.all_users(),
+    db: AsyncSession = Depends(get_conn_db)
+):
+    await validate_image_file(file)
+    
+    if current_user.avatar_url:        
+        public_id = current_user.avatar_url.split("/")[-1].split(".")[0]
+        await cloudinary_service.delete_avatar(public_id)
+
+    upload_result = await cloudinary_service.upload_avatar(file)    
+    
+    await crud_users.update_user_profile(
+        user_id=current_user.id,
+        session=db,
+        avatar_url=upload_result["secure_url"]
+    )
+    
+    return {"avatar_url": upload_result["secure_url"]}
+
+@router.post("/request-password-reset", response_model=dict)
+async def request_password_reset(
+    email: EmailStr,
+    db: AsyncSession = Depends(get_conn_db)
+) -> dict:
+    """Request password reset by email"""
+    try:
+        user = await crud_users.get_user_by_email(email, db)
+        if not user:            
+            return {"message": "If an account exists with that email, a password reset link will be sent."}
+
+        # Generate reset token
+        expires = datetime.utcnow() + timedelta(hours=settings.RESET_TOKEN_EXPIRE_HOURS)
+        reset_token = jwt.encode(
+            {
+                "sub": user.email,
+                "exp": expires,
+                "type": "password_reset" 
+            },
+            settings.SECRET_KEY,
+            algorithm=settings.ALGORITHM
+        )
+
+        # Send reset email
+        await EmailService().send_password_reset_email(user.email, reset_token)
+        
+        return {"message": "If an account exists with that email, a password reset link will be sent."}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to process password reset request"
+        )
+
+@router.post("/reset-password", response_model=dict)
+async def reset_password(
+    token: str,
+    new_password: str,
+    db: AsyncSession = Depends(get_conn_db)
+) -> dict:
+    """Reset user password using reset token"""
+    try:
+        # Verify token
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        
+        # Verify token type
+        if payload.get("type") != "password_reset":
+            raise HTTPException(status_code=400, detail="Invalid token type")
+            
+        email = payload.get("sub")
+        if not email:
+            raise HTTPException(status_code=400, detail="Invalid token")
+
+        user = await crud_users.get_user_by_email(email, db)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Update password
+        await crud_users.update_user_profile(
+            user_id=user.id,
+            session=db,
+            password_hash=Hasher.get_password_hash(new_password)
+        )
+
+        # Send confirmation email
+        await EmailService().send_password_changed_email(user.email)
+        
+        return {"message": "Password successfully reset"}
+        
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reset password"
         )
