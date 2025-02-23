@@ -12,7 +12,8 @@ from datetime import datetime, timedelta
 
 from app.database.connection import get_conn_db
 from app.repository.users import crud_users
-from app.schemas import UserProfileResponse, UserProfileEdit, UserProfileFull, UserProfileWithLogout
+from app.repository import users as repository_users
+from app.schemas import UserProfileResponse, UserProfileEdit, UserProfileFull, UserProfileWithLogout, RequestEmail
 from app.services.security.auth_service import role_deps, AuthService
 from app.services.security.secure_password import Hasher
 from app.services.user_service import get_token_blacklist
@@ -26,10 +27,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/users", tags=["users"])
 
 cloudinary_service = CloudinaryService()
-
-SECRET_KEY = "your_secret_key"
-ALGORITHM = "HS256"
-RESET_TOKEN_EXPIRE_HOURS = 1
 
 email_service = EmailService()
 
@@ -298,36 +295,33 @@ async def update_avatar(
 
 @router.post("/request-password-reset", response_model=dict)
 async def request_password_reset(
-    email: EmailStr,
+    body: RequestEmail,
     db: AsyncSession = Depends(get_conn_db)
 ) -> dict:
     """Request password reset by email"""
     try:
-        user = await crud_users.get_user_by_email(email, db)
-        if not user:            
+        # Check if user exists
+        user = await repository_users.get_user_by_email(body.email, db)
+        if not user:
+            # Return same message even if user doesn't exist (security best practice)
             return {"message": "If an account exists with that email, a password reset link will be sent."}
 
-        # Generate reset token
-        expires = datetime.utcnow() + timedelta(hours=settings.RESET_TOKEN_EXPIRE_HOURS)
-        reset_token = jwt.encode(
-            {
-                "sub": user.email,
-                "exp": expires,
-                "type": "password_reset" 
-            },
-            settings.SECRET_KEY,
-            algorithm=settings.ALGORITHM
-        )
+        # Generate reset token using your existing auth service
+        reset_token = await AuthService().generate_reset_token(user.email)
 
-        # Send reset email
-        await EmailService().send_password_reset_email(user.email, reset_token)
+        # Send reset email using your existing email service
+        await email_service.send_password_reset_email(
+            email=user.email,
+            token=reset_token
+        )
         
         return {"message": "If an account exists with that email, a password reset link will be sent."}
 
     except Exception as e:
+        logger.error(f"Password reset error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to process password reset request"
+            detail=str(e)
         )
 
 @router.post("/reset-password", response_model=dict)

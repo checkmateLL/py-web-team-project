@@ -178,3 +178,6 @@ class RatingResponse(BaseModel):
 class UserProfileWithLogout(UserProfileFull):    
     require_logout: bool = False
     message: Optional[str] = None
+
+class RequestEmail(BaseModel):
+    email: EmailStr

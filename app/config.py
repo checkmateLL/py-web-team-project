@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     SECRET_KEY_JWT:str = '**************************************'   
     ALGORITHM: str = "******"
+    RESET_TOKEN_EXPIRE_HOURS: int = 1
 
     CLD_NAME : str = 'test'
     CLD_API_KEY : str = 'test'
