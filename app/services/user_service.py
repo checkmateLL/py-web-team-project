@@ -1,6 +1,14 @@
 import redis.asyncio as redis
 from app.config import settings
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status, UploadFile
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+import magic
+import logging
+from app.database.models import User
+from app.services.image_service import CloudinaryService
+
+logger = logging.getLogger(__name__)
 
 class RedisClient():
 
@@ -51,3 +59,86 @@ async def get_redis():
 
 async def get_token_blacklist(redis_client: redis.Redis = Depends(get_redis)):
     return TokenBlackList(redis_client)
+
+class UserService:
+    def __init__(self, db: AsyncSession, cloudinary: CloudinaryService):
+        self.db = db
+        self.cloudinary = cloudinary
+
+    async def validate_avatar_file(self, file: UploadFile) -> None:
+        """Validates avatar file type and size."""
+        try:
+            # Read first chunk for MIME detection
+            first_chunk = await file.read(1024 * 1024)  # 1MB chunk
+            await file.seek(0)  # Reset file pointer
+
+            # Validate file type using python-magic
+            mime = magic.Magic(mime=True)
+            mime_type = mime.from_buffer(first_chunk)
+
+            if not mime_type.startswith('image/'):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="File must be an image"
+                )
+
+            # Validate file size (5MB limit)
+            file_size = len(first_chunk)
+            max_size = 5 * 1024 * 1024  # 5MB
+            
+            if file_size > max_size:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="File too large. Maximum size is 5MB"
+                )
+
+        except Exception as e:
+            logger.error(f"Avatar validation error: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error validating avatar file"
+            )
+
+    async def update_avatar(self, user_id: int, file: UploadFile) -> dict:
+        """Updates user avatar with proper cleanup of old avatar."""
+        try:
+            # Validate new avatar
+            await self.validate_avatar_file(file)
+
+            # Get current user
+            user = await self.db.execute(
+                select(User).where(User.id == user_id)
+            )
+            user = user.scalar_one_or_none()
+
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User not found"
+                )
+
+            # Delete old avatar if exists
+            if user.avatar_url:
+                try:
+                    # Extract public_id from URL
+                    public_id = user.avatar_url.split("/")[-1].split(".")[0]
+                    await self.cloudinary.delete_avatar(public_id)
+                except Exception as e:
+                    logger.warning(f"Failed to delete old avatar: {str(e)}")
+
+            # Upload new avatar
+            upload_result = await self.cloudinary.upload_avatar(file)
+            
+            # Update user record
+            user.avatar_url = upload_result["secure_url"]
+            await self.db.commit()
+
+            return {"avatar_url": upload_result["secure_url"]}
+
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Avatar update error: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to update avatar: {str(e)}"
+            )

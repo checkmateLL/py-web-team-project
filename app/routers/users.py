@@ -16,19 +16,16 @@ from app.repository import users as repository_users
 from app.schemas import UserProfileResponse, UserProfileEdit, UserProfileFull, UserProfileWithLogout, RequestEmail
 from app.services.security.auth_service import role_deps, AuthService
 from app.services.security.secure_password import Hasher
+from app.services.password_service import PasswordResetService
 from app.services.user_service import get_token_blacklist
 from app.services.image_service import CloudinaryService
 from app.database.models import User
 from app.services.email_service import EmailService
 from app.config import settings
 
+router = APIRouter(prefix="/users", tags=["users"])
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/users", tags=["users"])
-
-cloudinary_service = CloudinaryService()
-
-email_service = EmailService()
 
 @router.get(
     "/{username}", 
@@ -248,120 +245,112 @@ async def update_my_profile(
             detail="An unexpected error occurred"
         )
     
-async def validate_image_file(file: UploadFile):
-    """Validate that the uploaded file is an image"""
-    # Read first 2048 bytes for MIME detection
-    first_bytes = await file.read(2048)
-    # Reset file pointer
-    await file.seek(0)
-    
-    mime = magic.Magic(mime=True)
-    mime_type = mime.from_buffer(first_bytes)
-    
-    if not mime_type.startswith('image/'):
-        raise HTTPException(
-            status_code=400,
-            detail="File must be an image"
-        )
-    
-    # Limit file size to 5MB
-    if len(first_bytes) > 5 * 1024 * 1024:  # 5MB
-        raise HTTPException(
-            status_code=400,
-            detail="File size too large. Maximum size is 5MB"
-        )
-
 @router.put("me/avatar")
 async def update_avatar(
     file: UploadFile,
     current_user: User = role_deps.all_users(),
-    db: AsyncSession = Depends(get_conn_db)
+    db: AsyncSession = Depends(get_conn_db),
+    cloudinary_service: CloudinaryService = Depends(lambda: CloudinaryService())
 ):
-    await validate_image_file(file)
-    
-    if current_user.avatar_url:        
-        public_id = current_user.avatar_url.split("/")[-1].split(".")[0]
-        await cloudinary_service.delete_avatar(public_id)
+    """Update user's avatar"""
+    try:
+        if current_user.avatar_url:        
+            public_id = current_user.avatar_url.split("/")[-1].split(".")[0]
+            await cloudinary_service.delete_avatar(public_id)
 
-    upload_result = await cloudinary_service.upload_avatar(file)    
-    
-    await crud_users.update_user_profile(
-        user_id=current_user.id,
-        session=db,
-        avatar_url=upload_result["secure_url"]
-    )
-    
-    return {"avatar_url": upload_result["secure_url"]}
+        upload_result = await cloudinary_service.upload_avatar(file)    
+        
+        await crud_users.update_user_profile(
+            user_id=current_user.id,
+            session=db,
+            avatar_url=upload_result["secure_url"]
+        )
+        
+        return {"avatar_url": upload_result["secure_url"]}
+    except Exception as e:
+        logger.error(f"Avatar update error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update avatar"
+        )
 
-@router.post("/request-password-reset", response_model=dict)
+
+@router.post("/request-password-reset")
 async def request_password_reset(
     body: RequestEmail,
-    db: AsyncSession = Depends(get_conn_db)
-) -> dict:
-    """Request password reset by email"""
+    db: AsyncSession = Depends(get_conn_db),
+    email_service: EmailService = Depends(lambda: EmailService())
+):
+    """Request password reset with proper token generation and email sending."""
     try:
-        # Check if user exists
-        user = await repository_users.get_user_by_email(body.email, db)
+        # Using crud_users instance instead of module
+        user = await crud_users.get_user_by_email(body.email, db)
         if not user:
             # Return same message even if user doesn't exist (security best practice)
-            return {"message": "If an account exists with that email, a password reset link will be sent."}
+            return {
+                "message": "If an account exists with that email, a password reset link will be sent."
+            }
 
-        # Generate reset token using your existing auth service
-        reset_token = await AuthService().generate_reset_token(user.email)
+        password_service = PasswordResetService(email_service)
+        # Generate reset token
+        reset_token = password_service.create_reset_token(user.email)
 
-        # Send reset email using your existing email service
+        # Send reset email
         await email_service.send_password_reset_email(
             email=user.email,
             token=reset_token
         )
-        
-        return {"message": "If an account exists with that email, a password reset link will be sent."}
+
+        return {
+            "message": "If an account exists with that email, a password reset link will be sent."
+        }
 
     except Exception as e:
-        logger.error(f"Password reset error: {str(e)}")
+        logger.error(f"Password reset request error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            detail="Failed to process password reset request"
         )
 
-@router.post("/reset-password", response_model=dict)
+@router.post("/reset-password")
 async def reset_password(
     token: str,
     new_password: str,
-    db: AsyncSession = Depends(get_conn_db)
-) -> dict:
-    """Reset user password using reset token"""
+    db: AsyncSession = Depends(get_conn_db),
+    email_service: EmailService = Depends(lambda: EmailService())
+):
+    """Reset password with token verification and secure password update."""
     try:
-        # Verify token
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        
-        # Verify token type
-        if payload.get("type") != "password_reset":
-            raise HTTPException(status_code=400, detail="Invalid token type")
-            
-        email = payload.get("sub")
-        if not email:
-            raise HTTPException(status_code=400, detail="Invalid token")
+        password_service = PasswordResetService(email_service)
+        # Verify token and get email
+        email = password_service.verify_reset_token(token)
 
+        # Get user using crud_users instance
         user = await crud_users.get_user_by_email(email, db)
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
 
-        # Update password
+        # Update password with new hash
+        from app.services.security.secure_password import Hasher
+        hashed_password = Hasher.get_password_hash(new_password)
         await crud_users.update_user_profile(
             user_id=user.id,
             session=db,
-            password_hash=Hasher.get_password_hash(new_password)
+            password_hash=hashed_password
         )
 
         # Send confirmation email
-        await EmailService().send_password_changed_email(user.email)
-        
+        await email_service.send_password_changed_email(user.email)
+
         return {"message": "Password successfully reset"}
-        
-    except JWTError:
-        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Password reset error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to reset password"
