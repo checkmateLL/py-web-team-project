@@ -309,9 +309,9 @@ class ImageCrud:
                 stmt = stmt.join(Image.tags).filter(Tag.name == tag)
 
             if order_by == "rating":
-                stmt = stmt.order_by(desc(Image.average_rating))#змінити на поле рейтингу
+                stmt = stmt.order_by(desc(Image.average_rating))
             else:
-                stmt = stmt.order_by(desc(Image.created_at))#змінити на поле дати
+                stmt = stmt.order_by(desc(Image.created_at))
 
             result = await session.execute(stmt)
             images = result.scalars().all()
