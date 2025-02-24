@@ -83,11 +83,3 @@ def client():
     app.dependency_overrides[get_conn_db] = override_get_db
     yield TestClient(app)
     app.dependency_overrides.clear()
-
-# @pytest.fixture
-# def mock_redis():
-#     mock_redis_client = AsyncMock()
-#     mock_redis_client.exists = AsyncMock(return_value=0)
-#     mock_redis_client.setex = AsyncMock(return_value=None)
-#     return mock_redis_client
-#     # mock_redis_client.reset_mock()
