@@ -55,7 +55,22 @@ async def get_user_profile(
     current_user: User = role_deps.all_users(),
     db: AsyncSession = Depends(get_conn_db)
 ):
-    """Get public profile information for any user"""
+    """
+    Get public profile information for any user.
+    
+    Retrieves non-sensitive profile information that is publicly viewable.
+    
+    Args:
+        username (str): Username of the profile to retrieve.
+        current_user (User): Currently authenticated user (from dependency).
+        db (AsyncSession): Database session (from dependency).
+        
+    Returns:
+        UserProfileResponse: Public profile information.
+        
+    Raises:
+        HTTPException: 404 Not Found if user doesn't exist.
+    """
     profile = await crud_users.get_user_profile(username, db)
     if not profile:
         raise HTTPException(
@@ -98,7 +113,22 @@ async def get_my_profile(
     current_user: User = role_deps.all_users(),
     db: AsyncSession = Depends(get_conn_db)
 ):
-    """Get full profile information for authenticated user"""
+    """
+    Get full profile information for authenticated user.
+    
+    Retrieves complete profile information including private details
+    for the currently authenticated user.
+    
+    Args:
+        current_user (User): Currently authenticated user (from dependency).
+        db (AsyncSession): Database session (from dependency).
+        
+    Returns:
+        UserProfileFull: Complete profile information.
+        
+    Raises:
+        HTTPException: 404 Not Found if profile doesn't exist.
+    """
     profile = await crud_users.get_user_profile(current_user.username, db)
     if not profile:
         raise HTTPException(
@@ -144,6 +174,9 @@ async def get_my_profile(
                         },
                         "email_taken": {
                             "value": {"detail": "Email already registered"}
+                        },
+                        "incorrect_password": {
+                            "value": {"detail": "Current password is incorrect"}
                         }
                     }
                 }
@@ -166,8 +199,28 @@ async def update_my_profile(
 ):
     """
     Update authenticated user's profile.
-    If the email is changed, the current access token is blacklisted to force a logout.
-    Supports password change with current password verification.
+    
+    Updates profile information for the currently authenticated user.
+    If the email or password is changed, the current access token is blacklisted
+    to force a logout.
+    
+    Args:
+        profile_update (UserProfileEdit): Profile fields to update.
+        response (Response): FastAPI response object.
+        current_user (User): Currently authenticated user (from dependency).
+        db (AsyncSession): Database session (from dependency).
+        token (str): JWT token from Authorization header.
+        token_blacklist: Token blacklist service.
+        email_service (EmailService): Email service for notifications.
+        
+    Returns:
+        UserProfileWithLogout: Updated profile information, potentially with logout flag.
+        
+    Raises:
+        HTTPException:
+            - 400 Bad Request for validation errors.
+            - 404 Not Found if user doesn't exist.
+            - 500 Internal Server Error for database or unexpected errors.
     """
     try:
         requires_logout = False
@@ -258,14 +311,66 @@ async def update_my_profile(
             detail="An unexpected error occurred"
         )
     
-@router.put("/me/avatar")
+@router.put(
+        "/me/avatar",
+        responses={
+        200: {
+            "description": "Avatar updated successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "avatar_url": "https://res.cloudinary.com/example/image/upload/avatars/user123.webp"
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Bad request",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "invalid_file_type": {
+                            "value": {"detail": "Invalid file type. Only JPEG, PNG and WebP are allowed."}
+                        },
+                        "file_too_large": {
+                            "value": {"detail": "File too large. Maximum size is 5MB"}
+                        }
+                    }
+                }
+            }
+        },
+        404: {"description": "User not found"},
+        500: {"description": "Internal server error"},
+        401: {"description": "Not authenticated"}
+    }
+)
 async def update_avatar(
     file: UploadFile,
     current_user: User = role_deps.all_users(),
     db: AsyncSession = Depends(get_conn_db),
     cloudinary_service: CloudinaryService = Depends(lambda: CloudinaryService())
 ):
-    """Update user's avatar"""    
+    """
+    Update user's avatar.
+    
+    Uploads a new avatar image for the authenticated user and
+    deletes the previous avatar if it exists.
+    
+    Args:
+        file (UploadFile): Image file to use as avatar.
+        current_user (User): Currently authenticated user (from dependency).
+        db (AsyncSession): Database session (from dependency).
+        cloudinary_service (CloudinaryService): Cloudinary service for image operations.
+        
+    Returns:
+        dict: Contains the URL of the new avatar.
+        
+    Raises:
+        HTTPException:
+            - 400 Bad Request for invalid file type or size.
+            - 404 Not Found if user doesn't exist.
+            - 500 Internal Server Error for upload failures.
+    """   
     user_service = UserService(db, cloudinary_service)
     
     try:
@@ -280,19 +385,53 @@ async def update_avatar(
             detail="Failed to update avatar"
         )
 
-@router.post("/request-password-reset")
+@router.post(
+    "/request-password-reset",
+    responses={
+        200: {
+            "description": "Password reset request processed",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "If an account exists with that email, a password reset link will be sent."
+                    }
+                }
+            }
+        },
+        500: {"description": "Internal server error"}
+    }
+)
 async def request_password_reset(
     body: RequestEmail,
     db: AsyncSession = Depends(get_conn_db),
     email_service: EmailService = Depends(lambda: EmailService())
 ):
-    """Request password reset with proper token generation and email sending."""    
+    """
+    Request password reset with token generation and email.
+    
+    Generates a password reset token and sends it via email
+    to the user's registered email address.
+    
+    Args:
+        body (RequestEmail): Email address for password reset.
+        db (AsyncSession): Database session (from dependency).
+        email_service (EmailService): Email service for sending reset emails.
+        
+    Returns:
+        dict: Success message.
+        
+    Raises:
+        HTTPException: 500 Internal Server Error for processing failures.
+        
+    Notes:
+        - Returns the same success message regardless of whether the email exists
+          to prevent email enumeration attacks.
+    """
     password_service = PasswordResetService(email_service)
     
     try:
         user = await crud_users.get_user_by_email(body.email, db)
-        if not user:
-            # Return same message even if user doesn't exist
+        if not user:            
             return {
                 "message": "If an account exists with that email, a password reset link will be sent."
             }
@@ -315,14 +454,65 @@ async def request_password_reset(
             detail="Failed to process password reset request"
         )
 
-@router.post("/reset-password")
+@router.post(
+    "/reset-password",
+    responses={
+        200: {
+            "description": "Password reset successful",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "message": "Password successfully reset"
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Bad request",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "invalid_token": {
+                            "value": {"detail": "Invalid or expired token"}
+                        },
+                        "password_too_short": {
+                            "value": {"detail": "Password must be at least 6 characters long"}
+                        }
+                    }
+                }
+            }
+        },
+        404: {"description": "User not found"},
+        500: {"description": "Internal server error"}
+    }
+)
 async def reset_password(
     token: str,
     new_password: str,
     db: AsyncSession = Depends(get_conn_db),
     email_service: EmailService = Depends(lambda: EmailService())
 ):
-    """Reset password with token verification and secure password update."""    
+    """
+    Reset password with token verification and secure update.
+    
+    Verifies the password reset token, updates the user's password,
+    and sends a confirmation email.
+    
+    Args:
+        token (str): Password reset token from email.
+        new_password (str): New password to set.
+        db (AsyncSession): Database session (from dependency).
+        email_service (EmailService): Email service for sending confirmation.
+        
+    Returns:
+        dict: Success message.
+        
+    Raises:
+        HTTPException:
+            - 400 Bad Request for invalid token or password.
+            - 404 Not Found if user doesn't exist.
+            - 500 Internal Server Error for reset failures.
+    """    
     password_service = PasswordResetService(email_service)
     
     try:     

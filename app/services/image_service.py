@@ -249,6 +249,8 @@ class CloudinaryService(IcloudinaryService):
             dict: Contains:
                 - secure_url: URL of the uploaded image
                 - public_id: Cloudinary public ID of the image
+        Raises:
+            HTTPException: 500 Internal Server Error if upload fails.
         """
         try:            
             transformation = {
@@ -283,6 +285,8 @@ class CloudinaryService(IcloudinaryService):
         
         Args:
             public_id (str): Cloudinary public ID of the avatar to delete.
+        Raises:
+            HTTPException: 500 Internal Server Error if deletion fails.
         """
         try:
             await cloudinary.uploader.destroy(public_id, resource_type="image")

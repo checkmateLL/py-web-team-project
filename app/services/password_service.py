@@ -10,11 +10,34 @@ from app.services.email_service import EmailService
 logger = logging.getLogger(__name__)
 
 class PasswordResetService:
+    """
+    Service for handling password reset functionality.
+    
+    This class handles JWT token creation and verification for password resets.
+    """
+
     def __init__(self, email_service: EmailService):
+        """
+        Initialize PasswordResetService.
+        
+        Args:
+            email_service (EmailService): Email service for sending password reset emails.
+        """
         self.email_service = email_service
 
     def create_reset_token(self, email: str) -> str:
-        """Creates a password reset token."""
+        """
+        Creates a password reset token with 1-hour expiration.
+        
+        Args:
+            email (str): User email to encode in the token.
+            
+        Returns:
+            str: JWT token string.
+            
+        Raises:
+            HTTPException: 500 Internal Server Error if token creation fails.
+        """
         expires = datetime.utcnow() + timedelta(hours=1)
         token_data = {
             "sub": email,
@@ -37,7 +60,20 @@ class PasswordResetService:
             )
 
     def verify_reset_token(self, token: str) -> str:
-        """Verifies a password reset token and returns the email if valid."""
+        """
+        Verifies a password reset token and returns the email if valid.
+        
+        Args:
+            token (str): JWT token to verify.
+            
+        Returns:
+            str: Email address extracted from valid token.
+            
+        Raises:
+            HTTPException: 
+                - 400 Bad Request if token is invalid, expired, or has wrong type.
+                - 400 Bad Request if any JWT decoding error occurs.
+        """
         try:
             payload = jwt.decode(
                 token,

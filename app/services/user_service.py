@@ -67,12 +67,36 @@ async def get_token_blacklist(redis_client: redis.Redis = Depends(get_redis)):
     return TokenBlackList(redis_client)
 
 class UserService:
+    """
+    Service for user-related operations.
+    
+    This class provides methods for user profile management, including
+    avatar handling and validation.
+    """
+
     def __init__(self, db: AsyncSession, cloudinary: CloudinaryService):
+        """
+        Initialize UserService.
+        
+        Args:
+            db (AsyncSession): SQLAlchemy database session.
+            cloudinary (CloudinaryService): Service for Cloudinary operations.
+        """        
         self.db = db
         self.cloudinary = cloudinary
 
     async def validate_avatar_file(self, file: UploadFile) -> None:
-        """Validates avatar file type and size."""
+        """
+        Validates avatar file type and size.
+        
+        Args:
+            file (UploadFile): File object to validate.
+            
+        Raises:
+            HTTPException: 
+                - 400 Bad Request if file type is invalid or file is too large.
+                - 500 Internal Server Error if validation encounters an error.
+        """
         try:
             # MIME detection
             first_chunk = await file.read(1024 * 1024)
@@ -107,7 +131,21 @@ class UserService:
             )
 
     async def update_avatar(self, user_id: int, file: UploadFile) -> dict:
-        """Updates user avatar with deletion of old avatar."""
+        """
+        Updates user avatar with deletion of old avatar.
+        
+        Args:
+            user_id (int): ID of the user whose avatar to update.
+            file (UploadFile): New avatar file.
+            
+        Returns:
+            dict: Contains the URL of the new avatar.
+            
+        Raises:
+            HTTPException:
+                - 404 Not Found if user doesn't exist.
+                - 500 Internal Server Error if update fails.
+        """
         try:            
             await self.validate_avatar_file(file)
             

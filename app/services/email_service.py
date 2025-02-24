@@ -13,7 +13,19 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 class EmailService:
+    """
+    Service for sending emails using SMTP with templates.
+    
+    This class handles all email-related functionality including password 
+    reset emails and password change notifications.
+    """
+
     def __init__(self):
+        """
+        Initialize email service with configuration from settings.
+        
+        Sets up SMTP configuration and Jinja2 templating environment.
+        """
         self.conf = {
             "MAIL_USERNAME": settings.MAIL_USERNAME,
             "MAIL_PASSWORD": settings.MAIL_PASSWORD,
@@ -32,7 +44,19 @@ class EmailService:
         )
 
     async def send_password_reset_email(self, email: EmailStr, token: str) -> bool:
-        """Send password reset email"""
+        """
+        Send password reset email with reset token.
+        
+        Args:
+            email (EmailStr): Recipient email address.
+            token (str): Password reset token.
+            
+        Returns:
+            bool: True if email was sent successfully.
+            
+        Raises:
+            HTTPException: 500 Internal Server Error if email sending fails.
+        """
         try:
             return await self.send_email(
                 recipient=email,
@@ -50,7 +74,15 @@ class EmailService:
             )
 
     async def send_password_changed_email(self, email: EmailStr) -> bool:
-        """Send password changed confirmation email"""
+        """
+        Send password changed confirmation email.
+        
+        Args:
+            email (EmailStr): Recipient email address.
+            
+        Returns:
+            bool: True if email was sent successfully, False otherwise.
+        """
         try:
             return await self.send_email(
                 recipient=email,
@@ -72,7 +104,21 @@ class EmailService:
         template_name: str,
         template_body: dict
     ) -> bool:
-        """Send an email using template."""
+        """
+        Send an email using template.
+        
+        Args:
+            recipient (EmailStr): Recipient email address.
+            subject (str): Email subject.
+            template_name (str): Name of the Jinja2 template file.
+            template_body (dict): Dictionary of variables to pass to the template.
+            
+        Returns:
+            bool: True if email was sent successfully.
+            
+        Raises:
+            HTTPException: 500 Internal Server Error if email sending fails.
+        """
         try:
             template = self.jinja_env.get_template(template_name)
             body = template.render(**template_body)
