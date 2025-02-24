@@ -124,10 +124,12 @@ class ImageResponseSchema(BaseModel):
     description: str
     file_url: str = Field(..., alias="image_url") 
     owner_id: int = Field(..., alias="user_id")
-    tags: list  
-    class Config:
+    tags: list
+    average_rating: Optional[float] = 0.0
+    created_at: datetime
 
-        from_attributes = True  
+    class Config:
+        from_attributes = True
 
 class ImageResponseUpdateSchema(BaseModel):
     id: int
