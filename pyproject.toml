@@ -29,6 +29,8 @@ qrcode = "^8.0"
 types-qrcode = "^8.0.0.20241004"
 pillow = "^11.1.0"
 aiosqlite = "^0.21.0"
+httpx = "^0.28.1"
+pytest-mock = "^3.14.0"
 
 [build-system]
 requires = ["poetry-core"]
