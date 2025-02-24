@@ -52,9 +52,15 @@ class PasswordResetService:
                     detail="Invalid token type"
                 )
 
-            # Check expiration
-            exp = payload.get("exp")
-            if not exp or float(exp) < datetime.utcnow().timestamp():
+            exp_timestamp = payload.get("exp")
+            if not exp_timestamp:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Token missing expiration"
+                )
+        
+            current_timestamp = datetime.utcnow().timestamp()
+            if float(exp_timestamp) < current_timestamp:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Token has expired"

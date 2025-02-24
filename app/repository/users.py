@@ -91,24 +91,32 @@ class UserCrud:
     
     def _calculate_member_duration(self, register_date: datetime) -> str:
         """Calculate duration of membership"""
-        days_since = (datetime.now() - register_date).days
+        if not register_date:
+            return "Unknown"
+        
+        days_since = max(0, (datetime.now() - register_date).days)
         years = days_since // 365
         months = (days_since % 365) // 30
+        days = days_since % 30
         
         if years > 0:
             member_since = f"{years} year{'s' if years != 1 else ''}"
             if months > 0:
                 member_since += f" and {months} month{'s' if months != 1 else ''}"
-        else:
+        elif months > 0:
             member_since = f"{months} month{'s' if months != 1 else ''}"
-            if months == 0:
-                member_since = "Less than a month"
+            if days > 0 and months < 2:
+                member_since += f" and {days} day{'s' if days != 1 else ''}"
+        else:
+            if days > 0:
+                member_since = f"{days} day{'s' if days != 1 else ''}"
+            else:
+                member_since = "Less than a day"
                 
         return member_since
 
     async def get_user_profile(self, username: str, session: AsyncSession):
-        """Get user profile with statistics"""
-        # Get user with related counts
+        """Get user profile with statistics"""        
         query = select(
             User,
             func.count(distinct(Image.id)).label('total_images'),

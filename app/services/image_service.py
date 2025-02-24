@@ -250,8 +250,7 @@ class CloudinaryService(IcloudinaryService):
                 - secure_url: URL of the uploaded image
                 - public_id: Cloudinary public ID of the image
         """
-        try:
-            # Add transformation for avatars
+        try:            
             transformation = {
                 'width': 400,
                 'height': 400,

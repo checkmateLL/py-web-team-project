@@ -9,6 +9,8 @@ import logging
 from datetime import datetime, timedelta
 
 from app.database.models import User
+from app.schemas import UserProfileEdit
+from app.repository.users import crud_users
 from app.services.image_service import CloudinaryService
 from app.services.security.secure_password import Hasher
 
@@ -76,7 +78,7 @@ class UserService:
             first_chunk = await file.read(1024 * 1024)
             await file.seek(0)  # Reset file pointer
 
-            # Validate file type using python-magic
+            # Validate file type using python-magic (should be only images)
             mime = magic.Magic(mime=True)
             mime_type = mime.from_buffer(first_chunk)
 
@@ -87,7 +89,7 @@ class UserService:
                     detail="Invalid file type. Only JPEG, PNG and WebP are allowed."
                 )
 
-            # Validate file size (5MB limit)
+            # Validate file size (5MB max)
             file_size = len(first_chunk)
             max_size = 5 * 1024 * 1024 
             
@@ -105,7 +107,7 @@ class UserService:
             )
 
     async def update_avatar(self, user_id: int, file: UploadFile) -> dict:
-        """Updates user avatar with cleanup of old avatar."""
+        """Updates user avatar with deletion of old avatar."""
         try:            
             await self.validate_avatar_file(file)
             
@@ -120,7 +122,7 @@ class UserService:
                     detail="User not found"
                 )
             
-            if user.avatar_url:
+            if user.avatar_url and '/' in user.avatar_url:
                 try:                    
                     public_id = user.avatar_url.split("/")[-1].split(".")[0]
                     await self.cloudinary.delete_avatar(public_id)

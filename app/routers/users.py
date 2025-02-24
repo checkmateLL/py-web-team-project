@@ -9,7 +9,6 @@ import magic
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 
-
 from app.database.connection import get_conn_db
 from app.repository.users import crud_users
 from app.repository import users as repository_users
@@ -169,11 +168,21 @@ async def update_my_profile(
     If the email is changed, the current access token is blacklisted to force a logout.
     """
     try:
+        if not any([
+            profile_update.username and profile_update.username != current_user.username,
+            profile_update.email and profile_update.email != current_user.email,
+            profile_update.password,
+            profile_update.bio is not None and profile_update.bio != current_user.bio,
+            profile_update.avatar_url is not None and profile_update.avatar_url != current_user.avatar_url
+        ]):            
+            profile = await crud_users.get_user_profile(current_user.username, db)
+            return profile
+        
         email_changed = False
         password_changed = False
         password_hash = None
         
-        # Check if username is changing and if the new username is available.
+        # Check if username is changing and if the new username is available
         if profile_update.username and profile_update.username != current_user.username:
             existing_user = await crud_users.get_user_by_username(profile_update.username, db)
             if existing_user:
@@ -182,7 +191,7 @@ async def update_my_profile(
                     detail="Username already taken"
                 )
         
-        # Check if email is changing and ensure the new email is not already registered.
+        # Check if email is changing and ensure the new email is not already registered
         if profile_update.email and profile_update.email != current_user.email:
             existing_user = await crud_users.exist_user(profile_update.email, db)
             if existing_user:
@@ -195,8 +204,7 @@ async def update_my_profile(
         if profile_update.password:
             password_hash = Hasher.get_password_hash(profile_update.password)
             password_changed = True
-
-        # Update the user profile in the database.
+        
         updated_user = await crud_users.update_user_profile(
             user_id=current_user.id,
             session=db,
@@ -212,17 +220,14 @@ async def update_my_profile(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found or update failed"
             )
-
-        # Retrieve the updated profile data.
-        profile = await crud_users.get_user_profile(updated_user.username, db)
         
-        # Handle logout requirements
+        profile = await crud_users.get_user_profile(updated_user.username, db)
+                
         if email_changed or password_changed:
             await AuthService().logout_set(token=token, token_blacklist=token_blacklist)
             response.headers["X-Require-Logout"] = "true"
-            profile["require_logout"] = True
+            profile["require_logout"] = True            
             
-            # message based on what changed
             if email_changed and password_changed:
                 profile["message"] = "Your email and password were updated. Please log in again with your new credentials."
             elif email_changed:
@@ -312,7 +317,13 @@ async def reset_password(
     """Reset password with token verification and secure password update."""    
     password_service = PasswordResetService(email_service)
     
-    try:        
+    try:     
+        if len(new_password) < 6:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be at least 6 characters long"
+            )
+           
         email = password_service.verify_reset_token(token)
         
         user = await crud_users.get_user_by_email(email, db)

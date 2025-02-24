@@ -36,7 +36,8 @@ class User(BaseModel):
 
     images : Mapped[list['Image']] = relationship('Image', back_populates='user', lazy='selectin')
     comments : Mapped[list['Comment']] = relationship('Comment', back_populates='user', lazy='selectin')
-
+    ratings : Mapped[list['Rating']] = relationship('Rating', back_populates='user', lazy='selectin') 
+    
 class Image(BaseModel):
     __tablename__ = 'images'
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
