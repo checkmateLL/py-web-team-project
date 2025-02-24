@@ -1,14 +1,10 @@
 import pytest
 from fastapi import status
-from sqlalchemy import select
-from app.database.models import User
-from unittest.mock import AsyncMock, patch
-from httpx import AsyncClient
+from unittest.mock import AsyncMock
 from unittest.mock import AsyncMock
 
 from app.main import app
-from app.services.user_service import TokenBlackList, get_token_blacklist
-from app.services.security.secure_password import Hasher  
+from app.services.user_service import get_token_blacklist 
 from app.repository.users import crud_users
 
 @pytest.mark.asyncio

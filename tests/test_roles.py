@@ -2,7 +2,6 @@ import pytest
 from fastapi import status
 
 from app.config import RoleSet
-from app.database.models import User
 from app.repository.users import crud_users
 
 @pytest.mark.asyncio
@@ -107,7 +106,7 @@ async def test_access_for_not_admin(client, db_session):
     }
     response = client.post("/app/auth/register", json=new_user_data)
     assert response.status_code == status.HTTP_200_OK
-    
+
     user_email = new_user_data["email"]
     user_password = new_user_data['password']
     

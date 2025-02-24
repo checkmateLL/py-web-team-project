@@ -1,4 +1,3 @@
-from unittest.mock import AsyncMock, MagicMock
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.pool import StaticPool
@@ -9,8 +8,7 @@ import pytest_asyncio
 from app.main import app
 from app.database.connection import get_conn_db
 from app.services.security.secure_password import Hasher
-from app.services.user_service import get_token_blacklist, TokenBlackList, redis_client
-from app.database.models import BaseModel, User
+from app.database.models import BaseModel, User, Image
 
 SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -34,6 +32,12 @@ test_user = {
     "password": "123",
     "role": "ADMIN"
 }
+test_image = {
+    'description': "Test Image",
+    'image_url': "https://example.com/test.jpg",
+    'user_id': 1,
+    'public_id': "test-public-id"
+}
 
 @pytest_asyncio.fixture(scope="module", autouse=True)
 async def initialize_db():
@@ -42,8 +46,9 @@ async def initialize_db():
         await conn.run_sync(BaseModel.metadata.drop_all)
         await conn.run_sync(BaseModel.metadata.create_all)
 
-    # add test user 
+    
     async with TestingSessionLocal() as session:
+        # add test user 
         hash_password = Hasher.get_password_hash(test_user["password"])
         user = User(
             username=test_user["username"],
@@ -51,7 +56,15 @@ async def initialize_db():
             password_hash=hash_password,
             role=test_user["role"]
         )
+        # add test image 
+        image = Image(
+            description=test_image['description'],
+            image_url=test_image["image_url"],
+            user_id=test_image["user_id"],
+            public_id=test_image['public_id']
+        )
         session.add(user)
+        session.add(image)
         await session.commit()
 
     yield

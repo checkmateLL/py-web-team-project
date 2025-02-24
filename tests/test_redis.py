@@ -1,10 +1,7 @@
 from unittest.mock import AsyncMock
 import pytest
 from app.services.user_service import  get_token_blacklist
-from app.services.security.auth_service import AuthService
-from fastapi import status
-from app.main import app
-from app.repository.users import crud_users
+
 
 @pytest.mark.asyncio
 async def test_blacklist_access_token():

@@ -2,14 +2,13 @@ import pytest
 from fastapi import status
 from sqlalchemy import select
 from app.database.models import User
-from unittest.mock import AsyncMock, patch
-from httpx import AsyncClient
+from unittest.mock import AsyncMock
 from unittest.mock import AsyncMock
 
 from app.main import app
-from app.services.user_service import TokenBlackList, get_token_blacklist
+from app.services.user_service import  get_token_blacklist
 from app.services.security.secure_password import Hasher  
-from app.repository.users import crud_users
+
 
 @pytest.mark.asyncio
 async def test_register_user_success(client):
@@ -239,7 +238,7 @@ async def test_logout_invalid_token(client):
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert "Invalid token" in response.json()["detail"]
-    
+
     app.dependency_overrides.clear()
     mock_redis.reset_mock()
 
