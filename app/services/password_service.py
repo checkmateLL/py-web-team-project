@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from fastapi import HTTPException, status
 import logging
+from typing import Optional
 
 from app.config import settings
 from app.services.email_service import EmailService
@@ -11,23 +12,21 @@ logger = logging.getLogger(__name__)
 class PasswordResetService:
     def __init__(self, email_service: EmailService):
         self.email_service = email_service
-        self.secret_key = settings.SECRET_KEY_JWT
-        self.algorithm = settings.ALGORITHM
 
     def create_reset_token(self, email: str) -> str:
         """Creates a password reset token."""
+        expires = datetime.utcnow() + timedelta(hours=1)
+        token_data = {
+            "sub": email,
+            "type": "password_reset",
+            "exp": expires.timestamp()
+        }
+        
         try:
-            expires = datetime.utcnow() + timedelta(hours=1)
-            token_data = {
-                "sub": email,
-                "type": "password_reset",
-                "exp": expires.timestamp()
-            }
-            
             token = jwt.encode(
                 token_data,
-                self.secret_key,
-                algorithm=self.algorithm
+                settings.SECRET_KEY_JWT,
+                algorithm=settings.ALGORITHM
             )
             return token
         except Exception as e:
@@ -42,8 +41,8 @@ class PasswordResetService:
         try:
             payload = jwt.decode(
                 token,
-                self.secret_key,
-                algorithms=[self.algorithm]
+                settings.SECRET_KEY_JWT,
+                algorithms=[settings.ALGORITHM]
             )
             
             # Verify token type

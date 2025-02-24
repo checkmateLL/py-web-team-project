@@ -17,7 +17,7 @@ from app.schemas import UserProfileResponse, UserProfileEdit, UserProfileFull, U
 from app.services.security.auth_service import role_deps, AuthService
 from app.services.security.secure_password import Hasher
 from app.services.password_service import PasswordResetService
-from app.services.user_service import get_token_blacklist
+from app.services.user_service import get_token_blacklist, UserService
 from app.services.image_service import CloudinaryService
 from app.database.models import User
 from app.services.email_service import EmailService
@@ -245,28 +245,21 @@ async def update_my_profile(
             detail="An unexpected error occurred"
         )
     
-@router.put("me/avatar")
+@router.put("/me/avatar")
 async def update_avatar(
     file: UploadFile,
     current_user: User = role_deps.all_users(),
     db: AsyncSession = Depends(get_conn_db),
     cloudinary_service: CloudinaryService = Depends(lambda: CloudinaryService())
 ):
-    """Update user's avatar"""
+    """Update user's avatar"""    
+    user_service = UserService(db, cloudinary_service)
+    
     try:
-        if current_user.avatar_url:        
-            public_id = current_user.avatar_url.split("/")[-1].split(".")[0]
-            await cloudinary_service.delete_avatar(public_id)
-
-        upload_result = await cloudinary_service.upload_avatar(file)    
-        
-        await crud_users.update_user_profile(
-            user_id=current_user.id,
-            session=db,
-            avatar_url=upload_result["secure_url"]
-        )
-        
-        return {"avatar_url": upload_result["secure_url"]}
+        result = await user_service.update_avatar(current_user.id, file)
+        return result
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Avatar update error: {str(e)}")
         raise HTTPException(
@@ -274,28 +267,25 @@ async def update_avatar(
             detail="Failed to update avatar"
         )
 
-
 @router.post("/request-password-reset")
 async def request_password_reset(
     body: RequestEmail,
     db: AsyncSession = Depends(get_conn_db),
     email_service: EmailService = Depends(lambda: EmailService())
 ):
-    """Request password reset with proper token generation and email sending."""
+    """Request password reset with proper token generation and email sending."""    
+    password_service = PasswordResetService(email_service)
+    
     try:
-        # Using crud_users instance instead of module
         user = await crud_users.get_user_by_email(body.email, db)
         if not user:
-            # Return same message even if user doesn't exist (security best practice)
+            # Return same message even if user doesn't exist
             return {
                 "message": "If an account exists with that email, a password reset link will be sent."
             }
-
-        password_service = PasswordResetService(email_service)
-        # Generate reset token
+        
         reset_token = password_service.create_reset_token(user.email)
-
-        # Send reset email
+        
         await email_service.send_password_reset_email(
             email=user.email,
             token=reset_token
@@ -319,30 +309,26 @@ async def reset_password(
     db: AsyncSession = Depends(get_conn_db),
     email_service: EmailService = Depends(lambda: EmailService())
 ):
-    """Reset password with token verification and secure password update."""
-    try:
-        password_service = PasswordResetService(email_service)
-        # Verify token and get email
+    """Reset password with token verification and secure password update."""    
+    password_service = PasswordResetService(email_service)
+    
+    try:        
         email = password_service.verify_reset_token(token)
-
-        # Get user using crud_users instance
+        
         user = await crud_users.get_user_by_email(email, db)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
-
-        # Update password with new hash
-        from app.services.security.secure_password import Hasher
+        
         hashed_password = Hasher.get_password_hash(new_password)
         await crud_users.update_user_profile(
             user_id=user.id,
             session=db,
             password_hash=hashed_password
         )
-
-        # Send confirmation email
+        
         await email_service.send_password_changed_email(user.email)
 
         return {"message": "Password successfully reset"}
