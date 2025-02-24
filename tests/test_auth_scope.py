@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock
 from app.main import app
 from app.services.user_service import TokenBlackList, get_token_blacklist
 from app.services.security.secure_password import Hasher  
-
+from app.repository.users import crud_users
 
 @pytest.mark.asyncio
 async def test_register_user_success(client):
@@ -175,29 +175,38 @@ async def test_login_response_format(client):
 @pytest.mark.asyncio
 async def test_blacklisted_token_reuse(client):
     """
-    Test reuse of blacklisted token
+    Test Re-Use of blacklisted token
     """
+    # - default seting redis mock
     mock_redis = AsyncMock()
     mock_redis.exists = AsyncMock(return_value=0)
     mock_redis.setex = AsyncMock(return_value=None)
-
+    # -
+    # reuturned set value is_token_blacklisted in Depends AuthService
+    mock_redis.is_token_blacklisted.return_value = True
+    # set Depends get_token_blacklist
     app.dependency_overrides[get_token_blacklist] = lambda: mock_redis
     
+    # login user part
     login_data = {"username": "deadpool@example.com", "password": "123"}
     login_response = client.post("app/auth/login", data=login_data)
     access_token = login_response.json()["access_token"]
     assert access_token, 'getting token'
 
+    # set return value redis.exists
     mock_redis.exists = AsyncMock(return_value=1)
 
+    # create object token_blacklist [Dependes]
     token_blacklist = await get_token_blacklist(mock_redis)
+    # added token to bl
     await token_blacklist.blacklist_access_token(access_token, 1800)
-
+    # check if added token to bl called onse
     mock_redis.setex.assert_called_once_with(f"blacklist:{access_token}", 1800, "blacklisted")
-
+    # verify if token added to bl
     result = await token_blacklist.is_token_blacklisted(access_token)
     assert result is True
     
+    # try logout part
     logout_response = client.post(
         "app/auth/logout",
         headers={"Authorization": f"Bearer {access_token}"}
@@ -213,17 +222,24 @@ async def test_logout_invalid_token(client):
     """
     Test logout with an invalid token
     """
+    # - default seting redis mock
     mock_redis = AsyncMock()
     mock_redis.exists = AsyncMock(return_value=0)
     mock_redis.setex = AsyncMock(return_value=None)
+    # -
+    # reuturned set value is_token_blacklisted in Depends AuthService
+    mock_redis.is_token_blacklisted.return_value = False
+    # set Depends get_token_blacklist
     app.dependency_overrides[get_token_blacklist] = lambda: mock_redis
-    
+
+    # try logut with invalid token
     response = client.post(
         "/app/auth/logout",
         headers={"Authorization": "Bearer invalid_token"}
     )
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert "Invalid token" in response.json()["detail"]
+    
     app.dependency_overrides.clear()
     mock_redis.reset_mock()
 
