@@ -48,7 +48,10 @@ async def test_create_comment(client, db_session):
 
 @pytest.mark.asyncio
 async def test_update_comment(client, db_session):
-
+    """
+    test update comment user-ownre image
+    test update comment user-not-owner image
+    """
     result = await db_session.execute(select(Image).where(Image.id == 1))
     image_from_db = result.scalar_one_or_none()
     assert image_from_db is not None, "Image not found"
@@ -86,15 +89,41 @@ async def test_update_comment(client, db_session):
     assert change_data["text"] == "Updated Comment"
     assert change_data["id"] == original_data["id"]
 
-
     result = await db_session.execute(select(Comment).where(Comment.id == original_data['id']))
     comment_from_db = result.scalar_one_or_none()
     assert comment_from_db is not None
     assert comment_from_db.text == "Updated Comment"
+
+
+    new_user_data = {
+        "email": "newuser2@example.com",
+        "user_name": "new_user",
+        "password": "securepassword123"
+    }
+    response = client.post("/app/auth/register", json=new_user_data)
+    assert response.status_code == status.HTTP_200_OK
+
+    login_data = {
+        "username": new_user_data['email'],
+        "password": new_user_data['password']
+    }
+    response_login = client.post("/app/auth/login", data=login_data)
+    assert response_login.status_code == 200
+    access_token_fail = response_login.json()["access_token"]
+
+    response_change_comment =  client.put(
+            f"/app/comments/{original_data['id']}/",
+            json={"text": "Updated Comment"},
+            headers={"Authorization": f"Bearer {access_token_fail}"}
+        )
+    assert response_change_comment.status_code == 403
     
 @pytest.mark.asyncio
 async def test_delete_comment(client, db_session):
-
+    """
+    testing delete comment user-admin
+    testing delete comment user-not admin
+    """
     result = await db_session.execute(select(Image).where(Image.id == 1))
     image_from_db = result.scalar_one_or_none()
     assert image_from_db is not None, "Image not found"
@@ -119,6 +148,28 @@ async def test_delete_comment(client, db_session):
         )
     assert response_original_comment.status_code == 201
     original_data = response_original_comment.json()
+
+    new_user_data = {
+        "email": "newuser3@example.com",
+        "user_name": "new_user",
+        "password": "securepassword123"
+    }
+    response = client.post("/app/auth/register", json=new_user_data)
+    assert response.status_code == status.HTTP_200_OK
+
+    login_data = {
+        "username": new_user_data['email'],
+        "password": new_user_data['password']
+    }
+    response_login = client.post("/app/auth/login", data=login_data)
+    assert response_login.status_code == 200
+    access_token_fail = response_login.json()["access_token"]
+
+    response_comment = client.delete(
+            f"/app/comments/{original_data['id']}/",
+            headers={"Authorization": f"Bearer {access_token_fail}"}
+        )
+    assert response_comment.status_code == 403
 
     response_comment = client.delete(
             f"/app/comments/{original_data['id']}/",
@@ -213,3 +264,37 @@ async def test_get_comments_for_image(client, db_session):
     for i, comment in enumerate(comments_data):
         assert comment["text"] == f"Comment {i + 1}"
         assert comment["image_id"] == image_from_db.id
+
+@pytest.mark.asyncio
+async def test_empty_comment(client, db_session):
+
+    #find image in database
+    result = await db_session.execute(select(Image).where(Image.id == 1))
+    image_from_db = result.scalar_one_or_none()
+    assert image_from_db is not None, "Image not found"
+
+
+    user_email="deadpool@example.com"
+    user_password = "123"
+    
+    login_data = {
+        "username": user_email,
+        "password": user_password
+    }
+
+    response_login = client.post("/app/auth/login", data=login_data)
+    assert response_login.status_code == status.HTTP_200_OK
+
+    access_token = response_login.json()["access_token"]
+    assert access_token, 'Failed to get access token'
+
+    response =  client.post(
+            f"/app/comments/{image_from_db.id}/",
+            json={"text": ""},
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+    
+    error_detail = response.json()['detail'][0]
+    assert error_detail['loc'] == ['body', 'text']
+    assert error_detail['msg'] == 'String should have at least 1 character'
+    
