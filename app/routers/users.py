@@ -161,28 +161,41 @@ async def update_my_profile(
     current_user: User = role_deps.all_users(),
     db: AsyncSession = Depends(get_conn_db),
     token: str = Depends(AuthService.get_token),
-    token_blacklist = Depends(get_token_blacklist)   
+    token_blacklist = Depends(get_token_blacklist),
+    email_service: EmailService = Depends(lambda: EmailService())
 ):
     """
     Update authenticated user's profile.
     If the email is changed, the current access token is blacklisted to force a logout.
+    Supports password change with current password verification.
     """
     try:
+        requires_logout = False
+        logout_message = ""
+
         if not any([
             profile_update.username and profile_update.username != current_user.username,
             profile_update.email and profile_update.email != current_user.email,
-            profile_update.password,
             profile_update.bio is not None and profile_update.bio != current_user.bio,
-            profile_update.avatar_url is not None and profile_update.avatar_url != current_user.avatar_url
+            profile_update.new_password is not None
         ]):            
             profile = await crud_users.get_user_profile(current_user.username, db)
-            return profile
+            return profile        
         
-        email_changed = False
-        password_changed = False
-        password_hash = None
+        if profile_update.new_password:            
+            if not Hasher.verify_password(profile_update.current_password, current_user.password_hash):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Current password is incorrect"
+                )            
+            
+            password_hash = Hasher.get_password_hash(profile_update.new_password)
+                        
+            requires_logout = True
+            logout_message = "Your password has been changed. Please log in again."
+        else:
+            password_hash = None
         
-        # Check if username is changing and if the new username is available
         if profile_update.username and profile_update.username != current_user.username:
             existing_user = await crud_users.get_user_by_username(profile_update.username, db)
             if existing_user:
@@ -190,29 +203,25 @@ async def update_my_profile(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Username already taken"
                 )
-        
-        # Check if email is changing and ensure the new email is not already registered
+                
         if profile_update.email and profile_update.email != current_user.email:
             existing_user = await crud_users.exist_user(profile_update.email, db)
             if existing_user:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Email already registered"
-                )
-            email_changed = True
-
-        if profile_update.password:
-            password_hash = Hasher.get_password_hash(profile_update.password)
-            password_changed = True
-        
+                )            
+            
+            requires_logout = True
+            logout_message = "Your email has been updated. Please log in again."
+            
         updated_user = await crud_users.update_user_profile(
             user_id=current_user.id,
             session=db,
             username=profile_update.username,
             email=profile_update.email,
             password_hash=password_hash,
-            bio=profile_update.bio,
-            avatar_url=profile_update.avatar_url
+            bio=profile_update.bio
         )
         
         if not updated_user:
@@ -220,20 +229,19 @@ async def update_my_profile(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found or update failed"
             )
-        
-        profile = await crud_users.get_user_profile(updated_user.username, db)
                 
-        if email_changed or password_changed:
+        profile = await crud_users.get_user_profile(updated_user.username, db)
+                    
+        if requires_logout:
             await AuthService().logout_set(token=token, token_blacklist=token_blacklist)
             response.headers["X-Require-Logout"] = "true"
-            profile["require_logout"] = True            
+            profile["require_logout"] = True
+            profile["message"] = logout_message
             
-            if email_changed and password_changed:
-                profile["message"] = "Your email and password were updated. Please log in again with your new credentials."
-            elif email_changed:
-                profile["message"] = "Your email was updated. Please log in again with your new credentials."
-            else:  
-                profile["message"] = "Your password was updated. Please log in again with your new credentials."
+            try:
+                await email_service.send_password_changed_email(updated_user.email)
+            except Exception as e:
+                logger.warning(f"Failed to send change notification email: {str(e)}")
         
         return profile
     

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, constr, HttpUrl, ConfigDict, field_validator, StringConstraints
+from pydantic import BaseModel, EmailStr, Field, constr, HttpUrl, ConfigDict, field_validator, StringConstraints, ValidationInfo
 from datetime import datetime
 from typing import Optional, Annotated
 
@@ -54,31 +54,35 @@ class UserProfileResponse(BaseModel):
 class UserProfileEdit(BaseModel):
     username: Optional[Annotated[str, StringConstraints(min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")]] = None
     email: Optional[EmailStr] = None
-    password: Optional[str] = None
-    bio: Optional[Annotated[str, StringConstraints(max_length=500)]] = None
-    avatar_url: Optional[str] = None
+    current_password: Optional[str] = None
+    new_password: Optional[Annotated[str, StringConstraints(min_length=6)]] = None
+    bio: Optional[Annotated[str, StringConstraints(max_length=500)]] = None    
 
-    @field_validator("password")
+    @field_validator('new_password')
     @classmethod
-    def validate_password(cls, value: Optional[str]) -> Optional[str]:
-        if value and len(value) < 6:
-            raise ValueError("Password must be at least 6 characters long")
-        return value
+    def validate_password_change(cls, new_password: Optional[str], info: ValidationInfo) -> Optional[str]:
+        """
+        Ensure password change requires current password
+        and meets minimum length requirements
+        """     
+        if new_password is not None:
+            values = info.data
+            if not values.get('current_password'):
+                raise ValueError("Current password must be provided to change password")
+                        
+            if len(new_password) < 6:
+                raise ValueError("New password must be at least 6 characters long")
+        
+        return new_password
 
-    @field_validator("avatar_url", mode="before")
-    @classmethod
-    def validate_avatar_url(cls, value):
-        if value is not None:
-            return str(value)  
-        return value
-    
     class Config:
         json_schema_extra = {
             "example": {
                 "username": "john_doe",
                 "email": "john@example.com",
                 "bio": "Python developer and photographer",
-                "avatar_url": "https://example.com/avatar.jpg"
+                "current_password": "old_password",
+                "new_password": "new_password123"
             }
         }
 
