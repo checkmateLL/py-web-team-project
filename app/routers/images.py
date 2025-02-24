@@ -297,6 +297,40 @@ async def transform_image(
     )
     return sch.TransformationResponseSchema(**data)
 
+@router.get("/my_images/", response_model=list[sch.ImageResponseSchema])
+async def get_user_images(
+    session: AsyncSession = Depends(get_conn_db),
+    current_user: User = role_deps.all_users(),
+):
+    """
+    Get all images uploaded by the current user.
+
+    Args:
+        session: Database session.
+        current_user: Current authenticated user.
+
+    Returns:
+        List of ImageResponseSchema objects containing image details.
+    """
+    images = await crud_images.get_images_by_user_id(current_user.id, session)
+    if not images:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="You have no images."
+        )
+    return [
+        sch.ImageResponseSchema(
+            id=image.id,
+            description=image.description,
+            image_url=image.image_url,
+            user_id=image.user_id,
+            tags=[tag.name for tag in image.tags],
+            average_rating=getattr(image, 'average_rating', 0.0),
+            created_at=getattr(image, 'created_at', datetime.now())
+        )
+        for image in images
+    ]
+
 @router.get("/search_images/", response_model=list[sch.ImageResponseSchema])
 async def search_images(
     query: str = Query(None, description="Search by description"),
@@ -335,5 +369,7 @@ async def search_images_by_user(
         description=img.description,
         image_url=img.image_url,
         user_id=img.user_id,
-        tags=[tag.name for tag in img.tags]
+        tags=[tag.name for tag in img.tags],
+        average_rating=getattr(img, 'average_rating', 0.0),
+        created_at=getattr(img, 'created_at', datetime.now())
     ) for img in images]

@@ -318,8 +318,42 @@ class ImageCrud(CrudTags):
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error searching images: {str(err)}"
-            )    
-    
+            )        
+
+    async def get_images_by_user_id(
+            self,
+            user_id: int, 
+            session: AsyncSession
+            ):
+        """
+        Get all images uploaded by a specific user.
+
+        Args:
+            user_id: ID of the user.
+            session: Database session.
+
+        Returns:
+            List of Image objects.
+        """
+        result = await session.execute(select(Image).where(Image.user_id == user_id))
+        return result.scalars().all()
+
+    async def get_all_images(
+            self, 
+            session: AsyncSession
+            ):
+        """
+        Get all images uploaded by all users.
+
+        Args:
+            session: Database session.
+
+        Returns:
+            List of Image objects.
+        """
+        result = await session.execute(select(Image))
+        return result.scalars().all()
+
     async def search_by_user(
             self,
             username: str,
@@ -339,6 +373,6 @@ class ImageCrud(CrudTags):
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error searching images by user: {str(err)}"
-            )
-        
+            )        
+
 crud_images = ImageCrud()
