@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     REDIS_DB : int = 0
     REDIS_DECODE_RESPONSES : bool = True
     
+    PROJECT_NAME : str = 'PhotoShare'
+    PROJECT_VERSION : str = '1'
+
     model_config = SettingsConfigDict(
         extra="ignore", 
         env_file=".env", 

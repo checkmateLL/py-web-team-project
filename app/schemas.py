@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field, constr, HttpUrl, ConfigDict, field_validator, StringConstraints
+from pydantic import ConfigDict
 from datetime import datetime
 from typing import Optional, Annotated
 
@@ -30,8 +31,10 @@ class ResponseUser(BaseModel):
             avatar_url=obj.avatar_url
         )
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes= True
+    )
+
 
 class UserProfileResponse(BaseModel):
     username: str
@@ -43,8 +46,9 @@ class UserProfileResponse(BaseModel):
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes= True
+    )
 
 class UserProfileEdit(BaseModel):
     username: Optional[Annotated[str, StringConstraints(min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")]] = None
@@ -67,7 +71,7 @@ class UserProfileEdit(BaseModel):
             return str(value)  
         return value
     
-    class Config:
+    model_config = ConfigDict(
         json_schema_extra = {
             "example": {
                 "username": "john_doe",
@@ -76,7 +80,9 @@ class UserProfileEdit(BaseModel):
                 "avatar_url": "https://example.com/avatar.jpg"
             }
         }
+    )
 
+        
 class UserProfileFull(ResponseUser):
     total_images: int
     total_comments: int
@@ -104,8 +110,9 @@ class CommentResponse(BaseModel):
     user_id: int
     image_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes= True
+    )
 
 Tag = Annotated[str, constr(
     min_length=1,
@@ -124,10 +131,13 @@ class ImageResponseSchema(BaseModel):
     description: str
     file_url: str = Field(..., alias="image_url") 
     owner_id: int = Field(..., alias="user_id")
-    tags: list  
-    class Config:
-
-        from_attributes = True  
+    tags: list
+    average_rating: Optional[float] = 0.0
+    created_at: datetime
+    
+    model_config = ConfigDict(
+        from_attributes=True
+    )
 
 class ImageResponseUpdateSchema(BaseModel):
     id: int
@@ -135,16 +145,17 @@ class ImageResponseUpdateSchema(BaseModel):
     file_url: str = Field(..., alias="image_url") 
     owner_id: int = Field(..., alias="user_id")
 
-    class Config:
-        from_attributes = True  
+    model_config = ConfigDict(
+        from_attributes= True
+    )
 
 class TransformationParameters(BaseModel):
     crop: bool = False
     blur: bool = False
     circular: bool = False
     grayscale: bool = False
-
-    class Config:
+    
+    model_config = ConfigDict(
         json_schema_extra = {
             "example": {
                 "crop": True,
@@ -153,14 +164,17 @@ class TransformationParameters(BaseModel):
                 "grayscale": False
             }
         }
-        
+    )
+   
+         
 class TransformationResponseSchema(BaseModel):
     transformation_url: str
     qr_code_url: str
     image_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(
+        from_attributes= True
+    )
 
 class RatingCreate(BaseModel):
     value: float = Field(ge=1, le=5, description="Rating value between 1 and 5")
@@ -173,7 +187,9 @@ class RatingResponse(BaseModel):
     user_id: int
     image_id: int
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True
+    )
 
 class UserProfileWithLogout(UserProfileFull):    
     require_logout: bool = False

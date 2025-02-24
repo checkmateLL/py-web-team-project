@@ -11,7 +11,11 @@ import app.schemas as sch
 
 router = APIRouter(prefix='/auth')
 
-@router.post("/register", status_code=200, response_model=sch.ResponseUser)
+@router.post(
+          "/register", 
+          status_code=200, 
+          response_model=sch.ResponseUser
+    )
 async def register_user(
     body : sch.RegisterUser,
     session: AsyncSession = Depends(get_conn_db),
@@ -39,6 +43,9 @@ async def register_user(
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),  
     db: AsyncSession= Depends(get_conn_db)):
+    """
+    login user in system
+    """
     user = await crud_users.autenticate_user(
          form_data.username, 
          form_data.password,
