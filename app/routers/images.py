@@ -95,6 +95,7 @@ async def upload_image_endpoint(
         description=image_object.description,
         image_url=image_object.image_url,
         user_id=image_object.user_id,
+        created_at=image_object.created_at,
         tags=[tag.name for tag in tags_object] 
     )
 
@@ -167,6 +168,7 @@ async def add_tags_to_image(
         description=user_image.description,
         image_url=user_image.image_url,
         user_id=user_image.user_id,
+        created_at=user_image.created_at,
         tags=[tag.name for tag in user_image.tags] 
     )
 
@@ -195,6 +197,7 @@ async def get_image_info(
         description=image_object.description,
         image_url=image_object.image_url,
         user_id=image_object.user_id,
+        created_at=image_object.created_at,
         tags=[tag.name for tag in image_object.tags] 
     )
 
@@ -330,46 +333,3 @@ async def get_user_images(
         )
         for image in images
     ]
-
-@router.get("/search_images/", response_model=list[sch.ImageResponseSchema])
-async def search_images(
-    query: str = Query(None, description="Search by description"),
-    tag: str = Query(None, description="Filter by tag"),
-    order_by: str = Query("date", description="Sort by 'date' or 'rating'"),
-    session: AsyncSession = Depends(get_conn_db),
-    current_user: User = role_deps.all_users(),
-):
-    """
-    Search for images by description or tag.
-    Ability to sort by rating or upload date.
-    """
-    images = await crud_images.search_images(query, tag, order_by, session)
-    return [sch.ImageResponseSchema(
-        id=img.id,
-        description=img.description,
-        image_url=img.image_url,
-        user_id=img.user_id,
-        tags=[tag.name for tag in img.tags],
-        average_rating=img.average_rating,
-        created_at=img.created_at
-    ) for img in images]
-
-@router.get("/search_by_user/", response_model=list[sch.ImageResponseSchema])
-async def search_images_by_user(
-    username: str = Query(..., description="Username to search images"),
-    session: AsyncSession = Depends(get_conn_db),
-    current_user: User = role_deps.moderators_and_admins(),
-):
-    """
-    Search images by user (available to moderators and administrators).
-    """
-    images = await crud_images.search_by_user(username, session)
-    return [sch.ImageResponseSchema(
-        id=img.id,
-        description=img.description,
-        image_url=img.image_url,
-        user_id=img.user_id,
-        tags=[tag.name for tag in img.tags],
-        average_rating=getattr(img, 'average_rating', 0.0),
-        created_at=getattr(img, 'created_at', datetime.now())
-    ) for img in images]
