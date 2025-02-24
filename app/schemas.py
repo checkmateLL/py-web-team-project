@@ -35,16 +35,21 @@ class ResponseUser(BaseModel):
 
 class UserProfileResponse(BaseModel):
     username: str
+    email: EmailStr
     created_at: datetime
+    avatar_url: Optional[HttpUrl] = None
+    bio: Optional[str] = None
     total_images: int
     total_comments: int
     total_ratings_given: int
-    member_since: str 
-    avatar_url: Optional[str] = None
-    bio: Optional[str] = None
-
-    class Config:
-        from_attributes = True
+    member_since: str
+    
+    @field_validator('avatar_url', mode='before')
+    @classmethod
+    def validate_avatar_url(cls, v):
+        if v is None:
+            return "https://example.com/default-avatar.jpg"  # placeholder for future real example of avatar
+        return v
 
 class UserProfileEdit(BaseModel):
     username: Optional[Annotated[str, StringConstraints(min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")]] = None

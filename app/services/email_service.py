@@ -1,4 +1,3 @@
-# email_service.py
 import logging
 from pathlib import Path
 from typing import Dict, Optional
@@ -24,9 +23,8 @@ class EmailService:
             "MAIL_FROM_NAME": settings.MAIL_FROM_NAME,
             "MAIL_STARTTLS": settings.MAIL_STARTTLS,
             "MAIL_SSL_TLS": settings.MAIL_SSL_TLS,
-        }
+        }        
         
-        # Update template directory to your actual location
         template_dir = Path(__file__).parent.parent / 'templates'
         self.jinja_env = Environment(
             loader=FileSystemLoader(template_dir),
@@ -39,7 +37,7 @@ class EmailService:
             return await self.send_email(
                 recipient=email,
                 subject="Password Reset Request - PhotoShare",
-                template_name="reset_password_template.html",  # Updated to your actual template name
+                template_name="reset_password_template.html", 
                 template_body={
                     "token": token,
                 }
@@ -57,7 +55,7 @@ class EmailService:
             return await self.send_email(
                 recipient=email,
                 subject="Password Changed - PhotoShare",
-                template_name="email_template.html",  # Using your general email template
+                template_name="email_template.html",
                 template_body={
                     "subject": "Password Changed Successfully",
                     "message": "Your password has been successfully changed. If you did not make this change, please contact support immediately."
