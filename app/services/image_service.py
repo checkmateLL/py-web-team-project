@@ -237,3 +237,61 @@ class CloudinaryService(IcloudinaryService):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Cloudinary transformation error: {str(e)}"
             )
+        
+    async def upload_avatar(self, file: UploadFile) -> dict:
+        """
+        Upload avatar image to Cloudinary with optimization for avatars.
+        
+        Args:
+            file (UploadFile): Image file to upload.
+                    
+        Returns:
+            dict: Contains:
+                - secure_url: URL of the uploaded image
+                - public_id: Cloudinary public ID of the image
+        Raises:
+            HTTPException: 500 Internal Server Error if upload fails.
+        """
+        try:            
+            transformation = {
+                'width': 400,
+                'height': 400,
+                'crop': 'fill',
+                'gravity': 'face',
+                'quality': 'auto',
+                'format': 'webp'
+            }
+            
+            result = cloudinary.uploader.upload(
+                file.file,
+                folder="avatars",
+                transformation=transformation,
+                resource_type="auto"
+            )
+            
+            return {
+                "secure_url": result.get("secure_url"),
+                "public_id": result.get("public_id"),
+            }
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error uploading avatar to Cloudinary: {str(e)}"
+            )
+
+    async def delete_avatar(self, public_id: str):
+        """
+        Delete avatar from Cloudinary.
+        
+        Args:
+            public_id (str): Cloudinary public ID of the avatar to delete.
+        Raises:
+            HTTPException: 500 Internal Server Error if deletion fails.
+        """
+        try:
+            await cloudinary.uploader.destroy(public_id, resource_type="image")
+        except cloudinary.exceptions.Error as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error deleting avatar from Cloudinary: {str(e)}"
+            )

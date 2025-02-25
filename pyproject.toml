@@ -32,6 +32,9 @@ aiosqlite = "^0.21.0"
 httpx = "^0.28.1"
 pytest-mock = "^3.14.0"
 pytest-cov = "^6.0.0"
+aiosmtplib = "^2.0.1"
+better-profanity = "^0.7"
+python-magic = "^0.4.27"
 
 [build-system]
 requires = ["poetry-core"]
