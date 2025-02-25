@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.database.models import Image, Transformation, User, Tag
+from app.config import RoleSet
 
 class ImageCrud:
 
@@ -60,8 +61,7 @@ class ImageCrud:
                     status_code=404, 
                     detail="Image not found."
                 )
-
-            if image_obj.user_id != current_user.id:
+            if current_user.role != RoleSet.admin and image_obj.user_id != current_user.id:
                 raise HTTPException(
                     status_code=403, 
                     detail="You don't have permission to update this image."
@@ -95,7 +95,6 @@ class ImageCrud:
                     status_code=404, 
                     detail="Image not found."
                 )
-            
             if image.user_id != current_user.id:
                 raise HTTPException(
                     status_code=403, 
