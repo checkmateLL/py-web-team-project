@@ -47,7 +47,7 @@ async def get_redis():
     try:
         yield client
     finally:
-        await client.close()
+        await client.aclose()
 
 async def get_token_blacklist(redis_client: redis.Redis = Depends(get_redis)):
     return TokenBlackList(redis_client)

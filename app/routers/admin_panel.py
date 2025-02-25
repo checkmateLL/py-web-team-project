@@ -121,11 +121,11 @@ async def activate_user(
         status_code=status.HTTP_204_NO_CONTENT
     )
 
-@router.get("/get_all_images/{user_id}/", response_model=list[sch.ImageResponseSchema])
+@router.get("/get_all_images_by_admin/{user_id}/", response_model=list[sch.ImageResponseSchema])
 async def get_all_images_by_admin(
     user_id: int,
     session: AsyncSession = Depends(get_conn_db),
-    _ : User = role_deps.admin_moderator(),
+    current_user: User = role_deps.admin_only(),
 ):
     """
     Get all images uploaded by a specific user (admin only).
@@ -146,7 +146,7 @@ async def get_all_images_by_admin(
             detail=f"User with ID {user_id} not found."
         )
 
-    # get all images by user_id
+    # get images by user_id
     images = await crud_images.get_images_by_user_id(user_id, session)
     if not images:
         raise HTTPException(
@@ -165,7 +165,6 @@ async def get_all_images_by_admin(
         )
         for image in images
     ]
-
 
 @router.delete(
         "/delete_image/{image_id}/", 
@@ -236,10 +235,14 @@ async def get_image_info(
     """
     get info about image
     """
+
     image_object = await crud_images.get_image_obj(
         image_id=image_id,
-        current_user_id=current_user.id,
         session=session,
+    )
+    crud_images.check_permission(
+        image_obj=image_object, 
+        current_user_id=current_user.id 
     )
     
     return sch.ImageResponseSchema(

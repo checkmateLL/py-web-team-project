@@ -1,12 +1,12 @@
 from fastapi import (
-    APIRouter,
-    Body,
-    File,
-    HTTPException,
-    UploadFile,
-    status,
-    Depends,
-    Query,
+    APIRouter, 
+    Body, 
+    File, 
+    HTTPException, 
+    UploadFile, 
+    status, 
+    Depends, 
+    Query
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
@@ -20,8 +20,7 @@ from app.database.models import User
 from app.repository.images import crud_images
 from app.services.image_service import CloudinaryService
 
-router = APIRouter(tags=["images"])
-
+router = APIRouter(tags=['images'])
 
 @router.post("/upload_image")
 async def upload_image_endpoint(
@@ -29,61 +28,74 @@ async def upload_image_endpoint(
     file: UploadFile = File(...),
     tags: list[str] = Query(default_factory=list),
     session: AsyncSession = Depends(get_conn_db),
-    current_user: User = role_deps.all_users(),
-    cloudinary_service: CloudinaryService = Depends(CloudinaryService),
+    current_user: User =  role_deps.all_users(),
+    cloudinary_service: CloudinaryService = Depends(CloudinaryService)
 ):
     """
-    Upload image, added descriptions and regs
+        Upload image, added descriptions and regs
 
-    Args:
-        description
-        file
-        tags
-        session
-        current_user
-        cloudinary_service
-    Returns
-        ImageResponseSchema
-    Raises
-        HTTPException: If count tegs match 5.
-        HTTPException: If Cloudinary not return `secure_url` &
-        `public_id`.
-        HTTPException: IF file not image.
-    """
+        Args:
+            description
+            file
+            tags
+            session
+            current_user
+            cloudinary_service
+        Returns
+            ImageResponseSchema
+        Raises
+            HTTPException: If count tegs match 5.
+            HTTPException: If Cloudinary not return `secure_url` &
+            `public_id`.
+            HTTPException: IF file not image.
+    """  
     if tags and len(tags) > 5:
-        raise HTTPException(status_code=400, detail="You can only add up to 5 tags.")
+        raise HTTPException(
+            status_code=400, 
+            detail="You can only add up to 5 tags."
+        )
 
     allowed_types = {"image/jpeg", "image/png", "image/gif"}
     if file.content_type not in allowed_types:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid file type. Only JPG, PNG and GIF",
+            detail='Invalid file type. Only JPG, PNG and GIF'
         )
 
-    upload_result = await cloudinary_service.upload_image(file, current_user.email)
+    upload_result = await cloudinary_service.upload_image(
+        file=file, 
+        folder=current_user.email
+    )
     secure_url = upload_result.get("secure_url")
     public_id = upload_result.get("public_id")
 
     if not secure_url or not public_id:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Cloudinary did not return required data.",
+            detail="Cloudinary did not return required data."
         )
 
-    tags_object = await crud_images.handle_tags(tags, session)
-
-    image_object = await crud_images.create_image(
-        secure_url, description, current_user.id, public_id, session
+    tags_object = await crud_images.handle_tags(
+        tags_names=tags, 
+        session=session
     )
 
-    await crud_images._add_tag_to_image(image_object, tags_object, session)
+    image_object = await crud_images.create_image(
+        url=secure_url,
+        description=description,
+        user_id=current_user.id,
+        public_id=public_id,
+        session=session
+    )
+    
+    await crud_images._add_tag_to_image(image_object,tags_object,session)
 
     return sch.ImageResponseSchema(
         id=image_object.id,
         description=image_object.description,
         image_url=image_object.image_url,
         user_id=image_object.user_id,
-        tags=[tag.name for tag in tags_object],
+        tags=[tag.name for tag in tags_object] 
     )
 
 @router.delete(
@@ -91,10 +103,9 @@ async def upload_image_endpoint(
         status_code=status.HTTP_204_NO_CONTENT
     )
 async def delete_image(
-    image_id: int,
-    session: AsyncSession = Depends(get_conn_db),
-    current_user: User = role_deps.all_users(),
-):
+    image_id: int, 
+    session: AsyncSession = Depends(get_conn_db), 
+    current_user: User = role_deps.all_users()):
     """
     Deleta image by ID
     """
@@ -103,14 +114,22 @@ async def delete_image(
 
         if not deleted:
             raise HTTPException(
-                status_code=404, detail="Image not found or access denied"
+                status_code=404, 
+                detail="Image not found or access denied"
             )
-        return {"message": "Image deleted successfully"}
+        return {
+            "message": "Image deleted successfully"
+        }
     except SQLAlchemyError as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Database error: {str(e)}"
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
-
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Unexpected error: {str(e)}"
+        )
 
 @router.post('/{image_id}/add_tags')
 async def add_tags_to_image(
@@ -124,10 +143,14 @@ async def add_tags_to_image(
     """
     user_image = await crud_images.get_image_obj(
         image_id=image_id,
-        current_user_id=current_user.id,
         session=session
         )
     
+    crud_images.check_permission(
+        image_obj=user_image, #+
+        current_user_id=current_user.id #+
+    )
+
     existing_tags = {tag.name for tag in user_image.tags}
     new_tags = set(tags) - existing_tags
     if len(existing_tags) + len(new_tags) > 5:
@@ -157,10 +180,14 @@ async def get_image_info(
     """
     get info about image
     """
+
     image_object = await crud_images.get_image_obj(
         image_id=image_id,
-        current_user_id=current_user.id,
         session=session,
+    )
+    crud_images.check_permission(
+        image_obj=image_object, 
+        current_user_id=current_user.id 
     )
     
     return sch.ImageResponseSchema(
@@ -172,17 +199,20 @@ async def get_image_info(
     )
 
 @router.put(
-    "/update_image_description/{image_id}/",
-    response_model=sch.ImageResponseUpdateSchema,
-)
+        "/update_image_description/{image_id}/",
+        response_model=sch.ImageResponseUpdateSchema
+    )
 async def update_image_description(
-    image_id: int,
-    description: str,
-    session: AsyncSession = Depends(get_conn_db),
-    current_user: User = role_deps.all_users(),
-):
+    image_id: int, 
+    description: str, 
+    session: AsyncSession = Depends(get_conn_db), 
+    current_user: User = role_deps.all_users()
+    ):
     update_image_object = await crud_images.update_image_description(
-        image_id, description, session, current_user
+        image_id, 
+        description, 
+        session, 
+        current_user
     )
 
     return sch.ImageResponseUpdateSchema(
@@ -190,19 +220,26 @@ async def update_image_description(
         description=update_image_object.description,
         image_url=update_image_object.image_url,
         user_id=update_image_object.user_id,
+        
     )
 
 @router.get("/get_image/{image_id}/")
 async def get_image_by_id(
-    image_id: int,
+    image_id: int, 
     session: AsyncSession = Depends(get_conn_db),
-    current_user: User = role_deps.all_users(),
+    _: User = role_deps.all_users(),
 ):
     """find url by ImageId"""
-    image_object = await crud_images.get_image_url(image_id, session)
+    image_object= await crud_images.get_image_url(
+        image_id, 
+        session)
     if not image_object:
-        raise HTTPException(status_code=404, detail="Image not found")
+        raise HTTPException(
+            status_code=404, 
+            detail="Image not found"
+    )
     return RedirectResponse(url=image_object.image_url)
+
 
 @router.post(
         "/transform_image/{image_id}/", 
@@ -210,13 +247,9 @@ async def get_image_by_id(
         status_code=status.HTTP_200_OK
     )
 async def transform_image(
-    image_id: int,
-    crop: bool = Body(False),
-    blur: bool = Body(False),
-    circular: bool = Body(False),
-    grayscale: bool = Body(False),
-    transformation_params: dict | None = Body(default=None),
-    session: AsyncSession = Depends(get_conn_db),
+    image_id: int, 
+    transformation_params: dict = Body(...),
+    session: AsyncSession = Depends(get_conn_db), 
     current_user: User = role_deps.all_users(),
     cloudinary_service: CloudinaryService = Depends(CloudinaryService),
     qr_service: ImageGenerator = Depends(get_image_generator)
@@ -225,16 +258,13 @@ async def transform_image(
     Transform image using given transformation parameters and generate QR code.
 
     Args:
-        image_id (int): ID of the image to transform
-        crop (bool): Apply 200x200 crop
-        blur (bool): Apply blur effect
-        circular (bool): Make image circular
-        grayscale (bool): Convert to grayscale
-        transformation_params (dict, optional): Custom transformation parameters that override individual flags
-        session (AsyncSession): Database session
-        current_user (User): Current authenticated user
-        cloudinary_service (CloudinaryService): Service for image transformation
-        qr_service (ImageGenerator): Service for QR code generation
+        image_id (int): ID of the image to transform.
+        transformation_params (dict): Dictionary with parameters for the 
+        image transformation.
+        session (AsyncSession): The database session to interact with the database.
+        current_user (User): The user making the request.
+        cloudinary_service (CloudinaryService): Service for image transformation.
+        qr_service (ImageGenerator): Service for generating a QR code for the image.
 
     Returns:
         TransformationResponseSchema: Contains transformation URL, QR code URL,
@@ -245,29 +275,30 @@ async def transform_image(
     """
     current_image = await crud_images.get_image_obj(
         image_id=image_id,
-        current_user_id=current_user.id,
         session=session
     )
-    transf_result = await cloudinary_service.transform_image(
+    
+    crud_images.check_permission(
+        image_obj=current_image,
+        current_user_id=current_user.id
+    )
+
+    ts_url = await cloudinary_service.transform_image(
         image=current_image,
         transformation_params=transformation_params,
-        crop=crop,
-        blur=blur,
-        circular=circular,
-        grayscale=grayscale
     )
-    qrcode_url = qr_service.generate_qr_code(transf_result.get('transformed_url'))
+    qrcode_url = qr_service.generate_qr_code(current_image.image_url)
 
     data = await crud_images.create_transformed_images(
-        transformed_url=transf_result.get('transformed_url'),
+        transformed_url=ts_url,
         qr_code_url=qrcode_url,
         image_id=current_image.id,
         session=session
     )
     return sch.TransformationResponseSchema(**data)
 
-@router.get("/get_all_images_by_user/", response_model=list[sch.ImageResponseSchema])
-async def get_all_images(
+@router.get("/my_images/", response_model=list[sch.ImageResponseSchema])
+async def get_user_images(
     session: AsyncSession = Depends(get_conn_db),
     current_user: User = role_deps.all_users(),
 ):
@@ -294,6 +325,51 @@ async def get_all_images(
             image_url=image.image_url,
             user_id=image.user_id,
             tags=[tag.name for tag in image.tags],
+            average_rating=getattr(image, 'average_rating', 0.0),
+            created_at=getattr(image, 'created_at', datetime.now())
         )
         for image in images
     ]
+
+@router.get("/search_images/", response_model=list[sch.ImageResponseSchema])
+async def search_images(
+    query: str = Query(None, description="Search by description"),
+    tag: str = Query(None, description="Filter by tag"),
+    order_by: str = Query("date", description="Sort by 'date' or 'rating'"),
+    session: AsyncSession = Depends(get_conn_db),
+    current_user: User = role_deps.all_users(),
+):
+    """
+    Search for images by description or tag.
+    Ability to sort by rating or upload date.
+    """
+    images = await crud_images.search_images(query, tag, order_by, session)
+    return [sch.ImageResponseSchema(
+        id=img.id,
+        description=img.description,
+        image_url=img.image_url,
+        user_id=img.user_id,
+        tags=[tag.name for tag in img.tags],
+        average_rating=img.average_rating,
+        created_at=img.created_at
+    ) for img in images]
+
+@router.get("/search_by_user/", response_model=list[sch.ImageResponseSchema])
+async def search_images_by_user(
+    username: str = Query(..., description="Username to search images"),
+    session: AsyncSession = Depends(get_conn_db),
+    current_user: User = role_deps.moderators_and_admins(),
+):
+    """
+    Search images by user (available to moderators and administrators).
+    """
+    images = await crud_images.search_by_user(username, session)
+    return [sch.ImageResponseSchema(
+        id=img.id,
+        description=img.description,
+        image_url=img.image_url,
+        user_id=img.user_id,
+        tags=[tag.name for tag in img.tags],
+        average_rating=getattr(img, 'average_rating', 0.0),
+        created_at=getattr(img, 'created_at', datetime.now())
+    ) for img in images]
