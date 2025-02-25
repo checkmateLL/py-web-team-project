@@ -10,7 +10,7 @@ import app.schemas as sch
 
 router = APIRouter(tags=['search'])
 
-@router.get("/images/", response_model=list[sch.ImageResponseSchema])
+@router.get("/search/images/", response_model=list[sch.ImageResponseSchema])
 async def search_images(
     query: str = Query(None, description="Search by description"),
     tag: str = Query(None, description="Filter by tag"),

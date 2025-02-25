@@ -195,7 +195,7 @@ async def search_images_by_username(
 async def delete_rating(
     rating_id: int, 
     session: AsyncSession = Depends(get_conn_db), 
-    current_user: User = role_deps.admin_moderator()
+    _: User = role_deps.admin_moderator()
 ):
     """
     Delete rating(Only moderators and admins).

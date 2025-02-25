@@ -3,6 +3,7 @@ from sqlalchemy.future import select
 from fastapi import HTTPException, status
 from app.database.models import Rating, Image
 from sqlalchemy.sql import func
+from sqlalchemy.exc import SQLAlchemyError
 from abc import ABC, abstractmethod
 
 from app.repository.images import crud_images
@@ -209,28 +210,38 @@ class RatingCrud(BaseRatingCrud):
             )
         return rating
         
-    async def delete_rating(self, rating_id:int, session: AsyncSession):
+    async def delete_rating(
+            self, rating_id:int, 
+            session: AsyncSession,
+            detail=f'An error occurred while deleting the rating.'
+            ):
         """
         Delete rating (available to moderators and administrators).
         """
-        rating_object = await self._get_rating_object(rating_id, session)
-        await session.delete(rating_object)
+        try:
+            rating_object = await self._get_rating_object(rating_id, session)
+            image_id = rating_object.image_id
 
-        image = await crud_images.get_image_obj(
-            rating_object.image_id,
-            session
-        )
-        
-        await session.commit()
-        
-        await self._update_average_rating(
-            image=image,
-            image_id=rating_object.image_id,
-            session=session
-        )
+            await session.delete(rating_object)
+            await session.commit()
 
-        return {
-            "message": "Rating deleted successfully"
-        }
+            image = await crud_images.get_image_obj(
+                image_id,
+                session
+            )
+            await self._update_average_rating(
+                image=image,
+                image_id=image_id,
+                session=session
+            )
 
+            return {
+                "message": "Rating deleted successfully"
+            }
+        except SQLAlchemyError:
+            await session.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=detail
+            )
 crud_ratings = RatingCrud()

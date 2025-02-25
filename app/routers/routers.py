@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.routers import auth, images, comments, admin_panel, search, ratings
+from app.routers import auth, images, comments, admin_panel, search, ratings, users
 
 api_router = APIRouter(prefix='/app')
 
@@ -31,5 +31,10 @@ api_router.include_router(
 api_router.include_router(
     ratings.router,
     tags=['ratings']
+)
+
+api_router.include_router(
+    users.router,
+    tags=['users']
 )
 
