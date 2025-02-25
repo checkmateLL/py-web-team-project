@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import (
     APIRouter, 
     Body, 
@@ -95,6 +96,7 @@ async def upload_image_endpoint(
         description=image_object.description,
         image_url=image_object.image_url,
         user_id=image_object.user_id,
+        created_at=image_object.created_at,
         tags=[tag.name for tag in tags_object] 
     )
 
@@ -147,8 +149,8 @@ async def add_tags_to_image(
         )
     
     crud_images.check_permission(
-        image_obj=user_image, #+
-        current_user_id=current_user.id #+
+        image_obj=user_image, 
+        current_user_id=current_user.id 
     )
 
     existing_tags = {tag.name for tag in user_image.tags}
@@ -167,6 +169,7 @@ async def add_tags_to_image(
         description=user_image.description,
         image_url=user_image.image_url,
         user_id=user_image.user_id,
+        created_at=user_image.created_at,
         tags=[tag.name for tag in user_image.tags] 
     )
 
@@ -195,6 +198,7 @@ async def get_image_info(
         description=image_object.description,
         image_url=image_object.image_url,
         user_id=image_object.user_id,
+        created_at=image_object.created_at,
         tags=[tag.name for tag in image_object.tags] 
     )
 
@@ -248,7 +252,7 @@ async def get_image_by_id(
     )
 async def transform_image(
     image_id: int, 
-    transformation_params: dict = Body(...),
+    transformation_params: sch.TransformationParameters = Body(...),
     session: AsyncSession = Depends(get_conn_db), 
     current_user: User = role_deps.all_users(),
     cloudinary_service: CloudinaryService = Depends(CloudinaryService),
@@ -281,12 +285,17 @@ async def transform_image(
     crud_images.check_permission(
         image_obj=current_image,
         current_user_id=current_user.id
+        
     )
 
     ts_url = await cloudinary_service.transform_image(
         image=current_image,
-        transformation_params=transformation_params,
+        crop=transformation_params.crop,
+        blur=transformation_params.blur,
+        circular=transformation_params.circular,
+        grayscale=transformation_params.grayscale
     )
+
     qrcode_url = qr_service.generate_qr_code(current_image.image_url)
 
     data = await crud_images.create_transformed_images(
@@ -295,7 +304,7 @@ async def transform_image(
         image_id=current_image.id,
         session=session
     )
-    return sch.TransformationResponseSchema(**data)
+    return data
 
 @router.get("/my_images/", response_model=list[sch.ImageResponseSchema])
 async def get_user_images(
@@ -330,46 +339,3 @@ async def get_user_images(
         )
         for image in images
     ]
-
-@router.get("/search_images/", response_model=list[sch.ImageResponseSchema])
-async def search_images(
-    query: str = Query(None, description="Search by description"),
-    tag: str = Query(None, description="Filter by tag"),
-    order_by: str = Query("date", description="Sort by 'date' or 'rating'"),
-    session: AsyncSession = Depends(get_conn_db),
-    current_user: User = role_deps.all_users(),
-):
-    """
-    Search for images by description or tag.
-    Ability to sort by rating or upload date.
-    """
-    images = await crud_images.search_images(query, tag, order_by, session)
-    return [sch.ImageResponseSchema(
-        id=img.id,
-        description=img.description,
-        image_url=img.image_url,
-        user_id=img.user_id,
-        tags=[tag.name for tag in img.tags],
-        average_rating=img.average_rating,
-        created_at=img.created_at
-    ) for img in images]
-
-@router.get("/search_by_user/", response_model=list[sch.ImageResponseSchema])
-async def search_images_by_user(
-    username: str = Query(..., description="Username to search images"),
-    session: AsyncSession = Depends(get_conn_db),
-    current_user: User = role_deps.moderators_and_admins(),
-):
-    """
-    Search images by user (available to moderators and administrators).
-    """
-    images = await crud_images.search_by_user(username, session)
-    return [sch.ImageResponseSchema(
-        id=img.id,
-        description=img.description,
-        image_url=img.image_url,
-        user_id=img.user_id,
-        tags=[tag.name for tag in img.tags],
-        average_rating=getattr(img, 'average_rating', 0.0),
-        created_at=getattr(img, 'created_at', datetime.now())
-    ) for img in images]

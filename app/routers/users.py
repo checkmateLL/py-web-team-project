@@ -15,7 +15,7 @@ from app.database.models import User
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(prefix="/users")
 
 @router.get(
     "/{username}", 
@@ -43,7 +43,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 )
 async def get_user_profile(
     username: str = Path(..., min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$"),
-    current_user: User = role_deps.all_users(),
+    _: User = role_deps.all_users(),
     db: AsyncSession = Depends(get_conn_db)
 ):
     """Get public profile information for any user"""
@@ -174,8 +174,8 @@ async def update_my_profile(
         
         # Check if email is changing and ensure the new email is not already registered.
         if profile_update.email and profile_update.email != current_user.email:
-            existing_user = await crud_users.exist_user(profile_update.email, db)
-            if existing_user:
+            email_exists = await crud_users.exist_user(profile_update.email, db)
+            if email_exists:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Email already registered"
