@@ -288,7 +288,7 @@ class ImageCrud(CrudTags):
         
         try:
             new_transformation = Transformation(
-                transformation_url=transformed_url,
+                transformation_url=transformed_url['transformed_url'],
                 qr_code_url=qr_code_url,
                 image_id=image_id
             )
