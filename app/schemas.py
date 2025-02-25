@@ -133,8 +133,8 @@ class ImageResponseSchema(BaseModel):
     owner_id: int = Field(..., alias="user_id")
     tags: list
     average_rating: Optional[float] = 0.0
-    created_at: datetime
-    
+    #created_at: datetime
+    created_at: Optional[datetime] = Field(default_factory=datetime.now)
     model_config = ConfigDict(
         from_attributes=True
     )
@@ -154,7 +154,7 @@ class TransformationParameters(BaseModel):
     blur: bool = False
     circular: bool = False
     grayscale: bool = False
-    
+    transformation_params: dict = {}
     model_config = ConfigDict(
         json_schema_extra = {
             "example": {

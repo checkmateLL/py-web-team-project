@@ -170,7 +170,7 @@ async def get_all_images_by_admin(
         "/delete_image/{image_id}/", 
         status_code=status.HTTP_204_NO_CONTENT
     )
-async def delete_image(
+async def delete_image_admin(
     image_id: int,
     session: AsyncSession = Depends(get_conn_db),
     current_user: User = role_deps.admin_moderator(),
@@ -179,7 +179,7 @@ async def delete_image(
     Deleta image by ID
     """
     try:
-        deleted = await crud_images.delete_image(image_id, session, current_user)
+        deleted = await crud_images.delete_image_admin(image_id, session, current_user)
 
         if not deleted:
             raise HTTPException(

@@ -225,6 +225,24 @@ class ImageCrud(CrudTags):
             return True
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
+        
+    async def delete_image_admin(
+            self,
+            image_id: int, 
+            session: AsyncSession, 
+            current_user: User
+        ):
+        try:
+            
+            image_obj = await self.get_image_obj(image_id,session)
+            
+            cloudinary.uploader.destroy(image_obj.public_id)
+
+            await session.delete(image_obj)
+            await session.commit()
+            return True
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
     async def get_image_url(
             self,

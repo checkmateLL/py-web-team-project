@@ -248,7 +248,7 @@ async def get_image_by_id(
     )
 async def transform_image(
     image_id: int, 
-    transformation_params: dict = Body(...),
+    transformation_params: sch.TransformationParameters = Body(...),
     session: AsyncSession = Depends(get_conn_db), 
     current_user: User = role_deps.all_users(),
     cloudinary_service: CloudinaryService = Depends(CloudinaryService),
@@ -358,7 +358,7 @@ async def search_images(
 async def search_images_by_user(
     username: str = Query(..., description="Username to search images"),
     session: AsyncSession = Depends(get_conn_db),
-    current_user: User = role_deps.moderators_and_admins(),
+    _ : User = role_deps.admin_moderator(),
 ):
     """
     Search images by user (available to moderators and administrators).
