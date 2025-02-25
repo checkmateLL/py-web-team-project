@@ -3,10 +3,85 @@ from sqlalchemy.future import select
 from fastapi import HTTPException, status
 from app.database.models import Rating, Image
 from sqlalchemy.sql import func
+from abc import ABC, abstractmethod
 
 from app.repository.images import crud_images
 
-class RatingCrud:
+class BaseRatingCrud(ABC):
+
+    @abstractmethod
+    async def _update_average_rating(
+        self,
+        image: Image,
+        image_id: int,
+        session: AsyncSession
+    ):
+        """Update average rating for image."""
+        ...
+    
+    @abstractmethod
+    async def _create_rating(
+        self,
+        image_id: int,
+        user_id: int,
+        value: int,
+        session: AsyncSession
+    ):
+        """Create a rating object."""
+        ...
+    
+    @abstractmethod
+    async def _get_average_rating(
+        self,
+        image_id: int,
+        session: AsyncSession
+    ) -> float:
+        """Get average rating for image."""
+        ...
+    
+    @abstractmethod
+    async def _get_existing_rating(
+        self,
+        image_id: int,
+        user_id: int,
+        session: AsyncSession,
+        detail: str
+    ):
+        """Get existing rating for image."""
+        ...
+    
+    @abstractmethod
+    async def _get_rating_object(
+        self,
+        rating_id: int,
+        session: AsyncSession,
+        detail: str
+    ):
+        """Get rating object by ID."""
+        ...
+    
+    @abstractmethod
+    async def add_rating(
+        self,
+        image_id: int,
+        user_id: int,
+        value: int,
+        session: AsyncSession
+    ):
+        """Add a rating to an image."""
+        ...
+    
+    @abstractmethod
+    async def delete_rating(
+        self,
+        rating_id: int,
+        session: AsyncSession
+    ):
+        """Delete a rating."""
+        ...
+
+
+class RatingCrud(BaseRatingCrud):
     
     async def _update_average_rating(
         self,
@@ -132,6 +207,7 @@ class RatingCrud:
                 status_code=404, 
                 detail=detail
             )
+        return rating
         
     async def delete_rating(self, rating_id:int, session: AsyncSession):
         """
@@ -139,6 +215,11 @@ class RatingCrud:
         """
         rating_object = await self._get_rating_object(rating_id, session)
 
+        if rating_object is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f'Rating with id {rating_id} not found.'
+            )
         await session.delete(rating_object)
 
         image = await crud_images.get_image_obj(
