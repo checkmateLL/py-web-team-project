@@ -8,6 +8,24 @@ class RegisterUser(BaseModel):
     email: EmailStr
     password: str
 
+    model_config = ConfigDict(
+        json_schema_extra = {
+            "example": {
+                "user_name": "john_doe",
+                "email": "john@example.com",
+                "password": "123"
+            }
+        }
+    )
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        if value and len(value) < 6:
+            raise ValueError("Password must be at least 6 characters long")
+        return value
+
+
 class ResponseUser(BaseModel):
     id: int
     username: str
@@ -51,7 +69,16 @@ class UserProfileResponse(BaseModel):
     )
 
 class UserProfileEdit(BaseModel):
-    username: Optional[Annotated[str, StringConstraints(min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")]] = None
+    username: Optional[
+        Annotated[
+            str, 
+            StringConstraints(
+                min_length=3, 
+                max_length=50, 
+                pattern="^[a-zA-Z0-9_-]+$"
+                )
+            ]
+        ] = None
     email: Optional[EmailStr] = None
     password: Optional[str] = None
     bio: Optional[Annotated[str, StringConstraints(max_length=500)]] = None
