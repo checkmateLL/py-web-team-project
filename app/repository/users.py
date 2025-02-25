@@ -6,7 +6,7 @@ from typing import Optional
 
 from app.config import RoleSet
 from app.services.security.secure_password import Hasher
-from app.database.models import User, Image, Comment, Rating
+from app.database.models import Comment, Image, Rating, User
 from app.services.email_service import EmailService
 from fastapi import HTTPException, status
 
@@ -162,7 +162,7 @@ class UserCrud:
         password_hash: Optional[str] = None,
         bio: str | None = None,
         avatar_url: str | None = None        
-    ) -> User:
+    ) -> User | None:
         """Update user profile"""
         try:
             query = select(User).filter(User.id == user_id)

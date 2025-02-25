@@ -45,11 +45,14 @@ class Image(BaseModel):
     image_url: Mapped[str] = mapped_column(String, nullable=False)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
     public_id: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    average_rating: Mapped[float] = mapped_column(Float, default=0.0)
 
     user: Mapped['User'] = relationship('User', back_populates='images', lazy='selectin')
     tags: Mapped[list['Tag']] = relationship('Tag', secondary=image_tag_association, back_populates='images', lazy='selectin')
     comments: Mapped[list['Comment']] = relationship('Comment', back_populates='image', lazy='selectin')
     transformations: Mapped[list['Transformation']] = relationship('Transformation', back_populates='image',lazy='selectin')
+    ratings: Mapped[list['Rating']] = relationship('Rating', back_populates='image', lazy='selectin')
 
 class Tag(BaseModel):
     __tablename__ = 'tags'

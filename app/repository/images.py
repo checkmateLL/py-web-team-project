@@ -1,4 +1,4 @@
-from sqlalchemy import insert
+from sqlalchemy import insert, select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from fastapi import HTTPException, status
@@ -254,12 +254,6 @@ class ImageCrud(CrudTags):
             image_id,
             session:AsyncSession):
         
-        if not transformed_url or not qr_code_url:
-            raise HTTPException(
-                status_code=400,
-                detail="Transformed URL or QR code URL is missing"
-            )
-        
         try:
             new_transformation = Transformation(
                 transformation_url=transformed_url,
@@ -288,5 +282,97 @@ class ImageCrud(CrudTags):
                 status_code=500,
                 detail=f"An unexpected error occurred: {str(e)}"
             )
+
+        
+    async def search_images(
+            self,
+            query: str = None,
+            tag: str = None,
+            order_by: str = "date",
+            session: AsyncSession = None
+    ):
+        """
+        Search for images by description or tag.
+        Ability to sort by rating or upload date.
+        """
+        try:
+            stmt = select(Image)
+
+            if query: #фільтр за ключовим словом
+                stmt = stmt.filter(Image.description.ilike(f"%{query}%"))
+
+            if tag: #фільтр за тегом
+                stmt = stmt.join(Image.tags).filter(Tag.name == tag)
+
+            if order_by == "rating":
+                stmt = stmt.order_by(desc(Image.average_rating))
+            else:
+                stmt = stmt.order_by(desc(Image.created_at))
+
+            result = await session.execute(stmt)
+            images = result.scalars().all()
+
+            return images
+    
+        except Exception as err:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error searching images: {str(err)}"
+            )        
+
+    async def get_images_by_user_id(
+            self,
+            user_id: int, 
+            session: AsyncSession
+            ):
+        """
+        Get all images uploaded by a specific user.
+
+        Args:
+            user_id: ID of the user.
+            session: Database session.
+
+        Returns:
+            List of Image objects.
+        """
+        result = await session.execute(select(Image).where(Image.user_id == user_id))
+        return result.scalars().all()
+
+    async def get_all_images(
+            self, 
+            session: AsyncSession
+            ):
+        """
+        Get all images uploaded by all users.
+
+        Args:
+            session: Database session.
+
+        Returns:
+            List of Image objects.
+        """
+        result = await session.execute(select(Image))
+        return result.scalars().all()
+
+    async def search_by_user(
+            self,
+            username: str,
+            session: AsyncSession = None 
+    ):
+        """
+        Search images by user (available to moderators and administrators).
+        """
+        try:
+            result = await session.execute(
+                select(Image).join(User).filter(User.username.ilike(f"{username}"))
+            )
+            images = result.scalars().all()
+            return images
+        
+        except Exception as err:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error searching images by user: {str(err)}"
+            )        
 
 crud_images = ImageCrud()

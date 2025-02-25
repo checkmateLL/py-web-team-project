@@ -5,6 +5,8 @@ from app.database.models import User
 from app.services.security.auth_service import role_deps
 from app.repository.users import crud_users
 from app.database.connection import get_conn_db
+import app.schemas as sch
+from app.repository.images import crud_images
 
 router = APIRouter(prefix='/admin_panel')
 
@@ -116,3 +118,48 @@ async def activate_user(
     return Response(
         status_code=status.HTTP_204_NO_CONTENT
     )
+
+@router.get("/get_all_images_by_admin/{user_id}/", response_model=list[sch.ImageResponseSchema])
+async def get_all_images_by_admin(
+    user_id: int,
+    session: AsyncSession = Depends(get_conn_db),
+    current_user: User = role_deps.admin_only(),
+):
+    """
+    Get all images uploaded by a specific user (admin only).
+
+    - **user_id**: ID of the user whose images you want to retrieve.
+    - **Requires admin privileges**.
+
+    Returns:
+        List of ImageResponseSchema objects containing image details.
+
+    Raises:
+        HTTPException: If the user is not found or has no images.
+    """
+    user_exists = await crud_users.get_user_by_id(user_id, session)
+    if not user_exists:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with ID {user_id} not found."
+        )
+
+    # get images by user_id
+    images = await crud_images.get_images_by_user_id(user_id, session)
+    if not images:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No images found for user with ID {user_id}."
+        )
+
+    # return images and supporting info
+    return [
+        sch.ImageResponseSchema(
+            id=image.id,
+            description=image.description,
+            image_url=image.image_url,
+            user_id=image.user_id,
+            tags=[tag.name for tag in image.tags],
+        )
+        for image in images
+    ]

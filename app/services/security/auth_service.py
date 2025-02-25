@@ -72,8 +72,15 @@ class AuthService(ConstructionAuthService):
     async def logout_set(
             self,
             token:str = Depends(oauth2_scheme),
-            token_blacklist:TokenBlackList = Depends(get_token_blacklist)
+            token_blacklist: TokenBlackList = Depends(get_token_blacklist)
     ):
+            
+        if await token_blacklist.is_token_blacklisted(token):
+            raise HTTPException(
+                status_code=401,
+                detail='Invalid token'
+            )
+        
         try:
             pyload = await token_manager.decode_token(
                 token_type=TokenType.ACCESS,
