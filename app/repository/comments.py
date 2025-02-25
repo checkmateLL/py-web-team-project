@@ -177,5 +177,4 @@ class CommentCrud:
         result = await session.execute(query)
         return result.scalars().all()
 
-# Initialize the CRUD instance for comments
 crud_comments = CommentCrud()

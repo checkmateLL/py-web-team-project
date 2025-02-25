@@ -2,9 +2,9 @@ from sqlalchemy import insert, select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from fastapi import HTTPException, status
-import cloudinary # type: ignore
-import cloudinary.uploader # type: ignore
-import cloudinary.api # type: ignore
+import cloudinary
+import cloudinary.uploader 
+import cloudinary.api
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -26,6 +26,19 @@ class CrudTags:
                 detail=detail
             )
         
+    @staticmethod
+    def _has_permission(
+        image_obj_user_id: 'Image',
+        current_user_id: int,
+        detail: str = 'You dont have permission to perform this action'
+    ):
+        if image_obj_user_id == current_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=detail
+            )
+        
+
     async def _get_all_tags(
             self,
             session : AsyncSession
@@ -53,7 +66,8 @@ class CrudTags:
     async def _select_uniqal(
             self,
             tags_name : list[str],
-            existings_tags : dict[str, Tag]
+            existings_tags : dict[str, Tag],
+            detail='Tags must by a list of strings'
     ):
         """
         Return new tag with not find in database
@@ -61,7 +75,7 @@ class CrudTags:
         if not isinstance(tags_name, list):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail='Tags must by a list of strings'
+                detail=detail
             )
         new_tags_name = set(tags_name) - set(existings_tags.keys())
         return new_tags_name
@@ -187,8 +201,8 @@ class ImageCrud(CrudTags):
             image_obj = await self.get_image_obj(image_id, session)
            
             self.check_permission(
-                image_obj=image_obj, #+
-                current_user_id=current_user.id #+
+                image_obj=image_obj, 
+                current_user_id=current_user.id 
             )
             
             image_obj.description = description
@@ -247,6 +261,24 @@ class ImageCrud(CrudTags):
             )
         return image
     
+    async def get_images_by_user_id(
+            self,
+            user_id: int, 
+            session: AsyncSession
+            ):
+        """
+        Get all images uploaded by a specific user.
+
+        Args:
+            user_id: ID of the user.
+            session: Database session.
+
+        Returns:
+            List of Image objects.
+        """
+        result = await session.execute(select(Image).where(Image.user_id == user_id))
+        return result.scalars().all()
+    
     async def create_transformed_images(
             self, 
             transformed_url,
@@ -286,10 +318,10 @@ class ImageCrud(CrudTags):
         
     async def search_images(
             self,
-            query: str = None,
-            tag: str = None,
+            session: AsyncSession,
+            query: str|None = None,
+            tag: str|None = None,
             order_by: str = "date",
-            session: AsyncSession = None
     ):
         """
         Search for images by description or tag.
@@ -298,10 +330,10 @@ class ImageCrud(CrudTags):
         try:
             stmt = select(Image)
 
-            if query: #фільтр за ключовим словом
+            if query: # filter by key_word description
                 stmt = stmt.filter(Image.description.ilike(f"%{query}%"))
 
-            if tag: #фільтр за тегом
+            if tag: # filter by tag
                 stmt = stmt.join(Image.tags).filter(Tag.name == tag)
 
             if order_by == "rating":
@@ -319,24 +351,6 @@ class ImageCrud(CrudTags):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error searching images: {str(err)}"
             )        
-
-    async def get_images_by_user_id(
-            self,
-            user_id: int, 
-            session: AsyncSession
-            ):
-        """
-        Get all images uploaded by a specific user.
-
-        Args:
-            user_id: ID of the user.
-            session: Database session.
-
-        Returns:
-            List of Image objects.
-        """
-        result = await session.execute(select(Image).where(Image.user_id == user_id))
-        return result.scalars().all()
 
     async def get_all_images(
             self, 
@@ -357,10 +371,10 @@ class ImageCrud(CrudTags):
     async def search_by_user(
             self,
             username: str,
-            session: AsyncSession = None 
+            session: AsyncSession
     ):
         """
-        Search images by user (available to moderators and administrators).
+        Search images by username (available to moderators and administrators).
         """
         try:
             result = await session.execute(
