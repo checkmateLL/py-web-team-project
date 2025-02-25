@@ -228,8 +228,8 @@ class ImageCrud(CrudTags):
             image_obj = await self.get_image_obj(image_id,session)
 
             self.check_permission(
-                image_obj=image_obj, #+
-                current_user_id=current_user.id #+
+                image_obj=image_obj,
+                current_user_id=current_user.id
             )
             
             cloudinary.uploader.destroy(image_obj.public_id)

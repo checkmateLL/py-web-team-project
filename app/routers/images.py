@@ -148,8 +148,8 @@ async def add_tags_to_image(
         )
     
     crud_images.check_permission(
-        image_obj=user_image, #+
-        current_user_id=current_user.id #+
+        image_obj=user_image, 
+        current_user_id=current_user.id 
     )
 
     existing_tags = {tag.name for tag in user_image.tags}
