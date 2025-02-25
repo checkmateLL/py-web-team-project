@@ -214,18 +214,15 @@ class RatingCrud(BaseRatingCrud):
         Delete rating (available to moderators and administrators).
         """
         rating_object = await self._get_rating_object(rating_id, session)
-
-        if rating_object is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f'Rating with id {rating_id} not found.'
-            )
         await session.delete(rating_object)
 
         image = await crud_images.get_image_obj(
             rating_object.image_id,
             session
         )
+        
+        await session.commit()
+        
         await self._update_average_rating(
             image=image,
             image_id=rating_object.image_id,
