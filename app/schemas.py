@@ -13,7 +13,7 @@ class RegisterUser(BaseModel):
             "example": {
                 "user_name": "john_doe",
                 "email": "john@example.com",
-                "password": "123"
+                "password": "123456"
             }
         }
     )
