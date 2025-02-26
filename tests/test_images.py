@@ -14,7 +14,7 @@ def mock_cloudinary_service():
     mock.upload_image = AsyncMock(return_value={
         "secure_url": "https://example.com/image.jpg",
         "public_id": "12345"
-    }) 
+    })
     return mock
 
 

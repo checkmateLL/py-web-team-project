@@ -2,7 +2,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Path, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
-from typing import Annotated, Optional
 import logging
 
 from app.database.connection import get_conn_db
