@@ -15,8 +15,6 @@ def mock_cloudinary_service():
         "secure_url": "https://example.com/image.jpg",
         "public_id": "12345"
     })
-    mock.destroy = AsyncMock(return_value={"result": "ok"})
- 
     return mock
 
 

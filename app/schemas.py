@@ -181,6 +181,7 @@ class TransformationParameters(BaseModel):
     blur: bool = False
     circular: bool = False
     grayscale: bool = False
+    transformation_params: dict = {}
     
     model_config = ConfigDict(
         json_schema_extra = {
@@ -188,14 +189,19 @@ class TransformationParameters(BaseModel):
                 "crop": True,
                 "blur": False,
                 "circular": True,
-                "grayscale": False
+                "grayscale": False,
+                "transformation_params": {}
             }
         }
     )
    
-         
+class TransformationURLSchema(BaseModel):
+    transformed_url: str
+    public_id: str
+    original_image_id: int
+
 class TransformationResponseSchema(BaseModel):
-    transformation_url: str
+    transformation_url: TransformationURLSchema
     qr_code_url: str
     image_id: int
 

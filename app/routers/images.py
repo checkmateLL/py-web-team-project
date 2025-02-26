@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import (
     APIRouter, 
     Body, 
@@ -251,7 +252,7 @@ async def get_image_by_id(
     )
 async def transform_image(
     image_id: int, 
-    transformation_params: dict = Body(...),
+    transformation_params: sch.TransformationParameters = Body(...),
     session: AsyncSession = Depends(get_conn_db), 
     current_user: User = role_deps.all_users(),
     cloudinary_service: CloudinaryService = Depends(CloudinaryService),
@@ -284,12 +285,17 @@ async def transform_image(
     crud_images.check_permission(
         image_obj=current_image,
         current_user_id=current_user.id
+        
     )
 
     ts_url = await cloudinary_service.transform_image(
         image=current_image,
-        transformation_params=transformation_params,
+        crop=transformation_params.crop,
+        blur=transformation_params.blur,
+        circular=transformation_params.circular,
+        grayscale=transformation_params.grayscale
     )
+
     qrcode_url = qr_service.generate_qr_code(current_image.image_url)
 
     data = await crud_images.create_transformed_images(
@@ -298,7 +304,7 @@ async def transform_image(
         image_id=current_image.id,
         session=session
     )
-    return sch.TransformationResponseSchema(**data)
+    return data
 
 @router.get("/my_images/", response_model=list[sch.ImageResponseSchema])
 async def get_user_images(
