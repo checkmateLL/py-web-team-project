@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 from fastapi.responses import RedirectResponse
 from datetime import datetime
+
 from app.database.models import User
 from app.services.security.auth_service import role_deps
 from app.repository.users import crud_users
@@ -150,7 +151,6 @@ async def get_all_images_by_admin(
             detail=f"User with ID {user_id} not found."
         )
 
-    # get images by user_id
     images = await crud_images.get_images_by_user_id(user_id, session)
     if not images:
         raise HTTPException(
@@ -158,7 +158,6 @@ async def get_all_images_by_admin(
             detail=f"No images found for user with ID {user_id}."
         )
 
-    # return images and supporting info
     return [
         sch.ImageResponseSchema(
             id=image.id,
@@ -213,34 +212,50 @@ async def delete_image_admin(
     current_user: User = role_deps.admin_moderator(),
     ):
     """
-    Deleta image by ID
+    Delete image by ID
     """
     try:
-        deleted = await crud_images.delete_image_admin(image_id, session, current_user)
-
+        deleted = await crud_images.delete_image_admin(
+            image_id, 
+            session, 
+            current_user
+        )
+    
         if not deleted:
             raise HTTPException(
-                status_code=404, detail="Image not found or access denied"
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Image not found or access denied"
             )
-        return {"message": "Image deleted successfully"}
+        return {
+            "message": "Image deleted successfully"
+        }
     except SQLAlchemyError as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Database error: {str(e)}")
+    
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Unexpected error: {str(e)}")
     
 @router.get("/get_image/{image_id}/")
 async def get_image_by_id(
     image_id: int,
     session: AsyncSession = Depends(get_conn_db),
-    _ : User = role_deps.admin_moderator(),  # Check for admin or moderator
+    _ : User = role_deps.admin_moderator(),
 ):
-    """find URL by ImageId"""
+    """
+    Find URL by ImageId.
+    """
     image_object = await crud_images.get_image_url(image_id, session)
     if not image_object:
-        raise HTTPException(status_code=404, detail="Image not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Image not found"
+        )
     return RedirectResponse(url=image_object.image_url)
     
-
 @router.put(
     "/update_image_description/{image_id}/",
     response_model=sch.ImageResponseUpdateSchema,
@@ -269,7 +284,7 @@ async def get_image_info(
     current_user:User = role_deps.admin_moderator(),
 ):
     """
-    get info about image
+    Get info about image.
     """
 
     image_object = await crud_images.get_image_obj(

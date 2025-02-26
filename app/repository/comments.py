@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 from typing import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
-
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from fastapi import HTTPException, status
