@@ -339,3 +339,26 @@ async def get_user_images(
         )
         for image in images
     ]
+
+@router.get("/search_images/", response_model=list[sch.ImageResponseSchema])
+async def search_images(
+    query: str = Query(None, description="Search by description"),
+    tag: str = Query(None, description="Filter by tag"),
+    order_by: str = Query("date", description="Sort by 'date' or 'rating'"),
+    session: AsyncSession = Depends(get_conn_db),
+    _: User = role_deps.all_users(),
+):
+    """
+    Search for images by description or tag.
+    Ability to sort by rating or upload date.
+    """
+    images = await crud_images.search_images(session ,query, tag, order_by)
+    return [sch.ImageResponseSchema(
+        id=img.id,
+        description=img.description,
+        image_url=img.image_url,
+        user_id=img.user_id,
+        tags=[tag.name for tag in img.tags],
+        average_rating=img.average_rating,
+        created_at=img.created_at
+    ) for img in images]
