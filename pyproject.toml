@@ -36,6 +36,9 @@ aiosmtplib = "^2.0.1"
 better-profanity = "^0.7"
 python-magic = "^0.4.27"
 
+[tool.mypy]
+ignore_missing_imports = true
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

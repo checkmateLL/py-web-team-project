@@ -7,6 +7,24 @@ class RegisterUser(BaseModel):
     email: EmailStr
     password: str
 
+    model_config = ConfigDict(
+        json_schema_extra = {
+            "example": {
+                "user_name": "john_doe",
+                "email": "john@example.com",
+                "password": "123456"
+            }
+        }
+    )
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        if value and len(value) < 6:
+            raise ValueError("Password must be at least 6 characters long")
+        return value
+
+
 class ResponseUser(BaseModel):
     id: int
     username: str
@@ -54,7 +72,16 @@ class UserProfileResponse(BaseModel):
         return v
 
 class UserProfileEdit(BaseModel):
-    username: Optional[Annotated[str, StringConstraints(min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")]] = None
+    username: Optional[
+        Annotated[
+            str, 
+            StringConstraints(
+                min_length=3, 
+                max_length=50, 
+                pattern="^[a-zA-Z0-9_-]+$"
+                )
+            ]
+        ] = None
     email: Optional[EmailStr] = None
     current_password: Optional[str] = None
     new_password: Optional[Annotated[str, StringConstraints(min_length=6)]] = None
@@ -138,8 +165,8 @@ class ImageResponseSchema(BaseModel):
     owner_id: int = Field(..., alias="user_id")
     tags: list
     average_rating: Optional[float] = 0.0
-    created_at: datetime
-    
+    #created_at: datetime
+    created_at: Optional[datetime] = Field(default_factory=datetime.now)
     model_config = ConfigDict(
         from_attributes=True
     )
@@ -159,21 +186,26 @@ class TransformationParameters(BaseModel):
     blur: bool = False
     circular: bool = False
     grayscale: bool = False
-    
+    transformation_params: dict = {}
     model_config = ConfigDict(
         json_schema_extra = {
             "example": {
                 "crop": True,
                 "blur": False,
                 "circular": True,
-                "grayscale": False
+                "grayscale": False,
+                "transformation_params": {}
             }
         }
     )
    
-         
+class TransformationURLSchema(BaseModel):
+    transformed_url: str
+    public_id: str
+    original_image_id: int
+
 class TransformationResponseSchema(BaseModel):
-    transformation_url: str
+    transformation_url: TransformationURLSchema
     qr_code_url: str
     image_id: int
 

@@ -22,7 +22,7 @@ from app.database.models import User
 from app.services.email_service import EmailService
 from app.config import settings
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(prefix="/users")
 logger = logging.getLogger(__name__)
 
 
@@ -52,7 +52,7 @@ logger = logging.getLogger(__name__)
 )
 async def get_user_profile(
     username: str = Path(..., min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$"),
-    current_user: User = role_deps.all_users(),
+    _: User = role_deps.all_users(),
     db: AsyncSession = Depends(get_conn_db)
 ):
     """
@@ -258,8 +258,8 @@ async def update_my_profile(
                 )
                 
         if profile_update.email and profile_update.email != current_user.email:
-            existing_user = await crud_users.exist_user(profile_update.email, db)
-            if existing_user:
+            email_exists = await crud_users.exist_user(profile_update.email, db)
+            if email_exists:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Email already registered"
