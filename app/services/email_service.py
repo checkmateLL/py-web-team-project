@@ -1,13 +1,14 @@
 import logging
 from pathlib import Path
-from typing import Dict, Optional
 from fastapi import HTTPException
 from pydantic import EmailStr
 from jinja2 import Environment, FileSystemLoader
-import aiosmtplib
+import aiosmtplib #type: ignore
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+from app.database.models import User
+from app.services.security.secure_token.manager import token_manager, TokenType
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -37,11 +38,60 @@ class EmailService:
             "MAIL_SSL_TLS": settings.MAIL_SSL_TLS,
         }        
         
-        template_dir = Path(__file__).parent.parent / 'templates'
+        template_dir = Path('/app/templates')
         self.jinja_env = Environment(
             loader=FileSystemLoader(template_dir),
             autoescape=True
         )
+
+    async def _prepea_send_change_email(self, user:User, request):
+
+        token_cahage_email = await token_manager.create_token(
+            token_type=TokenType.RESET_EMAIL,
+            data={'sub': user.email},
+        )
+        email_task = {
+            "username": user.username,
+            "host": str(request.base_url),
+            "token": token_cahage_email
+        }
+        subject = "Confirm change email"
+        template_name = "change_email_template.html"
+
+        success = await self.send_email(
+            recipient=user.email,
+            subject=subject,
+            template_name=template_name,
+            template_body=email_task
+        )
+        if success:
+            logger.info(f'Confirmation change email successfully sent to {user.email}')
+
+    
+    async def _prepea_send_change_password_email(self, user:User, request):
+
+        token_cahage_email = await token_manager.create_token(
+            token_type=TokenType.RESET_EMAIL,
+            data={'sub': user.email},
+        )
+        email_task = {
+            "username": user.username,
+            "host": str(request.base_url),
+            "token": token_cahage_email
+        }
+        subject = "Change password"
+        template_name = "reset_password_template.html"
+
+        success = await self.send_email(
+            recipient=user.email,
+            subject=subject,
+            template_name=template_name,
+            template_body=email_task
+        )
+        if success:
+            logger.info(f'Change password email successfully sent to {user.email}')
+
+
 
     async def send_password_reset_email(self, email: EmailStr, token: str) -> bool:
         """

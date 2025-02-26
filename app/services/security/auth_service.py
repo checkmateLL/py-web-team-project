@@ -109,7 +109,7 @@ class AuthService(ConstructionAuthService):
     async def get_token(
             token:str = Depends(oauth2_scheme)
     ):
-        """return access token"""
+        """return oauth2_scheme token"""
         return token
 
 class IRokeProtect(ABC):

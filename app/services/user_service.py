@@ -2,7 +2,7 @@ import redis.asyncio as redis
 from app.config import settings
 from fastapi import Depends, HTTPException, status, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-import magic
+import magic 
 
 from app.repository.users import crud_users
 from app.services.image_service import CloudinaryService

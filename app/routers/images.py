@@ -358,7 +358,7 @@ async def search_images(
 async def search_images_by_user(
     username: str = Query(..., description="Username to search images"),
     session: AsyncSession = Depends(get_conn_db),
-    current_user: User = role_deps.moderators_and_admins(),
+    current_user: User = role_deps.admin_moderator(),
 ):
     """
     Search images by user (available to moderators and administrators).
