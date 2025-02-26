@@ -12,7 +12,6 @@ class DatabaseSessionManager:
         self._session_maker: Optional[async_sessionmaker] = None
 
     async def initialize(self):
-        #ініціалізація двіжка
         if self._engine is None or self._session_maker is None:
             self._engine = create_async_engine(self._url)
             self._session_maker = async_sessionmaker(
@@ -55,7 +54,7 @@ class DatabaseSessionManager:
         finally:
             await self.close()
 
-sessionmanager = DatabaseSessionManager(settings.PG_URL)
+sessionmanager = DatabaseSessionManager(settings.SQLALCHEMY_DATABASE_URL)
 
 async def get_conn_db() -> AsyncGenerator[AsyncSession, None]:
     async with sessionmanager.lifespan():

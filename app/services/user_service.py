@@ -8,6 +8,7 @@ class RedisClient():
         self.host = settings.REDIS_HOST
         self.port = settings.REDIS_PORT
         self.db = settings.REDIS_DB
+        self.password = settings.REDIS_PASSWORD
         self.set = settings.REDIS_DECODE_RESPONSES
         self._client = None
 
@@ -17,6 +18,7 @@ class RedisClient():
                 host=self.host,
                 port=self.port,
                 db=self.db,
+                password=self.password,
                 decode_responses=self.set,
             )
         return self._client

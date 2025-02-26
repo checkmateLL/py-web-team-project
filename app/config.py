@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     PG_HOST : str =  'test'
     PG_PORT : int = 0000
     PG_URL: str = "postgresql+asyncpg://test:000000@localhost:0000/test"
-
+    SQLALCHEMY_DATABASE_URL: str = "postgresql+asyncpg://test:000000@localhost:0000/test"
     SECRET_KEY_JWT:str = '**************************************'   
     ALGORITHM: str = "******"
 
@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     REDIS_HOST : str = 'test'
     REDIS_PORT : int = 0000
     REDIS_DB : int = 0
+    REDIS_PASSWORD : str = 'test'
     REDIS_DECODE_RESPONSES : bool = True
     
     PROJECT_NAME : str = 'PhotoShare'
