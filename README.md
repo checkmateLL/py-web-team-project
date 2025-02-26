@@ -12,6 +12,10 @@ Create Image
 ```
 docker build -t py-web-team-project-web:latest .
 ```
+Fill .env
+```
+use .env.example
+```
 Create and start docker-compose
 ```
 docker-compose up -d
