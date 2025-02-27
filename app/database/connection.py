@@ -1,12 +1,9 @@
-# connect to PostgreSQL and managment database-sessia
 import contextlib
 from typing import AsyncGenerator, Optional
-
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
 from app.config import settings
-
 
 class DatabaseSessionManager:
     def __init__(self, url: str):

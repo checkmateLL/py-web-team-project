@@ -16,7 +16,7 @@ from app.services.email_service import email_service as ems
 from app.services.security.secure_token.manager import token_manager, TokenType
 from app.services.security.secure_password import Hasher
 
-router = APIRouter(prefix="/users", tags=["users"])
+router = APIRouter(prefix="/users")
 
 @router.get(
     "/{username}", 
@@ -223,8 +223,7 @@ async def update_my_profile(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Username already taken"
                 )
-                
-            
+
         updated_user = await crud_users.update_user_profile(
             user_id=current_user.id,
             session=db,

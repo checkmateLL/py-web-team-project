@@ -39,6 +39,9 @@ fastapi-mail = "^1.4.2"
 aiosmtplib = "^3.0.2"
 fastapi-limiter = "^0.1.6"
 
+[tool.mypy]
+ignore_missing_imports = true
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
