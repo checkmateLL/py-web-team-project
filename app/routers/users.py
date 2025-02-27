@@ -329,7 +329,6 @@ async def update_avatar(
 
 @router.post(
         '/forgot-email',
-        response_model=sch.UserEmail,
         summary='Request email change',
         description="""
         This endpoint allows users to request an email change.
@@ -368,8 +367,8 @@ async def update_avatar(
     time_frame=settings.RL_TIMES_EMAIL
 )
 async def forgot_email(
-    body: sch.UserEmail,
     request: Request,
+    body: sch.UserEmail,
     bt: BackgroundTasks,
     session = Depends(get_conn_db),
     ):
@@ -456,9 +455,9 @@ async def reset_email(
     time_frame=settings.RL_TIMES_CHANGE_SET
 )
 async def change_email(
+    request: Request,
     token: str,
     body: sch.EmailSchemaUpdate,
-    request: Request,
     session = Depends(get_conn_db),
     token_blacklist=Depends(get_token_blacklist),
 
@@ -575,8 +574,8 @@ async def change_email_confirm_token(token: str):
     time_frame=settings.RL_TIMES_EMAIL
 )
 async def reset_password(
-    body: sch.UserEmail,
     request:Request,
+    body: sch.UserEmail,
     bt: BackgroundTasks,
     session = Depends(get_conn_db),
     _:User = role_deps.all_users(),
@@ -624,8 +623,8 @@ async def reset_password(
     time_frame=settings.RL_MINUTES_EMAIL
 )
 async def password_forgot(
-    email,
     request:Request,
+    email,
     bt: BackgroundTasks,
     session = Depends(get_conn_db),
     ):
@@ -722,9 +721,9 @@ async def change_password_confirm_token(
     time_frame=settings.RL_MINUTES_CHANGE_SET
 )
 async def change_password(
+    request: Request,
     token: str,
     body: sch.ChangePasswordRequest,
-    request: Request,
     session = Depends(get_conn_db),
     token_blacklist=Depends(get_token_blacklist),
     ):
@@ -784,11 +783,11 @@ async def change_password(
             session=session,
             password_hash=hashed_password
         )
-
         return {
             'message': 'Password updated successfully',
             'email': user.email
         }
+    
     except HTTPException:
         raise
     except Exception as e:

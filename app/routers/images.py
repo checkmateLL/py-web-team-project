@@ -262,8 +262,8 @@ async def get_image_by_id(
     time_frame=settings.RL_MINUTES_TF_IMAGE
 )
 async def transform_image(
-    image_id: int,
     request: Request,
+    image_id: int,
     transformation_params: sch.TransformationParameters = Body(...),
     session: AsyncSession = Depends(get_conn_db), 
     current_user: User = role_deps.all_users(),

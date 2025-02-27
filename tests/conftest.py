@@ -1,4 +1,3 @@
-from unittest.mock import Mock, patch
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.pool import StaticPool
@@ -6,20 +5,12 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from sqlalchemy import text
 import pytest_asyncio
 
+from app.main import app
 from app.database.connection import get_conn_db
 from app.services.security.secure_password import Hasher
 from app.database.models import BaseModel, User, Image
+from app.utils.rate_limit import rate_limited
 
-@pytest.fixture(scope="module", autouse=True)
-def mock_rate_limiter():
-    # Создаем мок-декоратор, который ничего не делает
-    mock_decorator = Mock(return_value=lambda f: f)
-    
-    # Заменяем оригинальный декоратор
-    with patch("app.utils.rate_limit.rate_limited", mock_decorator):
-        yield
-
-from app.main import app
 
 SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -101,7 +92,6 @@ async def db_session():
 
 @pytest.fixture(scope='module')
 def client():
-    
     async def override_get_db():
         async with TestingSessionLocal() as session:
             yield session
@@ -109,4 +99,3 @@ def client():
     app.dependency_overrides[get_conn_db] = override_get_db
     yield TestClient(app)
     app.dependency_overrides.clear()
-

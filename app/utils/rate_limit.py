@@ -14,6 +14,11 @@ def rate_limited(max_calls: int, time_frame: int):
     ip_calls : DefaultDict[str, list[float]] = defaultdict(list)
 
     def decorator(func):
+
+        flag = True
+        if not flag:
+            return func
+        
         @wraps(func)
         async def wrapper(request: Request, *args, **kwargs):
 
