@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi_limiter.depends import RateLimiter
 
 from app.repository.users import crud_users
 from app.services.security.secure_token.manager import TokenType, token_manager
 from app.services.security.secure_password import Hasher
 from app.services.security.auth_service import AuthService
 from app.database.connection import get_conn_db
+from app.config import settings
 import app.schemas as sch
 
 router = APIRouter(prefix='/auth')
@@ -19,6 +21,10 @@ router = APIRouter(prefix='/auth')
 async def register_user(
     body : sch.RegisterUser,
     session: AsyncSession = Depends(get_conn_db),
+    rate_limiter: RateLimiter = Depends(RateLimiter(
+        times=settings.RL_TIMES_AUTH, 
+        minutes=settings.RL_MINUTES_AUTH)
+    )
 ):
     
     if await crud_users.exist_user(
@@ -42,7 +48,12 @@ async def register_user(
 @router.post("/login", response_model=sch.ResponseLogin)
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),  
-    db: AsyncSession= Depends(get_conn_db)):
+    db: AsyncSession= Depends(get_conn_db),
+    rate_limiter: RateLimiter = Depends(RateLimiter(
+        times=settings.RL_TIMES_AUTH, 
+        minutes=settings.RL_MINUTES_AUTH)
+    )
+):
     """
     login user in system
     """

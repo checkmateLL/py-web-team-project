@@ -39,7 +39,10 @@ app.mount(
 
 @app.get("/")
 async def index(request:Request):
-    return templates.TemplateResponse("index.html",{"request":request})
+    return templates.TemplateResponse("index.html",{
+        "request":request
+    }
+)
 
 @app.get("/check-connection-db")
 async def healthchecker(

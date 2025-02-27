@@ -36,6 +36,21 @@ class Settings(BaseSettings):
     PROJECT_NAME : str = 'PhotoShare'
     PROJECT_VERSION : str = '1'
 
+    RL_TIMES_AUTH: int = 5  
+    RL_MINUTES_AUTH: int = 5
+
+    RL_TIMES_TF_IMAGE: int = 20
+    RL_MINUTES_TF_IMAGE: int = 10
+
+    RL_TIMES_EMAIL: int = 1
+    RL_MINUTES_EMAIL: int = 1
+
+    RL_TIMES_CHANGE_SET: int = 5
+    RL_MINUTES_CHANGE_SET: int = 1
+
+    RL_TIMES_UPLOAD_PHOTO: int = 3
+    RL_MINUTES_UPLOAD_PHOTO: int = 1
+
     model_config = SettingsConfigDict(
         extra="ignore", 
         env_file=".env", 

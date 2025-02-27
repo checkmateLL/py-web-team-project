@@ -3,7 +3,7 @@ from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 
-
+from app.config import settings
 from app.utils.logger import logger
 from app.database.connection import get_conn_db
 from app import schemas as sch
@@ -369,7 +369,10 @@ async def forgot_email(
     request: Request,
     bt: BackgroundTasks,
     session = Depends(get_conn_db),
-    rate_limiter: RateLimiter = Depends(RateLimiter(times=1, minutes=1))
+    rate_limiter: RateLimiter = Depends(RateLimiter(
+        times=settings.RL_TIMES_EMAIL, 
+        minutes=settings.RL_TIMES_EMAIL)
+        )
     ):
     """
     Request an email change for the user.
@@ -410,7 +413,10 @@ async def reset_email(
     request:Request,
     bt: BackgroundTasks,
     current_user: User = role_deps.all_users(),
-    rate_limiter: RateLimiter = Depends(RateLimiter(times=1, minutes=1))
+    rate_limiter: RateLimiter = Depends(RateLimiter(
+        times=settings.RL_TIMES_EMAIL, 
+        minutes=settings.RL_TIMES_EMAIL)
+        )
     ):
     """
     Initiates the email reset process by sending a confirmation email to the user.
@@ -451,7 +457,10 @@ async def change_email(
     body: sch.EmailSchemaUpdate,
     session = Depends(get_conn_db),
     token_blacklist=Depends(get_token_blacklist),
-    rate_limiter: RateLimiter = Depends(RateLimiter(times=5, minutes=1))
+    rate_limiter: RateLimiter = Depends(RateLimiter(
+        times=settings.RL_TIMES_CHANGE_SET, 
+        minutes=settings.RL_TIMES_CHANGE_SET)
+        )
     ):
     """
     Confirm and change user email to a new one, and add the token to the blacklist.
@@ -566,7 +575,10 @@ async def reset_password(
     bt: BackgroundTasks,
     session = Depends(get_conn_db),
     _:User = role_deps.all_users(),
-    rate_limiter: RateLimiter = Depends(RateLimiter(times=1, minutes=1))
+    rate_limiter: RateLimiter = Depends(RateLimiter(
+        times=settings.RL_TIMES_EMAIL, 
+        minutes=settings.RL_TIMES_EMAIL)
+        )
     ):
     """
     Send a password reset email to the user.
@@ -611,7 +623,10 @@ async def password_forgot(
     request:Request,
     bt: BackgroundTasks,
     session = Depends(get_conn_db),
-    rate_limiter: RateLimiter = Depends(RateLimiter(times=1, minutes=1))
+    rate_limiter: RateLimiter = Depends(RateLimiter(
+        times=settings.RL_TIMES_EMAIL, 
+        minutes=settings.RL_MINUTES_EMAIL)
+        )
     ):
     """
     Send a password reset email when the user has forgotten their password.
@@ -706,7 +721,10 @@ async def change_password(
     body: sch.ChangePasswordRequest,
     session = Depends(get_conn_db),
     token_blacklist=Depends(get_token_blacklist),
-    rate_limiter: RateLimiter = Depends(RateLimiter(times=5, minutes=1))
+    rate_limiter: RateLimiter = Depends(RateLimiter(
+        times=settings.RL_TIMES_CHANGE_SET, 
+        minutes=settings.RL_MINUTES_CHANGE_SET)
+        )
     ):
     """
     Confirm and change user password to a new password.

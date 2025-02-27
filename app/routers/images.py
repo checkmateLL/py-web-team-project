@@ -11,7 +11,7 @@ from fastapi import (
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 from fastapi.responses import RedirectResponse
-
+from fastapi_limiter.depends import RateLimiter
 import app.schemas as sch
 from app.database.connection import get_conn_db
 from app.services.security.auth_service import role_deps
@@ -19,6 +19,7 @@ from app.services.qrcode_service import ImageGenerator, get_image_generator
 from app.database.models import User
 from app.repository.images import crud_images
 from app.services.image_service import CloudinaryService
+from app.config import settings
 
 router = APIRouter(tags=['images'])
 
@@ -29,7 +30,11 @@ async def upload_image_endpoint(
     tags: list[str] = Query(default_factory=list),
     session: AsyncSession = Depends(get_conn_db),
     current_user: User =  role_deps.all_users(),
-    cloudinary_service: CloudinaryService = Depends(CloudinaryService)
+    cloudinary_service: CloudinaryService = Depends(CloudinaryService),
+    rate_limiter: RateLimiter = Depends(RateLimiter(
+        times=settings.RL_TIMES_UPLOAD_PHOTO, 
+        minutes=settings.RL_MINUTES_UPLOAD_PHOTO)
+    )
 ):
     """
         Upload image, added descriptions and regs
@@ -252,7 +257,11 @@ async def transform_image(
     session: AsyncSession = Depends(get_conn_db), 
     current_user: User = role_deps.all_users(),
     cloudinary_service: CloudinaryService = Depends(CloudinaryService),
-    qr_service: ImageGenerator = Depends(get_image_generator)
+    qr_service: ImageGenerator = Depends(get_image_generator),
+    rate_limiter: RateLimiter = Depends(RateLimiter(
+        times=settings.RL_TIMES_TF_IMAGE, 
+        minutes=settings.RL_MINUTES_TF_IMAGE)
+    )
 ):
     """
     Transform image using given transformation parameters and generate QR code.
