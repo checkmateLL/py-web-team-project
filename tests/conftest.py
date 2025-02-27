@@ -12,6 +12,7 @@ from app.database.models import BaseModel, User, Image
 from app.utils.rate_limit import rate_limited
 
 
+
 SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 engine = create_async_engine(
