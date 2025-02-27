@@ -1,5 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, constr, HttpUrl, ConfigDict, field_validator, StringConstraints
-from pydantic import ConfigDict
+from pydantic import BaseModel, EmailStr, Field, constr, HttpUrl, ConfigDict, field_validator, StringConstraints, ValidationInfo, ConfigDict, validator
 from datetime import datetime
 from typing import Optional, Annotated
 
@@ -56,60 +55,59 @@ class ResponseUser(BaseModel):
 
 class UserProfileResponse(BaseModel):
     username: str
+    email: EmailStr
     created_at: datetime
+    avatar_url: Optional[HttpUrl] = None
+    bio: Optional[str] = None
     total_images: int
     total_comments: int
     total_ratings_given: int
-    member_since: str 
-    avatar_url: Optional[str] = None
-    bio: Optional[str] = None
-
-    model_config = ConfigDict(
-        from_attributes= True
-    )
+    member_since: str
+    
+    @field_validator('avatar_url', mode='before')
+    @classmethod
+    def validate_avatar_url(cls, v):
+        if v is None:
+            return "https://example.com/default-avatar.jpg"  # placeholder for future real example of avatar
+        return v
 
 class UserProfileEdit(BaseModel):
-    username: Optional[
-        Annotated[
-            str, 
-            StringConstraints(
-                min_length=3, 
-                max_length=50, 
-                pattern="^[a-zA-Z0-9_-]+$"
-                )
-            ]
-        ] = None
-    email: Optional[EmailStr] = None
-    password: Optional[str] = None
-    bio: Optional[Annotated[str, StringConstraints(max_length=500)]] = None
-    avatar_url: Optional[str] = None
+    username: Optional[Annotated[str, StringConstraints(min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")]] = None
+    bio: Optional[Annotated[str, StringConstraints(max_length=500)]] = None    
 
-    @field_validator("password")
-    @classmethod
-    def validate_password(cls, value: Optional[str]) -> Optional[str]:
-        if value and len(value) < 6:
-            raise ValueError("Password must be at least 6 characters long")
-        return value
-
-    @field_validator("avatar_url", mode="before")
-    @classmethod
-    def validate_avatar_url(cls, value):
-        if value is not None:
-            return str(value)  
-        return value
-    
-    model_config = ConfigDict(
+    class Config:
         json_schema_extra = {
             "example": {
                 "username": "john_doe",
                 "email": "john@example.com",
                 "bio": "Python developer and photographer",
-                "avatar_url": "https://example.com/avatar.jpg"
+                "current_password": "old_password",
+                
             }
         }
-    )
 
-        
+class EmailSchemaUpdate(BaseModel):
+    new_email: EmailStr
+
+class UserEmail(BaseModel):
+    user_email: EmailStr
+
+class ChangePasswordRequest(BaseModel):
+    new_password: str = Field(..., min_length=6, max_length=100)
+
+    @field_validator('new_password')
+    def validate_password(cls, value):
+        """
+        Extra validation password.
+        """
+        if len(value) < 6:
+            raise ValueError("Password must be at least 6 characters long")
+        if not any(char.isdigit() for char in value):
+            raise ValueError("Password must contain at least one digit")
+        if not any(char.isupper() for char in value):
+            raise ValueError("Password must contain at least one uppercase letter")
+        return value
+    
 class UserProfileFull(ResponseUser):
     total_images: int
     total_comments: int
@@ -226,3 +224,6 @@ class RatingResponse(BaseModel):
 class UserProfileWithLogout(UserProfileFull):    
     require_logout: bool = False
     message: Optional[str] = None
+
+class RequestEmail(BaseModel):
+    email: EmailStr

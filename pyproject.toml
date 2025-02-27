@@ -32,6 +32,12 @@ aiosqlite = "^0.21.0"
 httpx = "^0.28.1"
 pytest-mock = "^3.14.0"
 pytest-cov = "^6.0.0"
+better-profanity = "^0.7"
+python-magic = "^0.4.27"
+libmagic = "^1.0"
+fastapi-mail = "^1.4.2"
+aiosmtplib = "^3.0.2"
+fastapi-limiter = "^0.1.6"
 
 [tool.mypy]
 ignore_missing_imports = true

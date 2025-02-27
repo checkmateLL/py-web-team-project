@@ -3,6 +3,8 @@ from app.services.security.secure_token.types import TokenType
 from app.services.security.secure_token.strategies import (
     AccessTokenStrategy,
     RefreshTokenStrategy,
+    ResetEmailTokenStrategy,
+    ResetPasswordTokenStrategy
 )
 
 class TokenStrategyFactory:
@@ -10,6 +12,8 @@ class TokenStrategyFactory:
     _strategies = {
         TokenType.ACCESS: AccessTokenStrategy,
         TokenType.REFRESH: RefreshTokenStrategy,
+        TokenType.RESET_EMAIL: ResetEmailTokenStrategy,
+        TokenType.RESET_PASSWORD: ResetPasswordTokenStrategy
     }
 
     @classmethod
