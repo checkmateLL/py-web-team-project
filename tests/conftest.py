@@ -9,6 +9,7 @@ from app.main import app
 from app.database.connection import get_conn_db
 from app.services.security.secure_password import Hasher
 from app.database.models import BaseModel, User, Image
+from app.utils.rate_limit import rate_limited
 
 SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -89,6 +90,13 @@ async def db_session():
 
 @pytest.fixture(scope="module")
 def client():
+    def mock_rate_limited(max_calls, time_frame):
+        def decorator(func):
+            return func  
+        return decorator
+
+
+    app.dependency_overrides[rate_limited] = mock_rate_limited
     async def override_get_db():
         async with TestingSessionLocal() as session:
             yield session
