@@ -1,6 +1,6 @@
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from enum import Enum
-from typing import Optional
 
 class Settings(BaseSettings):
     PG_USER : str = 'test'
@@ -23,14 +23,14 @@ class Settings(BaseSettings):
     REDIS_DB : int = 0
     REDIS_DECODE_RESPONSES : bool = True
 
-    MAIL_SERVER: str
-    MAIL_PORT: int
-    MAIL_USERNAME: str
-    MAIL_PASSWORD: str
-    MAIL_FROM: str
-    MAIL_FROM_NAME: str
-    MAIL_SSL_TLS: bool
-    MAIL_STARTTLS: bool
+    MAIL_SERVER: str = 'test'
+    MAIL_PORT: int = 1
+    MAIL_USERNAME: str = 'test'
+    MAIL_PASSWORD: SecretStr = SecretStr('secret_password')
+    MAIL_FROM: str = 'test'
+    MAIL_FROM_NAME: str = 'test'
+    MAIL_SSL_TLS: bool = False
+    MAIL_STARTTLS: bool = False
     
     PROJECT_NAME : str = 'PhotoShare'
     PROJECT_VERSION : str = '1'

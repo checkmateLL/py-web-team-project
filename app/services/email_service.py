@@ -1,200 +1,113 @@
-import logging
 from pathlib import Path
-from fastapi import HTTPException
-from pydantic import EmailStr
 from jinja2 import Environment, FileSystemLoader
-import aiosmtplib #type: ignore
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-
 from app.database.models import User
 from app.services.security.secure_token.manager import token_manager, TokenType
 from app.config import settings
+from app.utils.logger import logger
+from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 
-logger = logging.getLogger(__name__)
+template_dir = Path(__file__).parent.parent / 'templates'
+jinja_env = Environment(loader=FileSystemLoader(template_dir))
+
+conf = ConnectionConfig(
+    MAIL_USERNAME=settings.MAIL_USERNAME,
+    MAIL_PASSWORD=settings.MAIL_PASSWORD, 
+    MAIL_FROM=settings.MAIL_USERNAME,
+    MAIL_PORT=settings.MAIL_PORT,
+    MAIL_SERVER=settings.MAIL_SERVER,
+    MAIL_FROM_NAME="TODO Systems",
+    MAIL_STARTTLS=False,
+    MAIL_SSL_TLS=True,
+    USE_CREDENTIALS=True,
+    VALIDATE_CERTS=True,
+    TEMPLATE_FOLDER=Path(__file__).parent.parent / 'templates',
+)
 
 class EmailService:
-    """
-    Service for sending emails using SMTP with templates.
-    
-    This class handles all email-related functionality including password 
-    reset emails and password change notifications.
-    """
 
     def __init__(self):
+        self.template_dir = Path(__file__).parent.parent / 'templates'
+        self.jinja_env = Environment(loader=FileSystemLoader(self.template_dir))
+
+        self.conf = ConnectionConfig(
+            MAIL_USERNAME=settings.MAIL_USERNAME,
+            MAIL_PASSWORD=settings.MAIL_PASSWORD,
+            MAIL_FROM=settings.MAIL_USERNAME,
+            MAIL_PORT=settings.MAIL_PORT,
+            MAIL_SERVER=settings.MAIL_SERVER,
+            MAIL_FROM_NAME="TODO Systems",
+            MAIL_STARTTLS=False,
+            MAIL_SSL_TLS=True,
+            USE_CREDENTIALS=True,
+            VALIDATE_CERTS=True,
+            TEMPLATE_FOLDER=self.template_dir,
+        )
+
+
+    async def send_email_change_user_email(self, user:User, host: str):
         """
-        Initialize email service with configuration from settings.
-        
-        Sets up SMTP configuration and Jinja2 templating environment.
-        """
-        self.conf = {
-            "MAIL_USERNAME": settings.MAIL_USERNAME,
-            "MAIL_PASSWORD": settings.MAIL_PASSWORD,
-            "MAIL_FROM": settings.MAIL_FROM,
-            "MAIL_PORT": settings.MAIL_PORT,
-            "MAIL_SERVER": settings.MAIL_SERVER,
-            "MAIL_FROM_NAME": settings.MAIL_FROM_NAME,
-            "MAIL_STARTTLS": settings.MAIL_STARTTLS,
-            "MAIL_SSL_TLS": settings.MAIL_SSL_TLS,
-        }        
-        
-        template_dir = Path('/app/templates')
-        self.jinja_env = Environment(
-            loader=FileSystemLoader(template_dir),
-            autoescape=True
-        )
-
-    async def _prepea_send_change_email(self, user:User, request):
-
-        token_cahage_email = await token_manager.create_token(
-            token_type=TokenType.RESET_EMAIL,
-            data={'sub': user.email},
-        )
-        email_task = {
-            "username": user.username,
-            "host": str(request.base_url),
-            "token": token_cahage_email
-        }
-        subject = "Confirm change email"
-        template_name = "change_email_template.html"
-
-        success = await self.send_email(
-            recipient=user.email,
-            subject=subject,
-            template_name=template_name,
-            template_body=email_task
-        )
-        if success:
-            logger.info(f'Confirmation change email successfully sent to {user.email}')
-
-    
-    async def _prepea_send_change_password_email(self, user:User, request):
-
-        token_cahage_email = await token_manager.create_token(
-            token_type=TokenType.RESET_EMAIL,
-            data={'sub': user.email},
-        )
-        email_task = {
-            "username": user.username,
-            "host": str(request.base_url),
-            "token": token_cahage_email
-        }
-        subject = "Change password"
-        template_name = "reset_password_template.html"
-
-        success = await self.send_email(
-            recipient=user.email,
-            subject=subject,
-            template_name=template_name,
-            template_body=email_task
-        )
-        if success:
-            logger.info(f'Change password email successfully sent to {user.email}')
-
-
-
-    async def send_password_reset_email(self, email: EmailStr, token: str) -> bool:
-        """
-        Send password reset email with reset token.
-        
-        Args:
-            email (EmailStr): Recipient email address.
-            token (str): Password reset token.
-            
-        Returns:
-            bool: True if email was sent successfully.
-            
-        Raises:
-            HTTPException: 500 Internal Server Error if email sending fails.
+        Send email change user_email
         """
         try:
-            return await self.send_email(
-                recipient=email,
-                subject="Password Reset Request - PhotoShare",
-                template_name="reset_password_template.html", 
-                template_body={
-                    "token": token,
-                }
-            )
-        except Exception as e:
-            logger.error(f"Failed to send password reset email: {str(e)}")
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to send password reset email"
+            token_cahage_email = await token_manager.create_token(
+                token_type=TokenType.RESET_EMAIL,
+                data={'sub': user.email},
             )
 
-    async def send_password_changed_email(self, email: EmailStr) -> bool:
-        """
-        Send password changed confirmation email.
-        
-        Args:
-            email (EmailStr): Recipient email address.
-            
-        Returns:
-            bool: True if email was sent successfully, False otherwise.
-        """
-        try:
-            return await self.send_email(
-                recipient=email,
-                subject="Password Changed - PhotoShare",
-                template_name="email_template.html",
-                template_body={
-                    "subject": "Password Changed Successfully",
-                    "message": "Your password has been successfully changed. If you did not make this change, please contact support immediately."
-                }
-            )
-        except Exception as e:
-            logger.error(f"Failed to send password changed email: {str(e)}")
-            return False
+            template = jinja_env.get_template("email_change_template.html")
 
-    async def send_email(
-        self, 
-        recipient: EmailStr, 
-        subject: str,
-        template_name: str,
-        template_body: dict
-    ) -> bool:
+            body = template.render(
+                username=user.username,
+                host=host,
+                token=token_cahage_email
+            )
+
+            message = MessageSchema(
+                subject="Confirm your email",
+                recipients=[user.email],
+                body=body,
+                subtype=MessageType.html
+            )
+
+
+            fm = FastMail(conf)
+            await fm.send_message(message)
+
+        except ConnectionError as err:
+            logger.warning(f"Failed to send password reset email: {str(err)}")
+
+    async def send_password_reset_email(self, user: User, host: str):
         """
-        Send an email using template.
-        
-        Args:
-            recipient (EmailStr): Recipient email address.
-            subject (str): Email subject.
-            template_name (str): Name of the Jinja2 template file.
-            template_body (dict): Dictionary of variables to pass to the template.
-            
-        Returns:
-            bool: True if email was sent successfully.
-            
-        Raises:
-            HTTPException: 500 Internal Server Error if email sending fails.
+        Send email reset password
         """
         try:
-            template = self.jinja_env.get_template(template_name)
-            body = template.render(**template_body)
 
-            message = MIMEMultipart()
-            message['From'] = f"{self.conf['MAIL_FROM_NAME']} <{self.conf['MAIL_FROM']}>"
-            message['To'] = recipient
-            message['Subject'] = subject
-            message.attach(MIMEText(body, 'html'))
-
-            async with aiosmtplib.SMTP(
-                hostname=self.conf['MAIL_SERVER'], 
-                port=self.conf['MAIL_PORT'],
-                use_tls=self.conf['MAIL_SSL_TLS']
-            ) as smtp:
-                await smtp.login(self.conf['MAIL_USERNAME'], self.conf['MAIL_PASSWORD'])
-                await smtp.send_message(message)
-
-            logger.info(f"Email sent successfully to {recipient}")
-            return True
-
-        except Exception as e:
-            logger.error(f"Email sending failed: {str(e)}")
-            raise HTTPException(
-                status_code=500, 
-                detail=f"Failed to send email: {str(e)}"
+            toke_change_password = await token_manager.create_token(
+                token_type=TokenType.RESET_PASSWORD,
+                data={'sub': user.email},
             )
+
+            template = jinja_env.get_template("reset_password_template.html")
+
+            body = template.render(
+                username=user.username,
+                host=host,
+                token=toke_change_password
+            )
+
+            message = MessageSchema(
+                subject = "Password Reset Request for Your Account",
+                recipients=[user.email],
+                body=body,
+                subtype=MessageType.html
+            )
+
+
+            fm = FastMail(conf)
+            await fm.send_message(message)
+            print(f"Password reset email sent successfully to {user.email}")
+
+        except Exception as err:
+            print(f"Failed to send password reset email: {str(err)}")
 
 email_service = EmailService()

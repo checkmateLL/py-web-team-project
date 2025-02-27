@@ -7,7 +7,7 @@ from typing import Optional
 from app.config import RoleSet
 from app.services.security.secure_password import Hasher
 from app.database.models import Comment, Image, Rating, User
-from app.services.email_service import EmailService
+from app import schemas as sch
 from fastapi import HTTPException, status
 
 class UserCrud:
@@ -52,7 +52,10 @@ class UserCrud:
     
         return new_user
 
-    async def get_user_by_email(self, email:str, session:AsyncSession):
+    async def get_user_by_email(
+            self, 
+            email: str, 
+            session:AsyncSession):
         result = await session.execute(select(User).filter(User.email == email))
         user = result.scalars().first()
         return user
@@ -84,7 +87,10 @@ class UserCrud:
         count = result.scalar_one()
         return count == 0
     
-    async def get_user_by_username(self, username: str, session: AsyncSession) -> User | None:
+    async def get_user_by_username(
+            self, 
+            username: str, 
+            session: AsyncSession) -> User | None:
         """Get user by username"""
         result = await session.execute(select(User).filter(User.username == username))
         return result.scalar_one_or_none()
@@ -254,5 +260,15 @@ class UserCrud:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Database error occurred"
             ) from err
-        
+    
+    async def change_email(self, old_email, new_email, session):
+        current_user = await self.get_user_by_email(old_email, session)
+        current_user.email = new_email
+
+        session.add(current_user)
+        await session.commit()
+        await session.refresh(current_user)
+
+        return current_user
+
 crud_users = UserCrud()
