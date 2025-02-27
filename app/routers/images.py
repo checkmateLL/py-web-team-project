@@ -7,12 +7,12 @@ from fastapi import (
     UploadFile, 
     status, 
     Depends, 
-    Query
+    Query,
+    Request
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 from fastapi.responses import RedirectResponse
-from fastapi_limiter.depends import RateLimiter
 import app.schemas as sch
 from app.database.connection import get_conn_db
 from app.services.security.auth_service import role_deps
@@ -21,21 +21,23 @@ from app.database.models import User
 from app.repository.images import crud_images
 from app.services.image_service import CloudinaryService
 from app.config import settings
+from app.utils.rate_limit import rate_limited
 
 router = APIRouter(tags=['images'])
 
 @router.post("/upload_image")
+@rate_limited(
+    max_calls=settings.RL_TIMES_UPLOAD_PHOTO, 
+    time_frame=settings.RL_MINUTES_UPLOAD_PHOTO
+)
 async def upload_image_endpoint(
+    request: Request,
     description: str = Body(..., min_length=3, max_length=255),
     file: UploadFile = File(...),
     tags: list[str] = Query(default_factory=list),
     session: AsyncSession = Depends(get_conn_db),
     current_user: User =  role_deps.all_users(),
     cloudinary_service: CloudinaryService = Depends(CloudinaryService),
-    rate_limiter: RateLimiter = Depends(RateLimiter(
-        times=settings.RL_TIMES_UPLOAD_PHOTO, 
-        minutes=settings.RL_MINUTES_UPLOAD_PHOTO)
-    )
 ):
     """
         Upload image, added descriptions and regs
@@ -255,18 +257,19 @@ async def get_image_by_id(
         response_model=sch.TransformationResponseSchema,
         status_code=status.HTTP_200_OK
     )
+@rate_limited(
+    max_calls=settings.RL_TIMES_TF_IMAGE,
+    time_frame=settings.RL_MINUTES_TF_IMAGE
+)
 async def transform_image(
-    image_id: int, 
+    request: Request,
+    image_id: int,
     transformation_params: sch.TransformationParameters = Body(...),
     session: AsyncSession = Depends(get_conn_db), 
     current_user: User = role_deps.all_users(),
     cloudinary_service: CloudinaryService = Depends(CloudinaryService),
     qr_service: ImageGenerator = Depends(get_image_generator),
-    rate_limiter: RateLimiter = Depends(RateLimiter(
-        times=settings.RL_TIMES_TF_IMAGE, 
-        minutes=settings.RL_MINUTES_TF_IMAGE)
-    )
-):
+    ):
     """
     Transform image using given transformation parameters and generate QR code.
 
@@ -376,7 +379,7 @@ async def search_images(
 async def search_images_by_user(
     username: str = Query(..., description="Username to search images"),
     session: AsyncSession = Depends(get_conn_db),
-    current_user: User = role_deps.admin_moderator(),
+    _: User = role_deps.admin_moderator(),
 ):
     """
     Search images by user (available to moderators and administrators).

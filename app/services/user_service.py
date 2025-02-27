@@ -79,7 +79,7 @@ class TokenBlackList:
             f"blacklist:{email_token}"
         ) > 0
    
-    async def is_token_blacklisted_(self, email_token: str) -> bool:
+    async def is_token_blacklisted_password(self, email_token: str) -> bool:
         """Check yiet access token in blacklist"""
         return await self.redis_client.exists(
             f"blacklist:{email_token}"

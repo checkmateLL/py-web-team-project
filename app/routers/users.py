@@ -1,5 +1,4 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status, Path, UploadFile
-from fastapi_limiter.depends import RateLimiter
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -15,6 +14,7 @@ from app.repository.users import crud_users
 from app.services.email_service import email_service as ems
 from app.services.security.secure_token.manager import token_manager, TokenType
 from app.services.security.secure_password import Hasher
+from app.utils.rate_limit import rate_limited
 
 router = APIRouter(prefix="/users")
 
@@ -329,7 +329,6 @@ async def update_avatar(
 
 @router.post(
         '/forgot-email',
-        response_model=sch.UserEmail,
         summary='Request email change',
         description="""
         This endpoint allows users to request an email change.
@@ -363,15 +362,15 @@ async def update_avatar(
         }
     }
 )
+@rate_limited(
+    max_calls=settings.RL_TIMES_EMAIL,
+    time_frame=settings.RL_TIMES_EMAIL
+)
 async def forgot_email(
-    body: sch.UserEmail,
     request: Request,
+    body: sch.UserEmail,
     bt: BackgroundTasks,
     session = Depends(get_conn_db),
-    rate_limiter: RateLimiter = Depends(RateLimiter(
-        times=settings.RL_TIMES_EMAIL, 
-        minutes=settings.RL_TIMES_EMAIL)
-        )
     ):
     """
     Request an email change for the user.
@@ -408,14 +407,14 @@ async def forgot_email(
     }
 
 @router.post('/reset-email')
+@rate_limited(
+    max_calls=settings.RL_TIMES_EMAIL,
+    time_frame=settings.RL_TIMES_EMAIL
+)
 async def reset_email(
     request:Request,
     bt: BackgroundTasks,
     current_user: User = role_deps.all_users(),
-    rate_limiter: RateLimiter = Depends(RateLimiter(
-        times=settings.RL_TIMES_EMAIL, 
-        minutes=settings.RL_TIMES_EMAIL)
-        )
     ):
     """
     Initiates the email reset process by sending a confirmation email to the user.
@@ -451,15 +450,17 @@ async def reset_email(
     }
 
 @router.post('/change-email')
+@rate_limited(
+    max_calls=settings.RL_TIMES_CHANGE_SET,
+    time_frame=settings.RL_TIMES_CHANGE_SET
+)
 async def change_email(
+    request: Request,
     token: str,
     body: sch.EmailSchemaUpdate,
     session = Depends(get_conn_db),
     token_blacklist=Depends(get_token_blacklist),
-    rate_limiter: RateLimiter = Depends(RateLimiter(
-        times=settings.RL_TIMES_CHANGE_SET, 
-        minutes=settings.RL_TIMES_CHANGE_SET)
-        )
+
     ):
     """
     Confirm and change user email to a new one, and add the token to the blacklist.
@@ -568,16 +569,16 @@ async def change_email_confirm_token(token: str):
 
 
 @router.post('/reset-password')
+@rate_limited(
+    max_calls=settings.RL_TIMES_EMAIL,
+    time_frame=settings.RL_TIMES_EMAIL
+)
 async def reset_password(
-    body: sch.UserEmail,
     request:Request,
+    body: sch.UserEmail,
     bt: BackgroundTasks,
     session = Depends(get_conn_db),
     _:User = role_deps.all_users(),
-    rate_limiter: RateLimiter = Depends(RateLimiter(
-        times=settings.RL_TIMES_EMAIL, 
-        minutes=settings.RL_TIMES_EMAIL)
-        )
     ):
     """
     Send a password reset email to the user.
@@ -617,15 +618,15 @@ async def reset_password(
     }
 
 @router.post('/password-forgot')
+@rate_limited(
+    max_calls=settings.RL_TIMES_EMAIL,
+    time_frame=settings.RL_MINUTES_EMAIL
+)
 async def password_forgot(
-    email,
     request:Request,
+    email,
     bt: BackgroundTasks,
     session = Depends(get_conn_db),
-    rate_limiter: RateLimiter = Depends(RateLimiter(
-        times=settings.RL_TIMES_EMAIL, 
-        minutes=settings.RL_MINUTES_EMAIL)
-        )
     ):
     """
     Send a password reset email when the user has forgotten their password.
@@ -715,15 +716,16 @@ async def change_password_confirm_token(
         )
     
 @router.post('/change-password')
+@rate_limited(
+    max_calls=settings.RL_TIMES_CHANGE_SET,
+    time_frame=settings.RL_MINUTES_CHANGE_SET
+)
 async def change_password(
+    request: Request,
     token: str,
     body: sch.ChangePasswordRequest,
     session = Depends(get_conn_db),
     token_blacklist=Depends(get_token_blacklist),
-    rate_limiter: RateLimiter = Depends(RateLimiter(
-        times=settings.RL_TIMES_CHANGE_SET, 
-        minutes=settings.RL_MINUTES_CHANGE_SET)
-        )
     ):
     """
     Confirm and change user password to a new password.
@@ -781,11 +783,11 @@ async def change_password(
             session=session,
             password_hash=hashed_password
         )
-
         return {
             'message': 'Password updated successfully',
             'email': user.email
         }
+    
     except HTTPException:
         raise
     except Exception as e:

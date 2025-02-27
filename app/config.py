@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     PROJECT_NAME : str = 'PhotoShare'
     PROJECT_VERSION : str = '1'
 
-    RL_TIMES_AUTH: int = 5  
+    RL_TIMES_AUTH: int = 5
     RL_MINUTES_AUTH: int = 5
 
     RL_TIMES_TF_IMAGE: int = 20

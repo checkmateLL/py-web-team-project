@@ -1,32 +1,20 @@
 from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.templating import Jinja2Templates
-from fastapi_limiter import FastAPILimiter
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
-from contextlib import asynccontextmanager
 from pathlib import Path
 
+from app.utils.rate_limit import rate_limited
 from app.services.security.auth_service import role_deps
 from app.routers.routers import api_router
 from app.config import settings
 from app.database.connection import get_conn_db
-from app.services.user_service import redis_client
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    client_redis = await redis_client.get_redis_client()
-    await FastAPILimiter.init(client_redis)
-    yield
-
-    await redis_client.close()
-    await FastAPILimiter.close()
 
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.PROJECT_VERSION,
-    lifespan=lifespan
 )
 app.include_router(router=api_router)
 
@@ -38,6 +26,7 @@ app.mount(
         directory=base_dir / 'templates' / 'static'), name='static')
 
 @app.get("/")
+@rate_limited(max_calls=5, time_frame=1)
 async def index(request:Request):
     return templates.TemplateResponse("index.html",{
         "request":request
