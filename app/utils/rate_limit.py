@@ -4,6 +4,8 @@ from fastapi import HTTPException, status, Request
 from collections import defaultdict
 from typing import DefaultDict
 
+from app.config import settings
+
 def rate_limited(max_calls: int, time_frame: int):
     """
     decorator from limit coll reqiest in ine IP-address.
@@ -15,12 +17,12 @@ def rate_limited(max_calls: int, time_frame: int):
 
     def decorator(func):
 
-        flag = True
-        if not flag:
-            return func
         
         @wraps(func)
         async def wrapper(request: Request, *args, **kwargs):
+            
+            if not settings.RATE_LIMIT_ENABLED:  
+                    return await func(request, *args, **kwargs)
 
             if request.client is None:
                 raise HTTPException(

@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     RL_TIMES_UPLOAD_PHOTO: int = 3
     RL_MINUTES_UPLOAD_PHOTO: int = 1
 
+    RATE_LIMIT_ENABLED: bool = False
+    
     model_config = SettingsConfigDict(
         extra="ignore", 
         env_file=".env", 
