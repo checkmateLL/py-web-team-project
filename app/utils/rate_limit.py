@@ -16,14 +16,13 @@ def rate_limited(max_calls: int, time_frame: int):
     ip_calls : DefaultDict[str, list[float]] = defaultdict(list)
 
     def decorator(func):
-
         
         @wraps(func)
         async def wrapper(request: Request, *args, **kwargs):
             
             if not settings.RATE_LIMIT_ENABLED:  
                     return await func(request, *args, **kwargs)
-
+              
             if request.client is None:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
