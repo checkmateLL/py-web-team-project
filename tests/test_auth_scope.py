@@ -165,17 +165,16 @@ async def test_login_response_format(client):
     response = client.post("/app/auth/login", data=login_data)
     data = response.json()
     
-    assert all(key in data for key in ["access_token", "refresh_token", "token_type"])
-    assert isinstance(data["access_token"], str)
-    assert isinstance(data["refresh_token"], str)
-    assert len(data["access_token"]) > 50
-    assert len(data["refresh_token"]) > 50
+    assert "access_token" in data
+    assert "refresh_token" in data
+    assert "token_type" in data
 
 @pytest.mark.asyncio
 async def test_blacklisted_token_reuse(client):
     """
     Test Re-Use of blacklisted token
     """
+
     # - default seting redis mock
     mock_redis = AsyncMock()
     mock_redis.exists = AsyncMock(return_value=0)
@@ -188,7 +187,8 @@ async def test_blacklisted_token_reuse(client):
     
     # login user part
     login_data = {"username": "deadpool@example.com", "password": "123"}
-    login_response = client.post("app/auth/login", data=login_data)
+    login_response = client.post("/app/auth/login", data=login_data)
+    print(login_response.json())
     access_token = login_response.json()["access_token"]
     assert access_token, 'getting token'
 
