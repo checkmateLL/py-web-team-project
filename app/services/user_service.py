@@ -28,25 +28,63 @@ class RedisClient():
             )
         return self._client
     
+    async def close(self):
+        if self._client:
+            await self._client.aclose()
+
 class TokenBlackList:
 
     def __init__(self, redis_client: redis.Redis):
         self.redis_client = redis_client
 
     async def blacklist_access_token(self, access_token: str, expires_in: int):
-        """Added access-token in blacklist"""
+        """
+        Added access-token in blacklist
+        """
         await self.redis_client.setex(
             f"blacklist:{access_token}",
             expires_in,
             "blacklisted"
         )
+    
+    async def blecklist_reset_email_token(self, email_token: str, expires_in: int):
+        """
+        Added reset token in blacklist
+        """
+        await self.redis_client.setex(
+            f'blacklist:{email_token}',
+            expires_in,
+            'blacklisted'
+        )
+    
+    async def blecklist_reset_password_token(self, password_token: str, expires_in: int):
+        """
+        Added reset token in blacklist
+        """
+        await self.redis_client.setex(
+            f'blacklist:{password_token}',
+            expires_in,
+            'blacklisted'
+        )
 
-    async def is_token_blacklisted(self, access_token: str) -> bool:
+    async def is_token_blacklisted_access(self, access_token: str) -> bool:
         """Check yiet access token in blacklist"""
         return await self.redis_client.exists(
             f"blacklist:{access_token}"
         ) > 0
-
+    
+    async def is_token_blacklisted_email(self, email_token: str) -> bool:
+        """Check yiet access token in blacklist"""
+        return await self.redis_client.exists(
+            f"blacklist:{email_token}"
+        ) > 0
+   
+    async def is_token_blacklisted_(self, email_token: str) -> bool:
+        """Check yiet access token in blacklist"""
+        return await self.redis_client.exists(
+            f"blacklist:{email_token}"
+        ) > 0
+   
 redis_client = RedisClient()
 
 async def get_redis():

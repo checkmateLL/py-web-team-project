@@ -1,4 +1,6 @@
 from pathlib import Path
+from smtplib import SMTPDataError
+from fastapi import HTTPException, status
 from jinja2 import Environment, FileSystemLoader
 from app.database.models import User
 from app.services.security.secure_token.manager import token_manager, TokenType
@@ -69,12 +71,26 @@ class EmailService:
                 subtype=MessageType.html
             )
 
-
             fm = FastMail(conf)
             await fm.send_message(message)
 
+        except SMTPDataError as e:
+            logger.error(f"Failed to send email: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to send email due to high intensity of connections"
+            )
+    
         except ConnectionError as err:
             logger.warning(f"Failed to send password reset email: {str(err)}")
+        
+        except Exception as e:
+            logger.error(f"Unexpected error: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to process request"
+            )
+        
 
     async def send_password_reset_email(self, user: User, host: str):
         """
@@ -107,7 +123,21 @@ class EmailService:
             await fm.send_message(message)
             print(f"Password reset email sent successfully to {user.email}")
 
-        except Exception as err:
-            print(f"Failed to send password reset email: {str(err)}")
+        except SMTPDataError as e:
+            logger.error(f"Failed to send email: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to send email due to high intensity of connections"
+            )
+        
+        except ConnectionError as err:
+            logger.warning(f"Failed to send password reset email: {str(err)}")
+        
+        except Exception as e:
+            logger.error(f"Unexpected error: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to process request"
+            )
 
 email_service = EmailService()

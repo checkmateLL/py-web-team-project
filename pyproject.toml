@@ -37,6 +37,7 @@ python-magic = "^0.4.27"
 libmagic = "^1.0"
 fastapi-mail = "^1.4.2"
 aiosmtplib = "^3.0.2"
+fastapi-limiter = "^0.1.6"
 
 [build-system]
 requires = ["poetry-core"]

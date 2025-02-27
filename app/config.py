@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     REDIS_PORT : int = 0000
     REDIS_DB : int = 0
     REDIS_DECODE_RESPONSES : bool = True
+    REDIS_URL_CORS: str = 'rediss://redis:6379/0?decode_responses=True'
 
     MAIL_SERVER: str = 'test'
     MAIL_PORT: int = 1

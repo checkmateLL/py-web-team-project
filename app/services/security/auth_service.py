@@ -24,6 +24,38 @@ class ConstructionAuthService(ABC):
     @abstractmethod
     async def get_token(self) -> str: ...
 
+    @abstractmethod
+    async def logout_set(self, token, token_blacklist) -> dict:
+        """
+        Added access token to bl
+        """
+        pass
+
+    @abstractmethod
+    async def added_resets_email_token_blacklist(
+        self,
+        token,
+        token_blacklist,
+        message
+    ) -> dict:
+        """
+        Added email tolen to bl
+        """
+        pass
+
+    @abstractmethod
+    async def added_resets_password_token_blacklist(
+        self,
+        token,
+        token_blacklist,
+        message
+    ) -> dict:
+        """
+        Added password token to bl.
+        """
+        pass
+    
+
 class AuthService(ConstructionAuthService):
 
     oauth2_scheme = OAuth2PasswordBearer(tokenUrl="app/auth/login")
@@ -75,7 +107,7 @@ class AuthService(ConstructionAuthService):
             token_blacklist: TokenBlackList = Depends(get_token_blacklist)
     ):
             
-        if await token_blacklist.is_token_blacklisted(token):
+        if await token_blacklist.is_token_blacklisted_access(token):
             raise HTTPException(
                 status_code=401,
                 detail='Invalid token'
@@ -104,42 +136,128 @@ class AuthService(ConstructionAuthService):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token"
             )
+    
+    async def added_resets_email_token_blacklist(
+            self,
+            token:str,
+            token_blacklist: TokenBlackList = Depends(get_token_blacklist),
+            message='Successfully added.'
+    ):
+        if await token_blacklist.is_token_blacklisted_email(token):
+            raise HTTPException(
+                status_code=401,
+                detail='Invalid token'
+            )
         
+        try:
+            pyload = await token_manager.decode_token(
+                token_type=TokenType.RESET_EMAIL,
+                token=token
+            )
+            exp_timestamp = pyload.get('exp')
+            if not exp_timestamp:
+                raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+            expires_in = max(exp_timestamp - int(datetime.now(timezone.utc).timestamp()), 0)
+
+            await token_blacklist.blecklist_reset_email_token(token, expires_in)
+            return {
+                'message': message,
+                'sub':pyload.get('sub')
+            }
+        
+        except JWTError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+    
+    async def added_resets_password_token_blacklist(
+            self,
+            token:str,
+            token_blacklist: TokenBlackList = Depends(get_token_blacklist),
+            message='Successfully added.'
+    ):
+        if await token_blacklist.is_token_blacklisted_password(token):
+            raise HTTPException(
+                status_code=401,
+                detail='Invalid token'
+            )
+        
+        try:
+            pyload = await token_manager.decode_token(
+                token_type=TokenType.RESET_PASSWORD,
+                token=token
+            )
+            exp_timestamp = pyload.get('exp')
+            if not exp_timestamp:
+                raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+            expires_in = max(exp_timestamp - int(datetime.now(timezone.utc).timestamp()), 0)
+
+            await token_blacklist.blecklist_reset_email_token(token, expires_in)
+            return {
+                'message': message,
+                'sub':pyload.get('sub')
+            }
+        
+        except JWTError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+        
+
     @staticmethod
     async def get_token(
             token:str = Depends(oauth2_scheme)
     ):
-        """return oauth2_scheme token"""
+        """
+        Return oauth2_scheme token.
+        """
         return token
 
 class IRokeProtect(ABC):
 
     @abstractmethod
     def role_required(self, required_role:list[RoleSet]):
-        """check role userObject"""
+        """
+        Check role userObject.
+        """
         ...
     
     @abstractmethod
     def all_users(self):
-        """access granted all roles"""
+        """
+        Access granted all roles.
+        """
         ...
 
     @abstractmethod
     def admin_moderator(self):
-        """access granted admin and moderator"""
+        """
+        Access granted admin and moderator.
+        """
         ...
     
     @abstractmethod
     def admin_only(self):
-        """access admin"""
+        """
+        Access admin.
+        """
         ...
     
     @abstractmethod
     def moderator_only(self):
-        """access granted moderator"""
+        """
+        Access granted moderator.
+        """
         ...
         
-
 
 class RoleProtect(IRokeProtect):
 
@@ -188,5 +306,5 @@ class RoleProtect(IRokeProtect):
                 RoleSet.moderator
             ]
         )
-
-role_deps = RoleProtect(AuthService())
+auth_service = AuthService()
+role_deps = RoleProtect(auth_service)
