@@ -202,7 +202,7 @@ async def test_blacklisted_token_reuse(client):
     # check if added token to bl called onse
     mock_redis.setex.assert_called_once_with(f"blacklist:{access_token}", 1800, "blacklisted")
     # verify if token added to bl
-    result = await token_blacklist.is_token_blacklisted(access_token)
+    result = await token_blacklist.is_token_blacklisted_access(access_token)
     assert result is True
     
     # try logout part
