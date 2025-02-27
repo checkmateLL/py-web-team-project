@@ -8,8 +8,6 @@ from app.config import settings
 from app.utils.logger import logger
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 
-template_dir = Path(__file__).parent.parent / 'templates'
-jinja_env = Environment(loader=FileSystemLoader(template_dir))
 
 conf = ConnectionConfig(
     MAIL_USERNAME=settings.MAIL_USERNAME,
@@ -56,7 +54,7 @@ class EmailService:
                 data={'sub': user.email},
             )
 
-            template = jinja_env.get_template("email_change_template.html")
+            template = self.jinja_env.get_template("email_change_template.html")
 
             body = template.render(
                 username=user.username,
@@ -103,7 +101,7 @@ class EmailService:
                 data={'sub': user.email},
             )
 
-            template = jinja_env.get_template("reset_password_template.html")
+            template = self.jinja_env.get_template("reset_password_template.html")
 
             body = template.render(
                 username=user.username,
