@@ -1,4 +1,5 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status, Path, UploadFile
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -406,12 +407,12 @@ async def forgot_email(
         "message": "Email change request is being processed. A confirmation email has been sent."
     }
 
-@router.post('/reset-email')
+@router.post('/reset-email-send')
 @rate_limited(
     max_calls=settings.RL_TIMES_EMAIL,
     time_frame=settings.RL_TIMES_EMAIL
 )
-async def reset_email(
+async def send_email_reset_user_email(
     request:Request,
     bt: BackgroundTasks,
     current_user: User = role_deps.all_users(),
@@ -426,7 +427,7 @@ async def reset_email(
     Parameters:
     - request (Request): The FastAPI Request object, used to generate the base 
     URL for the confirmation link.
-    - bt (BackgroundTasks): A FastAPI BackgroundTasks instance used to send the         confirmation email asynchronously.
+    - bt (BackgroundTasks): A FastAPI BackgroundTasks instance used to send the confirmation email asynchronously.
     - current_user (User): The current authenticated user requesting the email 
     change.
     - rate_limiter (RateLimiter): A rate limiter that allows only 1 request per 
@@ -506,10 +507,7 @@ async def change_email(
         session
     )
 
-    return {
-        'message': 'Email updated successfully',
-        'new_email': updated_user.email
-    }
+    return RedirectResponse(url='app/auth/login')
 
 @router.get('/confirm-email/{token}')
 async def change_email_confirm_token(token: str):
@@ -568,7 +566,7 @@ async def change_email_confirm_token(token: str):
         )
 
 
-@router.post('/reset-password')
+@router.post('/reset-password-send')
 @rate_limited(
     max_calls=settings.RL_TIMES_EMAIL,
     time_frame=settings.RL_TIMES_EMAIL
@@ -783,10 +781,7 @@ async def change_password(
             session=session,
             password_hash=hashed_password
         )
-        return {
-            'message': 'Password updated successfully',
-            'email': user.email
-        }
+        return RedirectResponse(url='app/auth/login')
     
     except HTTPException:
         raise
