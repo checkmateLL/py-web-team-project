@@ -11,7 +11,7 @@ api_router.include_router(
 
 api_router.include_router(
     images.router,
-    prefix='',
+    prefix='/img',
     tags=['images'])
 
 api_router.include_router(

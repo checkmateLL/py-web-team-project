@@ -242,7 +242,7 @@ async def add_tags_to_image(
             detail=f'Unexpected error occured: {str(err)}'
         )
 
-@router.get('/image-info', response_model=sch.ImageResponseSchema)
+@router.get('/image-info/{image_id}', response_model=sch.ImageResponseSchema)
 async def get_image_info(
     image_id:int = Path(..., gt=0, description="The ID of the image"),
     session:AsyncSession = Depends(get_conn_db),
