@@ -367,45 +367,6 @@ async def update_avatar(
     max_calls=settings.RL_TIMES_EMAIL,
     time_frame=settings.RL_TIMES_EMAIL
 )
-async def forgot_email(
-    request: Request,
-    body: sch.UserEmail,
-    bt: BackgroundTasks,
-    session = Depends(get_conn_db),
-    ):
-    """
-    Request an email change for the user.
-
-    This endpoint allows users to request an email change. When a valid email is provided, a confirmation
-    email will be sent to the user. The request is rate-limited to 1 per minute 
-    to prevent abuse.
-
-    Parameters:
-    - email (str): The email address of the user requesting the change.
-    - request (Request): The FastAPI Request object, used to generate the base 
-    URL for the confirmation link.
-    - bt (BackgroundTasks): A FastAPI BackgroundTasks instance used to send the confirmation email asynchronously.
-    - session (Session): The database session dependency, used for database interactions.
-    - rate_limiter (RateLimiter): A rate limiter to prevent multiple requests within a short period (1 request per minute).
-
-    Returns:
-    - dict: A message confirming the request for an email change is being processed.
-      Example response:
-      {
-        "message": "Email change request is being processed. A confirmation email has been sent."
-      }
-    """
-    curent_user = await crud_users.get_user_by_email(body.user_email, session)
-
-    if not curent_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
-    bt.add_task(ems.send_email_change_user_email, curent_user, str(request.base_url))
-    return {
-        "message": "Email change request is being processed. A confirmation email has been sent."
-    }
 
 @router.post('/reset-email-send')
 @rate_limited(
@@ -511,7 +472,8 @@ async def change_email(
         access_token = auth_header.split(' ')[1]
         await auth_service.added_access_token_blacklist(access_token, token_blacklist)
 
-    return RedirectResponse(url='/app/auth/login')
+    # return RedirectResponse(url='/app/auth/login')
+
 
 @router.get('/confirm-email/{token}')
 async def change_email_confirm_token(token: str):
@@ -709,7 +671,8 @@ async def change_password_confirm_token(
             "status": "success",
             "message": "Token is valid",
             "email": payload.get('sub'),
-            "redirect_to": "app/users/reset-password"
+            "redirect_to": "app/users/reset-password",
+            "token": token
         }
     except Exception as err:
         raise HTTPException(
@@ -785,13 +748,17 @@ async def change_password(
             session=session,
             password_hash=hashed_password
         )
-        
+
         auth_header = request.headers.get('Autorization')
         if auth_header and auth_header.startswith('Bearer'):
             access_token = auth_header.split(' ')[1]
             await auth_service.added_access_token_blacklist(access_token, token_blacklist)
-            
-        return RedirectResponse(url='/app/auth/login')
+        
+        return {
+            'status': 'correct',
+            'message': 'login with new password'
+        }
+        # return RedirectResponse(url='/app/auth/login')
     
     except HTTPException:
         raise
