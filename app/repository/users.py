@@ -7,7 +7,6 @@ from typing import Optional
 from app.config import RoleSet
 from app.services.security.secure_password import Hasher
 from app.database.models import Comment, Image, Rating, User
-from app import schemas as sch
 from fastapi import HTTPException, status
 
 class UserCrud:

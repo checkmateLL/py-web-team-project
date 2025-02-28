@@ -8,6 +8,7 @@ from app.repository.users import crud_users
 from app.services.image_service import CloudinaryService
 from app.utils.logger import logger
 from app.repository.users import crud_users
+from app.config import settings
 
 class RedisClient():
 
@@ -150,13 +151,8 @@ class UserService:
         """
         Validate file type using python-magic (should be only images)
         """
-        allowed_types = {
-            "image/jpeg", 
-            "image/png", 
-            "image/webp"
-        }
-
-        if mime_type not in allowed_types:
+        
+        if mime_type not in settings.ALLOWED_IMAGE_TYPE:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid file type. Only JPEG, PNG and WebP are allowed."

@@ -8,6 +8,7 @@ import cloudinary.api
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.config import settings
 from app.database.models import Image, Transformation, User, Tag
 
 class CrudTags:
@@ -37,8 +38,51 @@ class CrudTags:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=detail
             )
-        
+    
+    @staticmethod
+    async def _check_tags_count(
+        tags: list[str]
+    ):
+        if tags and len(tags) > 5:
+            raise HTTPException(
+                status_code=400, 
+                detail="You can only add up to 5 tags."
+            )
+    
+    @staticmethod
+    async def _check_allowed_types(file):
+        if file.content_type not in settings.ALLOWED_IMAGE_TYPE:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Invalid file type. Only JPG, PNG and GIF'
+            )
 
+    @staticmethod
+    async def get_data_cloudinary(upload_result):
+        secure_url = upload_result.get("secure_url")
+        public_id = upload_result.get("public_id")
+
+        if not secure_url or not public_id:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Cloudinary did not return required data."
+            )
+        return secure_url, public_id
+    
+    @staticmethod
+    async def _check_size_file(
+        file,
+        detail='File too large. Maximus size is 5MB.'
+        ):
+        first_chunk = await file.read(5 * 1024 * 1024 + 1)
+        await file.seek(0)
+
+        if len(first_chunk) > 5 * 1024 * 1024:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=detail
+            )
+        
     async def _get_all_tags(
             self,
             session : AsyncSession
@@ -223,22 +267,39 @@ class ImageCrud(CrudTags):
             session: AsyncSession, 
             current_user: User
         ):
-        try:
-            
-            image_obj = await self.get_image_obj(image_id,session)
+        """
+        Deleting image in cloudinary and database. Permision image owner.
+        """
+        image_obj = await self.get_image_obj(image_id,session)
 
-            self.check_permission(
-                image_obj=image_obj,
-                current_user_id=current_user.id
+        if not image_obj:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Image not found'
             )
-            
+
+        self.check_permission(
+            image_obj=image_obj,
+            current_user_id=current_user.id
+        )
+        try:
             cloudinary.uploader.destroy(image_obj.public_id)
 
+        except Exception as err:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f'Error deleting image form Cloudinary'
+            )
+
+        try:
             await session.delete(image_obj)
             await session.commit()
             return True
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+        except SQLAlchemyError:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail='Error deleting image from database'
+            )
         
     async def delete_image_admin(
             self,

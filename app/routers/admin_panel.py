@@ -303,3 +303,70 @@ async def get_image_info(
         user_id=image_object.user_id,
         tags=[tag.name for tag in image_object.tags] 
     )
+
+@router.get("/search_by_user/", response_model=list[sch.ImageResponseSchema])
+async def search_images_by_user(
+    username: str = Query(..., description="Username to search images"),
+    session: AsyncSession = Depends(get_conn_db),
+    _: User = role_deps.admin_moderator(),
+):
+    """
+    Search images uploaded by a specific user. This endpoint is available only to moderators and administrators.
+
+    ### Arguments:
+    - **username** (str): The username of the user whose images are being searched.
+    - **session** (AsyncSession): The database session for interacting with the database.
+    - **_** (User): The current authenticated user with moderator or admin role.
+
+    ### Returns:
+    A list of `ImageResponseSchema` objects containing the following image details:
+    - **id**: ID of the image.
+    - **description**: Description of the image.
+    - **image_url**: URL of the image.
+    - **user_id**: ID of the user who uploaded the image.
+    - **tags**: List of tags associated with the image.
+    - **average_rating**: Average rating of the image.
+    - **created_at**: Date and time when the image was uploaded.
+
+    ### Errors:
+    - `404 Not Found`: If no images are found for the specified username.
+
+    ### Example response:
+    ```json
+    [
+        {
+            "id": 1,
+            "description": "A beautiful sunset",
+            "image_url": "http://example.com/sunset.jpg",
+            "user_id": 123,
+            "tags": ["nature", "sunset"],
+            "average_rating": 4.5,
+            "created_at": "2025-02-28T14:00:00"
+        },
+        {
+            "id": 2,
+            "description": "A mountain view",
+            "image_url": "http://example.com/mountain.jpg",
+            "user_id": 123,
+            "tags": ["nature", "mountain"],
+            "average_rating": 4.0,
+            "created_at": "2025-02-25T10:30:00"
+        }
+    ]
+    ```
+
+    ### Query Parameters:
+    - **username**: The username of the user whose images you want to search.
+
+    **Note**: This endpoint is only accessible to users with an admin or moderator role.
+    """
+    images = await crud_images.search_by_user(username, session)
+    return [sch.ImageResponseSchema(
+        id=img.id,
+        description=img.description,
+        image_url=img.image_url,
+        user_id=img.user_id,
+        tags=[tag.name for tag in img.tags],
+        average_rating=getattr(img, 'average_rating', 0.0),
+        created_at=getattr(img, 'created_at', datetime.now())
+    ) for img in images]
