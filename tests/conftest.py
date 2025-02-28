@@ -9,6 +9,9 @@ from app.main import app
 from app.database.connection import get_conn_db
 from app.services.security.secure_password import Hasher
 from app.database.models import BaseModel, User, Image
+from app.utils.rate_limit import rate_limited
+
+
 
 SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -87,7 +90,8 @@ async def db_session():
         finally:
             await session.close()
 
-@pytest.fixture(scope="module")
+
+@pytest.fixture(scope='module')
 def client():
     async def override_get_db():
         async with TestingSessionLocal() as session:

@@ -8,7 +8,6 @@ from app.config import RoleSet
 from app.services.security.secure_password import Hasher
 from app.database.models import Comment, Image, Rating, User
 from fastapi import HTTPException, status
-from sqlalchemy.exc import SQLAlchemyError
 
 class UserCrud:
 
@@ -52,7 +51,10 @@ class UserCrud:
     
         return new_user
 
-    async def get_user_by_email(self, email:str, session:AsyncSession):
+    async def get_user_by_email(
+            self, 
+            email: str, 
+            session:AsyncSession):
         result = await session.execute(select(User).filter(User.email == email))
         user = result.scalars().first()
         return user
@@ -84,31 +86,42 @@ class UserCrud:
         count = result.scalar_one()
         return count == 0
     
-    async def get_user_by_username(self, username: str, session: AsyncSession) -> User | None:
+    async def get_user_by_username(
+            self, 
+            username: str, 
+            session: AsyncSession) -> User | None:
         """Get user by username"""
         result = await session.execute(select(User).filter(User.username == username))
         return result.scalar_one_or_none()
     
     def _calculate_member_duration(self, register_date: datetime) -> str:
         """Calculate duration of membership"""
-        days_since = (datetime.now() - register_date).days
+        if not register_date:
+            return "Unknown"
+        
+        days_since = max(0, (datetime.now() - register_date).days)
         years = days_since // 365
         months = (days_since % 365) // 30
+        days = days_since % 30
         
         if years > 0:
             member_since = f"{years} year{'s' if years != 1 else ''}"
             if months > 0:
                 member_since += f" and {months} month{'s' if months != 1 else ''}"
-        else:
+        elif months > 0:
             member_since = f"{months} month{'s' if months != 1 else ''}"
-            if months == 0:
-                member_since = "Less than a month"
+            if days > 0 and months < 2:
+                member_since += f" and {days} day{'s' if days != 1 else ''}"
+        else:
+            if days > 0:
+                member_since = f"{days} day{'s' if days != 1 else ''}"
+            else:
+                member_since = "Less than a day"
                 
         return member_since
 
     async def get_user_profile(self, username: str, session: AsyncSession):
-        """Get user profile with statistics"""
-        # Get user with related counts
+        """Get user profile with statistics"""        
         query = select(
             User,
             func.count(distinct(Image.id)).label('total_images'),
@@ -246,5 +259,15 @@ class UserCrud:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Database error occurred"
             ) from err
-        
+    
+    async def change_email(self, old_email, new_email, session):
+        current_user = await self.get_user_by_email(old_email, session)
+        current_user.email = new_email
+
+        session.add(current_user)
+        await session.commit()
+        await session.refresh(current_user)
+
+        return current_user
+
 crud_users = UserCrud()

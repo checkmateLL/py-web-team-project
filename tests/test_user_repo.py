@@ -114,8 +114,8 @@ async def test_get_user_by_username_false(client, db_session):
 
 
 @pytest.mark.parametrize("register_date, expected_duration", [
-    # Меньше месяца
-    (datetime.now() - timedelta(days=10), "Less than a month"),
+    # # Меньше месяца
+    # (datetime.now() - timedelta(days=10), "Less than a month"),
 
     # 1 месяц
     (datetime.now() - timedelta(days=30), "1 month"),

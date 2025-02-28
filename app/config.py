@@ -1,5 +1,6 @@
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from enum import Enum 
+from enum import Enum
 
 class Settings(BaseSettings):
     PG_USER : str = 'test'
@@ -21,9 +22,38 @@ class Settings(BaseSettings):
     REDIS_DB : int = 0
     REDIS_PASSWORD : str = 'test'
     REDIS_DECODE_RESPONSES : bool = True
+    REDIS_URL_CORS: str = 'rediss://redis:6379/0?decode_responses=True'
+
+    MAIL_SERVER: str = 'test'
+    MAIL_PORT: int = 1
+    MAIL_USERNAME: str = 'test'
+    MAIL_PASSWORD: SecretStr = SecretStr('secret_password')
+    MAIL_FROM: str = 'test'
+    MAIL_FROM_NAME: str = 'test'
+    MAIL_SSL_TLS: bool = False
+    MAIL_STARTTLS: bool = False
     
     PROJECT_NAME : str = 'PhotoShare'
     PROJECT_VERSION : str = '1'
+
+    RL_TIMES_AUTH: int = 5
+    RL_MINUTES_AUTH: int = 5
+
+    RL_TIMES_TF_IMAGE: int = 20
+    RL_MINUTES_TF_IMAGE: int = 10
+
+    RL_TIMES_EMAIL: int = 1
+    RL_MINUTES_EMAIL: int = 1
+
+    RL_TIMES_CHANGE_SET: int = 5
+    RL_MINUTES_CHANGE_SET: int = 1
+
+    RL_TIMES_UPLOAD_PHOTO: int = 3
+    RL_MINUTES_UPLOAD_PHOTO: int = 1
+
+    RATE_LIMIT_ENABLED: bool = False
+    
+    ALLOWED_IMAGE_TYPE: set = {"image/jpeg", "image/png", "image/gif"}
 
     model_config = SettingsConfigDict(
         extra="ignore", 

@@ -37,4 +37,3 @@ api_router.include_router(
     users.router,
     tags=['users']
 )
-
