@@ -413,7 +413,7 @@ class ImageCrud(CrudTags):
                 stmt = stmt.filter(Image.description.ilike(f"%{query}%"))
 
             if tag: # filter by tag
-                stmt = stmt.join(Image.tags).filter(Tag.name == tag)
+                stmt = stmt.join(Image.tags).filter(Tag.name == tag) #todo {ilike}
 
             if order_by == "rating":
                 stmt = stmt.order_by(desc(Image.average_rating))
