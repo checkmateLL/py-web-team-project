@@ -8,6 +8,10 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip install poetry
 
+RUN apt-get update && apt-get install -y \
+    libmagic1 libmagic-dev file \
+    && rm -rf /var/lib/apt/lists/*
+
 
 COPY pyproject.toml poetry.lock ./
 

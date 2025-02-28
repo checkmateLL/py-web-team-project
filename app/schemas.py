@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, constr, HttpUrl, ConfigDict, field_validator, StringConstraints, ValidationInfo, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, constr, HttpUrl, ConfigDict, field_validator, StringConstraints, ValidationInfo, ConfigDict, validator
 from datetime import datetime
 from typing import Optional, Annotated
 
@@ -72,37 +72,8 @@ class UserProfileResponse(BaseModel):
         return v
 
 class UserProfileEdit(BaseModel):
-    username: Optional[
-        Annotated[
-            str, 
-            StringConstraints(
-                min_length=3, 
-                max_length=50, 
-                pattern="^[a-zA-Z0-9_-]+$"
-                )
-            ]
-        ] = None
-    email: Optional[EmailStr] = None
-    current_password: Optional[str] = None
-    new_password: Optional[Annotated[str, StringConstraints(min_length=6)]] = None
+    username: Optional[Annotated[str, StringConstraints(min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")]] = None
     bio: Optional[Annotated[str, StringConstraints(max_length=500)]] = None    
-
-    @field_validator('new_password')
-    @classmethod
-    def validate_password_change(cls, new_password: Optional[str], info: ValidationInfo) -> Optional[str]:
-        """
-        Ensure password change requires current password
-        and meets minimum length requirements
-        """     
-        if new_password is not None:
-            values = info.data
-            if not values.get('current_password'):
-                raise ValueError("Current password must be provided to change password")
-                        
-            if len(new_password) < 6:
-                raise ValueError("New password must be at least 6 characters long")
-        
-        return new_password
 
     class Config:
         json_schema_extra = {
@@ -111,10 +82,32 @@ class UserProfileEdit(BaseModel):
                 "email": "john@example.com",
                 "bio": "Python developer and photographer",
                 "current_password": "old_password",
-                "new_password": "new_password123"
+                
             }
         }
-        
+
+class EmailSchemaUpdate(BaseModel):
+    new_email: EmailStr
+
+class UserEmail(BaseModel):
+    user_email: EmailStr
+
+class ChangePasswordRequest(BaseModel):
+    new_password: str = Field(..., min_length=6, max_length=100)
+
+    @field_validator('new_password')
+    def validate_password(cls, value):
+        """
+        Extra validation password.
+        """
+        if len(value) < 6:
+            raise ValueError("Password must be at least 6 characters long")
+        if not any(char.isdigit() for char in value):
+            raise ValueError("Password must contain at least one digit")
+        if not any(char.isupper() for char in value):
+            raise ValueError("Password must contain at least one uppercase letter")
+        return value
+    
 class UserProfileFull(ResponseUser):
     total_images: int
     total_comments: int
