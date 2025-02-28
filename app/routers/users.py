@@ -328,46 +328,6 @@ async def update_avatar(
             detail="Failed to update avatar"
         )
 
-@router.post(
-        '/forgot-email',
-        summary='Request email change',
-        description="""
-        This endpoint allows users to request an email change.
-        If the provideed email exists in the system, a cinfirmation email will
-        be send to the user.
-        """,
-        responses={
-        200: {
-            "description": "Email change request processed successfully",
-            "content": {
-                "application/json": {
-                    "example": {"message": "Processing sending email"}
-                }
-            }
-        },
-        404: {
-            "description": "User not found",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "User not found"}
-                }
-            }
-        },
-        429: {
-            "description": "Too many requests",
-            "content": {
-                "application/json": {
-                    "example": {"detail": "Too many requests"}
-                }
-            }
-        }
-    }
-)
-@rate_limited(
-    max_calls=settings.RL_TIMES_EMAIL,
-    time_frame=settings.RL_TIMES_EMAIL
-)
-
 @router.post('/reset-email-send')
 @rate_limited(
     max_calls=settings.RL_TIMES_EMAIL,
@@ -471,7 +431,10 @@ async def change_email(
     if auth_header and auth_header.startswith('Bearer'):
         access_token = auth_header.split(' ')[1]
         await auth_service.added_access_token_blacklist(access_token, token_blacklist)
-
+    return {
+            'status': 'correct',
+            'message': 'login with new password'
+        }
     # return RedirectResponse(url='/app/auth/login')
 
 
@@ -530,7 +493,6 @@ async def change_email_confirm_token(token: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f'Failed to vetify token: {str(err)}'
         )
-
 
 @router.post('/reset-password-send')
 @rate_limited(
