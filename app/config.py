@@ -53,6 +53,8 @@ class Settings(BaseSettings):
 
     RATE_LIMIT_ENABLED: bool = False
     
+    ALLOWED_IMAGE_TYPE: set = {"image/jpeg", "image/png", "image/gif"}
+
     model_config = SettingsConfigDict(
         extra="ignore", 
         env_file=".env", 
