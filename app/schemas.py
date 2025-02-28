@@ -2,8 +2,57 @@ from pydantic import BaseModel, EmailStr, Field, constr, HttpUrl, ConfigDict, fi
 from datetime import datetime
 from typing import Optional, Annotated
 
+USERNAME_PATTERN = "^[a-zA-Z0-9_-]+$"
+USERNAME_MIN_LENGTH = 3
+USERNAME_MAX_LENGTH = 50
+
+PASSWORD_MIN_LENGTH = 6
+PASSWORD_MAX_LENGTH = 100
+
+def validate_username(username: str) -> str:
+    """Validate username according to standard rules"""
+    import re
+    
+    if username is None:
+        return None
+        
+    if not username:
+        raise ValueError("Username cannot be empty")
+        
+    if len(username) < USERNAME_MIN_LENGTH:
+        raise ValueError(f"Username must be at least {USERNAME_MIN_LENGTH} characters long")
+        
+    if len(username) > USERNAME_MAX_LENGTH:
+        raise ValueError(f"Username cannot exceed {USERNAME_MAX_LENGTH} characters")
+        
+    if not re.match(USERNAME_PATTERN, username):
+        raise ValueError("Username can only contain letters, numbers, underscores, and hyphens")
+        
+    return username
+
+def validate_password(password: str) -> str:
+    """Validate password according to standard rules"""
+    if not password:
+        raise ValueError("Password cannot be empty")
+        
+    if len(password) < PASSWORD_MIN_LENGTH:
+        raise ValueError(f"Password must be at least {PASSWORD_MIN_LENGTH} characters long")
+        
+    if len(password) > PASSWORD_MAX_LENGTH:
+        raise ValueError(f"Password cannot exceed {PASSWORD_MAX_LENGTH} characters")
+    
+    if not any(char.isdigit() for char in password):
+        raise ValueError("Password must contain at least one digit")
+        
+    if not any(char.isupper() for char in password):
+        raise ValueError("Password must contain at least one uppercase letter")
+        
+    return password
+
 class RegisterUser(BaseModel):
-    user_name: str
+    user_name: Annotated[str, StringConstraints(min_length=USERNAME_MIN_LENGTH, 
+                                              max_length=USERNAME_MAX_LENGTH,
+                                            pattern=USERNAME_PATTERN)]
     email: EmailStr
     password: str
 
@@ -19,10 +68,8 @@ class RegisterUser(BaseModel):
 
     @field_validator("password")
     @classmethod
-    def validate_password(cls, value: str) -> str:
-        if value and len(value) < 6:
-            raise ValueError("Password must be at least 6 characters long")
-        return value
+    def validate_user_password(cls, value: str) -> str:
+        return validate_password(value)
 
 
 class ResponseUser(BaseModel):
@@ -72,17 +119,24 @@ class UserProfileResponse(BaseModel):
         return v
 
 class UserProfileEdit(BaseModel):
-    username: Optional[Annotated[str, StringConstraints(min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$")]] = None
+    username: Optional[Annotated[str, StringConstraints(
+        min_length=USERNAME_MIN_LENGTH, 
+        max_length=USERNAME_MAX_LENGTH, 
+        pattern=USERNAME_PATTERN)]] = None
     bio: Optional[Annotated[str, StringConstraints(max_length=500)]] = None    
 
+    @field_validator("username")
+    @classmethod
+    def validate_profile_username(cls, value: str) -> str:
+        if value is None:
+            return None
+        return validate_username(value)
+    
     class Config:
         json_schema_extra = {
             "example": {
-                "username": "john_doe",
-                "email": "john@example.com",
-                "bio": "Python developer and photographer",
-                "current_password": "old_password",
-                
+                "username": "john_doe",                
+                "bio": "Python developer and photographer"               
             }
         }
 
@@ -93,20 +147,11 @@ class UserEmail(BaseModel):
     user_email: EmailStr
 
 class ChangePasswordRequest(BaseModel):
-    new_password: str = Field(..., min_length=6, max_length=100)
+    new_password: str = Field(..., min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH)
 
     @field_validator('new_password')
-    def validate_password(cls, value):
-        """
-        Extra validation password.
-        """
-        if len(value) < 6:
-            raise ValueError("Password must be at least 6 characters long")
-        if not any(char.isdigit() for char in value):
-            raise ValueError("Password must contain at least one digit")
-        if not any(char.isupper() for char in value):
-            raise ValueError("Password must contain at least one uppercase letter")
-        return value
+    def validate_new_password(cls, value):
+        return validate_password(value)
     
 class UserProfileFull(ResponseUser):
     total_images: int
