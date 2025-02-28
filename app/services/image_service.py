@@ -30,7 +30,7 @@ class Transformation:
                 transformations, active
             )
         return transformations
-    
+      
     def _get_transformation_params(self) -> dict:
         """
         Returns transformation parameters. Must be implemented by subclasses.
@@ -96,11 +96,11 @@ class TransformationGenerator:
             dict: Combined transformation paramerers
         """
         transformations: dict = {}
-
-        transformations = self.transformations_chain.apply({}, grayscale)
-        transformations = self.transformations_chain.apply(transformations, circular)
-        transformations = self.transformations_chain.apply(transformations, blur)
-        transformations = self.transformations_chain.apply(transformations, crop)
+        
+        transformations = CropTransformation().apply(transformations, crop)
+        transformations = BlurTransformation().apply(transformations, blur)
+        transformations = CircularTransformation().apply(transformations, circular)
+        transformations = GrayscaleTransformation().apply(transformations, grayscale)
 
         return transformations
 

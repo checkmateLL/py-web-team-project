@@ -492,8 +492,8 @@ async def transform_image(
         circular=transformation_params.circular,
         grayscale=transformation_params.grayscale
     )
-
-    qrcode_url = qr_service.generate_qr_code(current_image.image_url)
+    ts_url
+    qrcode_url = qr_service.generate_qr_code(ts_url['transformed_url'])
 
     data = await crud_images.create_transformed_images(
         transformed_url=ts_url,
