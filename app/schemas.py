@@ -61,7 +61,7 @@ class RegisterUser(BaseModel):
             "example": {
                 "user_name": "john_doe",
                 "email": "john@example.com",
-                "password": "123456"
+                "password": "Password123"
             }
         }
     )
@@ -147,11 +147,24 @@ class UserEmail(BaseModel):
     user_email: EmailStr
 
 class ChangePasswordRequest(BaseModel):
-    new_password: str = Field(..., min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH)
+    new_password: str = Field(
+        ..., 
+        min_length=PASSWORD_MIN_LENGTH, 
+        max_length=PASSWORD_MAX_LENGTH,        
+        example="Password123"
+    )
 
     @field_validator('new_password')
     def validate_new_password(cls, value):
         return validate_password(value)
+    
+    model_config = ConfigDict(
+        json_schema_extra = {
+            "example": {
+                "new_password": "Password123"
+            }
+        }
+    )
     
 class UserProfileFull(ResponseUser):
     total_images: int
