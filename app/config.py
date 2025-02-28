@@ -28,8 +28,8 @@ class Settings(BaseSettings):
     MAIL_PORT: int = 1
     MAIL_USERNAME: str = 'test'
     MAIL_PASSWORD: SecretStr = SecretStr('secret_password')
-    MAIL_FROM: str = 'test'
-    MAIL_FROM_NAME: str = 'test'
+    MAIL_FROM: str = 'example@example.com'
+    MAIL_FROM_NAME: str = 'example@example.com'
     MAIL_SSL_TLS: bool = False
     MAIL_STARTTLS: bool = False
     
