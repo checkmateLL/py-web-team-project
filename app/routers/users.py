@@ -501,13 +501,17 @@ async def change_email(
             detail='User already exists'
         )
     current_user_email = payload.get('sub')
-    updated_user = await crud_users.change_email(
+    await crud_users.change_email(
         current_user_email, 
         body.new_email, 
         session
     )
+    auth_header = request.headers.get('Autorization')
+    if auth_header and auth_header.startswith('Bearer'):
+        access_token = auth_header.split(' ')[1]
+        await auth_service.added_access_token_blacklist(access_token, token_blacklist)
 
-    return RedirectResponse(url='app/auth/login')
+    return RedirectResponse(url='/app/auth/login')
 
 @router.get('/confirm-email/{token}')
 async def change_email_confirm_token(token: str):
@@ -781,7 +785,13 @@ async def change_password(
             session=session,
             password_hash=hashed_password
         )
-        return RedirectResponse(url='app/auth/login')
+        
+        auth_header = request.headers.get('Autorization')
+        if auth_header and auth_header.startswith('Bearer'):
+            access_token = auth_header.split(' ')[1]
+            await auth_service.added_access_token_blacklist(access_token, token_blacklist)
+            
+        return RedirectResponse(url='/app/auth/login')
     
     except HTTPException:
         raise

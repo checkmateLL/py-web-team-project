@@ -210,7 +210,43 @@ class AuthService(ConstructionAuthService):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token"
             )
+    
+    async def added_access_token_blacklist(
+            self,
+            token:str,
+            token_blacklist: TokenBlackList = Depends(get_token_blacklist),
+            message='Successfully added.'
+    ):
+        if await token_blacklist.is_token_blacklisted_access(token):
+            raise HTTPException(
+                status_code=401,
+                detail='Invalid token'
+            )
         
+        try:
+            pyload = await token_manager.decode_token(
+                token_type=TokenType.ACCESS,
+                token=token
+            )
+            exp_timestamp = pyload.get('exp')
+            if not exp_timestamp:
+                raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+            expires_in = max(exp_timestamp - int(datetime.now(timezone.utc).timestamp()), 0)
+
+            await token_blacklist.blecklist_reset_email_token(token, expires_in)
+            return {
+                'message': message,
+                'sub':pyload.get('sub')
+            }
+        
+        except JWTError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
 
     @staticmethod
     async def get_token(
