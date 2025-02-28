@@ -16,6 +16,7 @@ from app.services.security.secure_token.manager import token_manager, TokenType
 from app.services.security.secure_password import Hasher
 from app.utils.rate_limit import rate_limited
 
+router = APIRouter(prefix="/users")
 
 @router.get(
     "/{username}", 
