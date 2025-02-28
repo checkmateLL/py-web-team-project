@@ -172,7 +172,10 @@ async def get_all_images_by_admin(
 
 @router.get("/serch/by_user/", response_model=list[sch.ImageResponseSchema])
 async def search_images_by_username(
-    username: str = Query(..., description="Username to search images"),
+    username: str = Query(..., description="Username to search images", 
+                         min_length=sch.USERNAME_MIN_LENGTH, 
+                         max_length=sch.USERNAME_MAX_LENGTH,
+                         regex=sch.USERNAME_PATTERN),
     session: AsyncSession = Depends(get_conn_db),
     _: User = role_deps.admin_moderator(),
 ):
@@ -306,7 +309,10 @@ async def get_image_info(
 
 @router.get("/search_by_user/", response_model=list[sch.ImageResponseSchema])
 async def search_images_by_user(
-    username: str = Query(..., description="Username to search images"),
+    username: str = Query(..., description="Username to search images",
+                         min_length=sch.USERNAME_MIN_LENGTH, 
+                         max_length=sch.USERNAME_MAX_LENGTH,
+                         regex=sch.USERNAME_PATTERN),
     session: AsyncSession = Depends(get_conn_db),
     _: User = role_deps.admin_moderator(),
 ):

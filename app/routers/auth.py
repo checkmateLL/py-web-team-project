@@ -27,6 +27,18 @@ async def register_user(
     body : sch.RegisterUser,
     session: AsyncSession = Depends(get_conn_db),
 ):
+    """
+    Register a new user with validated username and password.
+    
+    Username requirements:
+    - 3-50 characters
+    - Only letters, numbers, underscores, and hyphens
+    
+    Password requirements:
+    - At least 6 characters
+    - Contains at least one digit
+    - Contains at least one uppercase letter
+    """
     
     if await crud_users.exist_user(
         body.email, 

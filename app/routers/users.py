@@ -43,7 +43,9 @@ router = APIRouter(prefix="/users")
     }
 )
 async def get_user_profile(
-    username: str = Path(..., min_length=3, max_length=50, pattern="^[a-zA-Z0-9_-]+$"),
+    username: str = Path(..., min_length=sch.USERNAME_MIN_LENGTH, 
+                        max_length=sch.USERNAME_MAX_LENGTH, 
+                        pattern=sch.USERNAME_PATTERN),
     _: User = role_deps.all_users(),
     db: AsyncSession = Depends(get_conn_db)
 ):
@@ -729,6 +731,12 @@ async def change_password(
     ):
     """
     Confirm and change user password to a new password.
+
+    The new password must meet the following requirements:
+    - At least 6 characters long
+    - Contains at least one digit
+    - Contains at least one uppercase letter
+    - Maximum 100 characters
 
     This endpoint verifies the provided token, ensures that the token is valid and not blacklisted,
     and allows the user to update their password. The new password must be different from the old one.

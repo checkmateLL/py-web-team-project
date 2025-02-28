@@ -8,6 +8,7 @@ from app.config import RoleSet
 from app.services.security.secure_password import Hasher
 from app.database.models import Comment, Image, Rating, User
 from fastapi import HTTPException, status
+from app.schemas import validate_username, validate_password
 
 class UserCrud:
 
@@ -28,6 +29,14 @@ class UserCrud:
         if userObject is first do admin role
         else userObject exist in database do user role
         """
+        try:
+            validate_username(user_name)
+            validate_password(password)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e)
+            )
         if await self.is_no_users(session=
                                  session):
             new_user = User(
@@ -177,6 +186,15 @@ class UserCrud:
             if not user:
                 return None 
             
+            if username is not None:
+                try:
+                    validate_username(username)
+                except ValueError as e:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=str(e)
+                    )
+                
             update_data = {
                 "username": username,
                 "email": email,
