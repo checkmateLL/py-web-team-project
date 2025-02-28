@@ -1,6 +1,6 @@
 # | PhotoShare ~~~~~~
 
-![alt text](app/templates/static/logo.webp)
+![alt text](app/templates/static/logo.png)
 ## Start project
 ```
 git clone https://github.com/checkmateLL/py-web-team-project.git
