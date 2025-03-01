@@ -11,15 +11,15 @@ router = APIRouter(prefix="/comments", tags=["comments"])
 
 
 @router.post(
-    "/{photo_id}/", 
+    "/{photo_id}/",
     response_model=sch.CommentResponse,
-    status_code=status.HTTP_201_CREATED
+    status_code=status.HTTP_201_CREATED,
 )
 async def create_comment(
     photo_id: int,
     body: sch.CommentCreate,
     current_user: User = role_deps.all_users(),
-    session: AsyncSession = Depends(get_conn_db)
+    session: AsyncSession = Depends(get_conn_db),
 ):
     """
     Creates a new comment for a specific photo.
@@ -34,10 +34,7 @@ async def create_comment(
         CommentResponse: The newly created comment.
     """
     new_comment = await crud_comments.create_comment(
-        text=body.text,
-        user_id=current_user.id,
-        image_id=photo_id,
-        session=session
+        text=body.text, user_id=current_user.id, image_id=photo_id, session=session
     )
 
     return {
@@ -46,18 +43,16 @@ async def create_comment(
         "created_at": new_comment.created_at,
         "updated_at": new_comment.updated_at,
         "user_id": new_comment.user_id,
-        "image_id": new_comment.image_id,  
+        "image_id": new_comment.image_id,
     }
 
-@router.put(
-    "/{comment_id}/",
-    response_model=sch.CommentResponse
-)
+
+@router.put("/{comment_id}/", response_model=sch.CommentResponse)
 async def update_comment(
     comment_id: int,
     body: sch.CommentUpdate,
     current_user: User = role_deps.all_users(),
-    session: AsyncSession = Depends(get_conn_db)
+    session: AsyncSession = Depends(get_conn_db),
 ):
     """
     Updates an existing comment if the user is the owner.
@@ -76,21 +71,15 @@ async def update_comment(
         HTTPException: 403 if the user is not the owner of the comment.
     """
     return await crud_comments.update_comment(
-        comment_id=comment_id,
-        text=body.text,
-        user=current_user,
-        session=session
+        comment_id=comment_id, text=body.text, user=current_user, session=session
     )
 
 
-@router.delete(
-    "/{comment_id}/",
-    status_code=status.HTTP_204_NO_CONTENT
-)
+@router.delete("/{comment_id}/", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_comment(
     comment_id: int,
     _: User = role_deps.admin_moderator(),
-    session: AsyncSession = Depends(get_conn_db)
+    session: AsyncSession = Depends(get_conn_db),
 ):
     """
     Deletes a comment if the user is an admin or moderator.
@@ -107,17 +96,15 @@ async def delete_comment(
         HTTPException: 404 if the comment does not exist.
         HTTPException: 403 if the user does not have permission to delete.
     """
-    await crud_comments.delete_comment(
-        comment_id=comment_id,
-        session=session
-    )
+    await crud_comments.delete_comment(comment_id=comment_id, session=session)
     return None
-    
+
+
 @router.get("/{comment_id}/", response_model=sch.CommentResponse)
 async def get_comment(
     comment_id: int,
     _: User = role_deps.all_users(),
-    session: AsyncSession = Depends(get_conn_db)
+    session: AsyncSession = Depends(get_conn_db),
 ):
     """
     Retrieves a single comment by ID.
@@ -136,8 +123,7 @@ async def get_comment(
 
     if not comment:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail="Comment not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found"
         )
 
     return {
@@ -149,14 +135,12 @@ async def get_comment(
         "image_id": comment.image_id,
     }
 
-@router.get(
-        "/image/{image_id}/", 
-        response_model=list[sch.CommentResponse]
-    )
+
+@router.get("/image/{image_id}/", response_model=list[sch.CommentResponse])
 async def get_comments_for_image(
     image_id: int,
     _: User = role_deps.all_users(),
-    session: AsyncSession = Depends(get_conn_db)
+    session: AsyncSession = Depends(get_conn_db),
 ):
     """
     Retrieves all comments for a specific image.
@@ -175,8 +159,8 @@ async def get_comments_for_image(
 
     if not comments:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail="No comments found for this image"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No comments found for this image",
         )
 
     return [

@@ -18,7 +18,7 @@ SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 engine = create_async_engine(
     SQLALCHEMY_DATABASE_URL,
     connect_args={"check_same_thread": False},
-    poolclass=StaticPool
+    poolclass=StaticPool,
 )
 
 TestingSessionLocal = async_sessionmaker(
@@ -26,21 +26,22 @@ TestingSessionLocal = async_sessionmaker(
     autoflush=False,
     expire_on_commit=False,
     bind=engine,
-    class_=AsyncSession
+    class_=AsyncSession,
 )
 
 test_user = {
     "username": "test",
     "email": "deadpool@example.com",
     "password": "New123",
-    "role": "ADMIN"
+    "role": "ADMIN",
 }
 test_image = {
-    'description': "Test Image",
-    'image_url': "https://example.com/test.jpg",
-    'user_id': 1,
-    'public_id': "test-public-id"
+    "description": "Test Image",
+    "image_url": "https://example.com/test.jpg",
+    "user_id": 1,
+    "public_id": "test-public-id",
 }
+
 
 @pytest_asyncio.fixture(scope="module", autouse=True)
 async def initialize_db():
@@ -49,22 +50,21 @@ async def initialize_db():
         await conn.run_sync(BaseModel.metadata.drop_all)
         await conn.run_sync(BaseModel.metadata.create_all)
 
-    
     async with TestingSessionLocal() as session:
-        # add test user 
+        # add test user
         hash_password = Hasher.get_password_hash(test_user["password"])
         user = User(
             username=test_user["username"],
             email=test_user["email"],
             password_hash=hash_password,
-            role=test_user["role"]
+            role=test_user["role"],
         )
-        # add test image 
+        # add test image
         image = Image(
-            description=test_image['description'],
+            description=test_image["description"],
             image_url=test_image["image_url"],
             user_id=test_image["user_id"],
-            public_id=test_image['public_id']
+            public_id=test_image["public_id"],
         )
         session.add(user)
         session.add(image)
@@ -76,6 +76,7 @@ async def initialize_db():
     async with engine.begin() as conn:
         await conn.execute(text("DELETE FROM users"))
         await conn.commit()
+
 
 @pytest_asyncio.fixture(scope="function")
 async def db_session():
@@ -91,9 +92,10 @@ async def db_session():
             await session.close()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def client():
     settings.RATE_LIMIT_ENABLED = False
+
     async def override_get_db():
         async with TestingSessionLocal() as session:
             yield session
@@ -103,6 +105,9 @@ def client():
     app.dependency_overrides.clear()
     settings.RATE_LIMIT_ENABLED = True
 
-@pytest.fixture(scope='function')
+
+@pytest.fixture(scope="function")
 def mock_rate_limited(mocker):
-    return mocker.patch('app.utils.rate_limit.rate_limited', return_value=lambda func: func)
+    return mocker.patch(
+        "app.utils.rate_limit.rate_limited", return_value=lambda func: func
+    )

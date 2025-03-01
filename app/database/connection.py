@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
 from app.config import settings
 
+
 class DatabaseSessionManager:
     """
     A class to manage database sessions asynchronously using SQLAlchemy.
@@ -14,6 +15,7 @@ class DatabaseSessionManager:
         _engine (Optional[AsyncEngine]): The asynchronous engine instance.
         _session_maker (Optional[async_sessionmaker]): The session maker instance.
     """
+
     def __init__(self, url: str):
         """
         Initialize the DatabaseSessionManager with a database URL.
@@ -32,9 +34,7 @@ class DatabaseSessionManager:
         if self._engine is None or self._session_maker is None:
             self._engine = create_async_engine(self._url)
             self._session_maker = async_sessionmaker(
-                autoflush=False,
-                autocommit=False,
-                bind=self._engine
+                autoflush=False, autocommit=False, bind=self._engine
             )
 
     async def close(self):
@@ -59,12 +59,12 @@ class DatabaseSessionManager:
         """
         if self._session_maker is None:
             await self.initialize()
-        
+
         if self._session_maker is None:
-            raise Exception('Session maker is not initialized')
-        
+            raise Exception("Session maker is not initialized")
+
         session = self._session_maker()
-        
+
         try:
             yield session
         except Exception as err:
@@ -86,7 +86,9 @@ class DatabaseSessionManager:
         finally:
             await self.close()
 
+
 sessionmanager = DatabaseSessionManager(settings.SQLALCHEMY_DATABASE_URL)
+
 
 async def get_conn_db() -> AsyncGenerator[AsyncSession, None]:
     """

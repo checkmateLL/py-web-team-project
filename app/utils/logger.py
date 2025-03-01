@@ -5,8 +5,8 @@ from typing import Optional
 
 class LoggerSetup:
     def __init__(self, directory: Path):
-        self.directory = directory 
-        self.log_file = self.directory / "app.log" 
+        self.directory = directory
+        self.log_file = self.directory / "app.log"
         self.logger: Optional[logging.Logger] = None
         self._ensure_directory_and_file()
 
@@ -19,7 +19,7 @@ class LoggerSetup:
 
     def setup_logger(self) -> logging.Logger:
         if self.logger is None:
-            
+
             formating = f"%(levelname)s - %(asctime)s  -%(filename)s - %(message)s"
             formatter = logging.Formatter(formating)
 

@@ -8,87 +8,59 @@ from abc import ABC, abstractmethod
 
 from app.repository.images import crud_images
 
+
 class BaseRatingCrud(ABC):
 
     @abstractmethod
     async def _update_average_rating(
-        self,
-        image: Image,
-        image_id: int,
-        session: AsyncSession
+        self, image: Image, image_id: int, session: AsyncSession
     ):
         """Update average rating for image."""
         ...
-    
+
     @abstractmethod
     async def _create_rating(
-        self,
-        image_id: int,
-        user_id: int,
-        value: int,
-        session: AsyncSession
+        self, image_id: int, user_id: int, value: int, session: AsyncSession
     ):
         """Create a rating object."""
         ...
-    
+
     @abstractmethod
-    async def _get_average_rating(
-        self,
-        image_id: int,
-        session: AsyncSession
-    ) -> float:
+    async def _get_average_rating(self, image_id: int, session: AsyncSession) -> float:
         """Get average rating for image."""
         ...
-    
+
     @abstractmethod
     async def _get_existing_rating(
-        self,
-        image_id: int,
-        user_id: int,
-        session: AsyncSession,
-        detail: str
+        self, image_id: int, user_id: int, session: AsyncSession, detail: str
     ):
         """Get existing rating for image."""
         ...
-    
+
     @abstractmethod
     async def _get_rating_object(
-        self,
-        rating_id: int,
-        session: AsyncSession,
-        detail: str
+        self, rating_id: int, session: AsyncSession, detail: str
     ):
         """Get rating object by ID."""
         ...
-    
+
     @abstractmethod
     async def add_rating(
-        self,
-        image_id: int,
-        user_id: int,
-        value: int,
-        session: AsyncSession
+        self, image_id: int, user_id: int, value: int, session: AsyncSession
     ):
         """Add a rating to an image."""
         ...
-    
+
     @abstractmethod
-    async def delete_rating(
-        self,
-        rating_id: int,
-        session: AsyncSession
-    ):
+    async def delete_rating(self, rating_id: int, session: AsyncSession):
         """Delete a rating."""
         ...
 
 
 class RatingCrud(BaseRatingCrud):
-    
+
     async def _update_average_rating(
-        self,
-        image: Image,
-        image_id: int,
-        session: AsyncSession
+        self, image: Image, image_id: int, session: AsyncSession
     ):
         """
         Update average rating for image.
@@ -101,27 +73,14 @@ class RatingCrud(BaseRatingCrud):
         await session.refresh(image)
 
     async def _create_rating(
-        self,
-        image_id: int,
-        user_id: int,
-        value: int,
-        session: AsyncSession
+        self, image_id: int, user_id: int, value: int, session: AsyncSession
     ):
-        new_rating = Rating(
-            image_id=image_id,
-            user_id=user_id,
-            value=value
-        )    
+        new_rating = Rating(image_id=image_id, user_id=user_id, value=value)
         session.add(new_rating)
         await session.commit()
         return new_rating
-    
 
-    async def _get_average_rating(
-        self, 
-        image_id: int, 
-        session: AsyncSession
-    ) -> float:
+    async def _get_average_rating(self, image_id: int, session: AsyncSession) -> float:
         """
         returned AVG rating bu image.
         """
@@ -129,92 +88,75 @@ class RatingCrud(BaseRatingCrud):
             select(func.avg(Rating.value)).filter(Rating.image_id == image_id)
         )
         return avg_result.scalar() or 0.0
-    
-    async def _get_existing_rating(
-            self, 
-            image_id: int, 
-            user_id: int, 
-            session: AsyncSession,
-            detail='You have already rated this image.'
-        ):
-            result = await session.execute(
-                select(Rating).filter(
-                    Rating.image_id == image_id, Rating.user_id == user_id)
-                )
-            existing_rating = result.scalar_one_or_none()
 
-            if existing_rating:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST, 
-                    detail=detail)
-            
-            return existing_rating
+    async def _get_existing_rating(
+        self,
+        image_id: int,
+        user_id: int,
+        session: AsyncSession,
+        detail="You have already rated this image.",
+    ):
+        result = await session.execute(
+            select(Rating).filter(
+                Rating.image_id == image_id, Rating.user_id == user_id
+            )
+        )
+        existing_rating = result.scalar_one_or_none()
+
+        if existing_rating:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+
+        return existing_rating
 
     async def add_rating(
-            self, 
-            image_id: int, 
-            user_id: int, 
-            value: int, 
-            session: AsyncSession
-        ):
+        self, image_id: int, user_id: int, value: int, session: AsyncSession
+    ):
         """
-        Adds a rating to a photo. 
+        Adds a rating to a photo.
         Checks if the user has not rated before and if this is not their photo.
         """
         image = await crud_images.get_image_obj(image_id, session)
 
         crud_images._has_permission(
-            image_obj_user_id=image.user_id,
-            current_user_id=user_id)
-        
+            image_obj_user_id=image.user_id, current_user_id=user_id
+        )
+
         await self._get_existing_rating(
-            image_id=image_id, 
-            user_id=user_id, 
-            session=session
+            image_id=image_id, user_id=user_id, session=session
         )
 
         await self._create_rating(
-            image_id=image_id,
-            user_id=user_id,
-            value=value,
-            session=session
+            image_id=image_id, user_id=user_id, value=value, session=session
         )
 
         await self._update_average_rating(
-            image=image,
-            image_id=image_id,
-            session=session
+            image=image, image_id=image_id, session=session
         )
 
         await session.commit()
         await session.refresh(image)
 
         return {
-            "message": "Rating added successfully", 
-            "average_rating": image.average_rating
-            }
-    
+            "message": "Rating added successfully",
+            "average_rating": image.average_rating,
+        }
+
     async def _get_rating_object(
-            self,
-            rating_id: int,
-            session: AsyncSession,
-            detail='Rating not found.'
+        self, rating_id: int, session: AsyncSession, detail="Rating not found."
     ):
         result = await session.execute(select(Rating).filter(Rating.id == rating_id))
         rating = result.scalar_one_or_none()
 
         if not rating:
-            raise HTTPException(
-                status_code=404, 
-                detail=detail
-            )
+            raise HTTPException(status_code=404, detail=detail)
         return rating
-        
+
     async def delete_rating(
-            self, rating_id:int, 
-            session: AsyncSession,
-            detail=f'An error occurred while deleting the rating.'
-            ):
+        self,
+        rating_id: int,
+        session: AsyncSession,
+        detail=f"An error occurred while deleting the rating.",
+    ):
         """
         Delete rating (available to moderators and administrators).
         """
@@ -225,23 +167,17 @@ class RatingCrud(BaseRatingCrud):
             await session.delete(rating_object)
             await session.commit()
 
-            image = await crud_images.get_image_obj(
-                image_id,
-                session
-            )
+            image = await crud_images.get_image_obj(image_id, session)
             await self._update_average_rating(
-                image=image,
-                image_id=image_id,
-                session=session
+                image=image, image_id=image_id, session=session
             )
 
-            return {
-                "message": "Rating deleted successfully"
-            }
+            return {"message": "Rating deleted successfully"}
         except SQLAlchemyError:
             await session.rollback()
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=detail
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=detail
             )
+
+
 crud_ratings = RatingCrud()

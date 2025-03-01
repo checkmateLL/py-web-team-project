@@ -8,11 +8,13 @@ def test_verify_password_correct():
     hashed_password = Hasher.get_password_hash(plain_password)
     assert Hasher.verify_password(plain_password, hashed_password) == True
 
+
 def test_verify_password_incorrect():
     plain_password = "mysecretpassword"
     wrong_password = "wrongpassword"
     hashed_password = Hasher.get_password_hash(plain_password)
     assert Hasher.verify_password(wrong_password, hashed_password) == False
+
 
 def test_verify_password_invalid_hash():
     plain_password = "mysecretpassword"
@@ -29,8 +31,10 @@ def test_get_password_hash_success():
     assert isinstance(hashed_password, str)
     assert len(hashed_password) > 0
 
+
 def test_get_password_hash_failure():
     pass
+
 
 def test_get_password_hash_unique():
     password = "mysecretpassword"

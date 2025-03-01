@@ -7,13 +7,16 @@ from app.services.security.auth_service import role_deps
 from app.database.models import User
 import app.schemas as sch
 
-router = APIRouter(tags=['search'])
+router = APIRouter(tags=["search"])
+
 
 @router.get("/search_images/", response_model=list[sch.ImageResponseSchema])
 async def search_images(
     query: str = Query(None, description="Search by description"),
     tag: str = Query(None, description="Filter by tag"),
-    order_by: str = Query(None, enum=["date","rating"], description="Sort by 'date' or 'rating'"),
+    order_by: str = Query(
+        None, enum=["date", "rating"], description="Sort by 'date' or 'rating'"
+    ),
     session: AsyncSession = Depends(get_conn_db),
     _: User = role_deps.all_users(),
 ):
@@ -71,17 +74,20 @@ async def search_images(
 
     **Note**: If the `order_by` value is invalid (not 'date' or 'rating'), a `400 Bad Request` error will be raised.
     """
-    images = await crud_images.search_images(session ,query, tag, order_by)
+    images = await crud_images.search_images(session, query, tag, order_by)
 
     if not images:
         return []
-    
-    return [sch.ImageResponseSchema(
-        id=img.id,
-        description=img.description,
-        image_url=img.image_url,
-        user_id=img.user_id,
-        tags=[tag.name for tag in img.tags],
-        average_rating=img.average_rating,
-        created_at=img.created_at
-    ) for img in images]
+
+    return [
+        sch.ImageResponseSchema(
+            id=img.id,
+            description=img.description,
+            image_url=img.image_url,
+            user_id=img.user_id,
+            tags=[tag.name for tag in img.tags],
+            average_rating=img.average_rating,
+            created_at=img.created_at,
+        )
+        for img in images
+    ]

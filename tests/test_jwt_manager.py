@@ -1,12 +1,17 @@
 import pytest
 from fastapi import HTTPException, status
 from app.services.security.secure_token.types import TokenType
-from app.services.security.secure_token.manager import TokenStrategyFactory, TokenManager
+from app.services.security.secure_token.manager import (
+    TokenStrategyFactory,
+    TokenManager,
+)
 from app.services.security.secure_token.strategies.base_strategy import ITokenStrategy
+
 
 @pytest.fixture
 def token_manager():
     return TokenManager()
+
 
 @pytest.mark.asyncio
 async def test_create_and_decode_access_token(token_manager):
@@ -16,6 +21,7 @@ async def test_create_and_decode_access_token(token_manager):
     assert decoded["user_id"] == 1
     assert decoded["scope"] == TokenType.ACCESS
 
+
 @pytest.mark.asyncio
 async def test_create_and_decode_refresh_token(token_manager):
     data = {"user_id": 1}
@@ -23,6 +29,7 @@ async def test_create_and_decode_refresh_token(token_manager):
     decoded = await token_manager.decode_token(TokenType.REFRESH, token)
     assert decoded["user_id"] == 1
     assert decoded["scope"] == TokenType.REFRESH
+
 
 @pytest.mark.asyncio
 async def test_decode_invalid_token(token_manager):
@@ -32,6 +39,7 @@ async def test_decode_invalid_token(token_manager):
     assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
     assert "Invalid token" in exc_info.value.detail
 
+
 @pytest.mark.asyncio
 async def test_decode_token_with_wrong_scope(token_manager):
     data = {"user_id": 1}
@@ -40,6 +48,7 @@ async def test_decode_token_with_wrong_scope(token_manager):
         await token_manager.decode_token(TokenType.REFRESH, token)
     assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
     assert "Invalid token scope" in exc_info.value.detail
+
 
 @pytest.mark.asyncio
 async def test_unsupported_token_type(token_manager):
@@ -57,4 +66,3 @@ def test_token_strategy_factory():
 
     with pytest.raises(ValueError):
         TokenStrategyFactory.get_strategy("unsupported_type")
-
