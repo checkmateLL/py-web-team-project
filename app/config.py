@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     RL_MINUTES_UPLOAD_PHOTO: int = 1
 
     RATE_LIMIT_ENABLED: bool = True
-    
+
     ALLOWED_IMAGE_TYPE: set = {"image/jpeg", "image/png", "image/gif"}
 
     model_config = SettingsConfigDict(

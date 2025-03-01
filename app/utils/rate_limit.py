@@ -3,6 +3,7 @@ from functools import wraps
 from fastapi import HTTPException, status, Request
 from collections import defaultdict, deque
 from typing import Any
+from app.config import settings
 
 def rate_limited(max_calls: int, time_frame: int):
     """
@@ -16,7 +17,8 @@ def rate_limited(max_calls: int, time_frame: int):
     def decorator(func):
         @wraps(func)
         async def wrapper(request: Request, *args, **kwargs):
-
+            if not settings.RATE_LIMIT_ENABLED:
+                return await func(request, *args, **kwargs)
             if 'x-forwarded-for' in request.headers:
                 ip = request.headers['x-forwarded-for'].split(',')[0].strip()
             elif request.client:

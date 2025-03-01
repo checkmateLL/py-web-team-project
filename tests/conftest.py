@@ -10,7 +10,7 @@ from app.database.connection import get_conn_db
 from app.services.security.secure_password import Hasher
 from app.database.models import BaseModel, User, Image
 from app.utils.rate_limit import rate_limited
-
+from app.config import settings
 
 
 SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -93,6 +93,7 @@ async def db_session():
 
 @pytest.fixture(scope='module')
 def client():
+    settings.RATE_LIMIT_ENABLED = False
     async def override_get_db():
         async with TestingSessionLocal() as session:
             yield session
@@ -100,3 +101,8 @@ def client():
     app.dependency_overrides[get_conn_db] = override_get_db
     yield TestClient(app)
     app.dependency_overrides.clear()
+    settings.RATE_LIMIT_ENABLED = True
+
+@pytest.fixture(scope='function')
+def mock_rate_limited(mocker):
+    return mocker.patch('app.utils.rate_limit.rate_limited', return_value=lambda func: func)

@@ -2,13 +2,13 @@ import pytest
 from fastapi import status
 from sqlalchemy import select
 from app.database.models import User
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 from unittest.mock import AsyncMock
 
 from app.main import app
 from app.services.user_service import  get_token_blacklist
 from app.services.security.secure_password import Hasher  
-
+from tests.conftest import mock_rate_limited
 
 @pytest.mark.asyncio
 async def test_register_user_success(client):
@@ -153,10 +153,12 @@ async def test_login_ban_user(client, db_session):
 
 
 @pytest.mark.asyncio
-async def test_login_response_format(client):
+@patch('app.utils.rate_limit.rate_limited', new=lambda func: func)
+async def test_login_response_format(client, mock_rate_limited):
     """
     test format respose login router
     """
+
     login_data = {
         "username": "deadpool@example.com",
         "password": "New123"
