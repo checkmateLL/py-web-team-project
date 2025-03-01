@@ -416,7 +416,7 @@ class ImageCrud(CrudTags):
                 stmt = stmt.join(Image.tags).filter(Tag.name.ilike(f"%{tag}%"))
 
             if order_by == "rating":
-                stmt.order_by(desc(func.coalesce(Image.average_rating, 0)))
+                stmt = stmt.order_by(desc(func.coalesce(Image.average_rating, 0)))
             elif order_by == "date":
                 stmt = stmt.order_by(desc(Image.created_at))
 
