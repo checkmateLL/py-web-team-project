@@ -10,6 +10,9 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent.parent.parent / 
 
 @router.get('/contacts', response_class=HTMLResponse)
 async def contacts_form(request:Request):
+    """
+    rendering html page login_form.html
+    """
     return templates.TemplateResponse(
         'contacts.html',
         {
@@ -20,6 +23,9 @@ async def contacts_form(request:Request):
 
 @router.get('/dashboard', response_class=HTMLResponse)
 async def get_dushboard(request:Request):
+    """
+    rendering html page login_form.html
+    """
     return templates.TemplateResponse(
         'dashboard.html',
         {

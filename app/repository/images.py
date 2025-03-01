@@ -21,6 +21,9 @@ class CrudTags:
         current_user_id: int,
         detail: str = 'You dont have permission to perform this action'
     ):
+        """
+        check permision spesion from ratings.
+        """
         if image_obj.user_id != current_user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -33,6 +36,9 @@ class CrudTags:
         current_user_id: int,
         detail: str = 'You dont have permission to perform this action'
     ):
+        """
+        access permision operation to image or tag.
+        """
         if image_obj_user_id == current_user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -43,6 +49,9 @@ class CrudTags:
     async def _check_tags_count(
         tags: list[str]
     ):
+        """
+        check limit tags when upload image.
+        """
         if tags and len(tags) > 5:
             raise HTTPException(
                 status_code=400, 
@@ -51,6 +60,9 @@ class CrudTags:
     
     @staticmethod
     async def _check_allowed_types(file):
+        """
+        check allowed types.
+        """
         if file.content_type not in settings.ALLOWED_IMAGE_TYPE:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -59,6 +71,9 @@ class CrudTags:
 
     @staticmethod
     async def get_data_cloudinary(upload_result):
+        """
+        get data cloudinary.
+        """
         secure_url = upload_result.get("secure_url")
         public_id = upload_result.get("public_id")
 
@@ -74,6 +89,19 @@ class CrudTags:
         file,
         detail='File too large. Maximus size is 5MB.'
         ):
+        """
+        Check the size of the uploaded file.
+
+        This function reads the first chunk of the file to determine its size.
+        If the file size exceeds the maximum allowed size (5MB), it raises an HTTP 400 Bad Request exception.
+
+        Args:
+            file: The uploaded file to check.
+            detail (str): The error message to include in the exception if the file is too large.
+
+        Raises:
+            HTTPException: If the file size exceeds the maximum allowed size.
+        """
         first_chunk = await file.read(5 * 1024 * 1024 + 1)
         await file.seek(0)
 
@@ -88,8 +116,18 @@ class CrudTags:
             session : AsyncSession
     ) -> dict[str,Tag]:
         """
-        Get all tags from database
-        # feature: use redis cache, optimisation process
+        Retrieve all tags from the database.
+
+        This function retrieves all tags from the database, including their associated images.
+
+        Args:
+            session (AsyncSession): An asynchronous database session.
+
+        Returns:
+            dict[str, Tag]: A dictionary of existing tags with tag names as keys.
+
+        Raises:
+            HTTPException: If a database error occurs.
         """
         try:
             result = await session.execute(
@@ -114,7 +152,20 @@ class CrudTags:
             detail='Tags must by a list of strings'
     ):
         """
-        Return new tag with not find in database
+        Return new tags that are not found in the database.
+
+        This function takes a list of tag names and a dictionary of existing tags,
+        and returns a set of new tag names that are not found in the existing tags.
+
+        Args:
+            tags_name (list[str]): A list of tag names to check.
+            existings_tags (dict[str, Tag]): A dictionary of existing tags with tag names as keys.
+
+        Returns:
+            set: A set of new tag names that are not found in the existing tags.
+
+        Raises:
+            HTTPException: If the provided tags_name is not a list.
         """
         if not isinstance(tags_name, list):
             raise HTTPException(
@@ -130,7 +181,19 @@ class CrudTags:
         session,
     ):
         """
-        Create new tag in database and return it
+        Create new tags in the database.
+
+        This function inserts new tag names into the database and returns the created tag objects.
+
+        Args:
+            new_tag_names (set): A set of new tag names to create.
+            session (AsyncSession): An asynchronous database session.
+
+        Returns:
+            list[Tag]: A list of newly created Tag objects.
+
+        Raises:
+            HTTPException: If an error occurs during the creation of new tags.
         """
         if not new_tag_names:
             return []
@@ -163,7 +226,20 @@ class CrudTags:
             tags_names:list[str], session:AsyncSession
     ):
         """
-        Work with list object Tag. Added new and return listTag
+        Handle tags for an image.
+
+        This function processes the provided tag names, retrieves existing tags from the database,
+        creates new tags if necessary, and returns a list of tag objects corresponding to the provided tag names.
+
+        Args:
+            tags_names (list[str]): A list of tag names to handle.
+            session (AsyncSession): An asynchronous database session.
+
+        Returns:
+            list[Tag]: A list of Tag objects corresponding to the provided tag names.
+
+        Raises:
+            HTTPException: If an error occurs during the tag handling process.
         """
         existing_tags = await self._get_all_tags(session)
         new_tag_names = await self._select_uniqal(tags_names, existing_tags)
@@ -182,7 +258,18 @@ class CrudTags:
             session
     ):
         """
-        Bind tag to image
+        Add tags to an image.
+
+        This function adds tags to an image object and updates the database.
+        It ensures that the tags are added uniquely to the image.
+
+        Args:
+            image_object (Image): The image object to which tags will be added.
+            tags_object (list[Tag]): A list of tag objects to add to the image.
+            session (AsyncSession): An asynchronous database session.
+
+        Raises:
+            HTTPException: If an error occurs during the database operation.
         """
         if not isinstance(tags_object, list):
             tags_object = [tags_object]
@@ -198,10 +285,7 @@ class CrudTags:
             )
     
 class ImageCrud(CrudTags):
-    """
-    Spesial class from Image CRUD operations.
-    """
-
+   
     async def create_image(
             self,
             url:str,
@@ -212,7 +296,22 @@ class ImageCrud(CrudTags):
     )->Image:
         session
         """
-        Create record images in database
+        Create a new image record in the database.
+
+        This function creates a new image record in the database with the provided URL, description, user ID, and public ID.
+
+        Args:
+            url (str): The URL of the image.
+            description (str): The description of the image.
+            user_id (int): The ID of the user who uploaded the image.
+            public_id (str): The public ID of the image in Cloudinary.
+            session (AsyncSession): An asynchronous database session.
+
+        Returns:
+            Image: The newly created Image object.
+
+        Raises:
+            HTTPException: If an error occurs during the creation of the image record.
         """
         try:
             image_record = Image(
@@ -241,6 +340,24 @@ class ImageCrud(CrudTags):
             session:AsyncSession,
             current_user:User,
     ):
+        """
+        Update the description of an image.
+
+        This function updates the description of an image in the database.
+        It ensures that only the owner of the image can perform this action.
+
+        Args:
+            image_id (int): The ID of the image to update.
+            description (str): The new description for the image.
+            session (AsyncSession): An asynchronous database session.
+            current_user (User): The current user performing the update.
+
+        Returns:
+            Image: The updated Image object.
+
+        Raises:
+            HTTPException: If the image with the specified ID does not exist or if the current user does not have permission to update the image.
+        """
         try:
             image_obj = await self.get_image_obj(image_id, session)
            
@@ -268,7 +385,21 @@ class ImageCrud(CrudTags):
             current_user: User
         ):
         """
-        Deleting image in cloudinary and database. Permision image owner.
+        Delete an image by its ID (available to image owners).
+
+        This function deletes an image from the database and Cloudinary.
+        It ensures that only the owner of the image can perform this action.
+
+        Args:
+            image_id (int): The ID of the image to delete.
+            session (AsyncSession): An asynchronous database session.
+            current_user (User): The current user performing the deletion.
+
+        Returns:
+            bool: True if the image was successfully deleted.
+
+        Raises:
+            HTTPException: If the image with the specified ID does not exist or if the current user does not have permission to delete the image.
         """
         image_obj = await self.get_image_obj(image_id,session)
 
@@ -307,6 +438,23 @@ class ImageCrud(CrudTags):
             session: AsyncSession, 
             current_user: User
         ):
+        """
+        Delete an image by its ID (available to administrators).
+
+        This function deletes an image from the database and Cloudinary.
+        It ensures that only administrators can perform this action.
+
+        Args:
+            image_id (int): The ID of the image to delete.
+            session (AsyncSession): An asynchronous database session.
+            current_user (User): The current user performing the deletion.
+
+        Returns:
+            bool: True if the image was successfully deleted.
+
+        Raises:
+            HTTPException: If the image with the specified ID does not exist or if the current user is not an administrator.
+        """
         try:
             
             image_obj = await self.get_image_obj(image_id,session)
@@ -324,6 +472,22 @@ class ImageCrud(CrudTags):
             image_id:int,
             session:AsyncSession
     ):
+        """
+        Get an image object by its ID.
+
+        This function retrieves an image object from the database based on its unique ID.
+        If the image is not found, it raises an HTTP 404 Not Found exception.
+
+        Args:
+            image_id (int): The ID of the image to retrieve.
+            session (AsyncSession): An asynchronous database session.
+
+        Returns:
+            Image: The Image object if found.
+
+        Raises:
+            HTTPException: If the image with the specified ID does not exist.
+        """
         image_obj = await self.get_image_obj(image_id,session)
         return image_obj
 
@@ -332,6 +496,22 @@ class ImageCrud(CrudTags):
             image_id:int,
             session:AsyncSession
     ):
+        """
+        Get an image object by its ID.
+
+        This function retrieves an image object from the database based on its unique ID.
+        If the image is not found, it raises an HTTP 404 Not Found exception.
+
+        Args:
+            image_id (int): The ID of the image to retrieve.
+            session (AsyncSession): An asynchronous database session.
+
+        Returns:
+            Image: The Image object if found.
+
+        Raises:
+            HTTPException: If the image with the specified ID does not exist.
+        """
         image = await session.get(Image, image_id)
         if not image:
             raise HTTPException(
@@ -346,14 +526,22 @@ class ImageCrud(CrudTags):
             session: AsyncSession
             ):
         """
-        Get all images uploaded by a specific user.
+        Create a new transformation record for an image.
+
+        This function creates a new transformation record in the database, which includes the transformed URL,
+        QR code URL, and the associated image ID.
 
         Args:
-            user_id: ID of the user.
-            session: Database session.
+            transformed_url (dict): A dictionary containing the transformed URL.
+            qr_code_url (str): The URL of the QR code.
+            image_id (int): The ID of the image being transformed.
+            session (AsyncSession): An asynchronous database session.
 
         Returns:
-            List of Image objects.
+            dict: A dictionary containing the transformation details.
+
+        Raises:
+            HTTPException: If an error occurs during the creation of the transformation record.
         """
         result = await session.execute(select(Image).where(Image.user_id == user_id))
         return result.scalars().all()
@@ -405,6 +593,21 @@ class ImageCrud(CrudTags):
         """
         Search for images by description or tag.
         Ability to sort by rating or upload date.
+
+        This function searches for images based on the provided query and tag.
+        It can also sort the results by rating or upload date.
+
+        Args:
+            session (AsyncSession): An asynchronous database session.
+            query (str | None): A search query for the image description.
+            tag (str | None): A search query for the image tags.
+            order_by (str): The sorting criteria. Can be "rating" or "date". Default is "date".
+
+        Returns:
+            list: A list of Image objects that match the search criteria.
+
+        Raises:
+            HTTPException: If an error occurs during the search operation.
         """
         try:
             stmt = select(Image).options(joinedload(Image.tags)).group_by(Image.id)
@@ -437,11 +640,13 @@ class ImageCrud(CrudTags):
         """
         Get all images uploaded by all users.
 
+        This function retrieves all images from the database.
+
         Args:
-            session: Database session.
+            session (AsyncSession): An asynchronous database session.
 
         Returns:
-            List of Image objects.
+            list: A list of Image objects representing all images in the database.
         """
         result = await session.execute(select(Image))
         return result.scalars().all()
@@ -453,6 +658,19 @@ class ImageCrud(CrudTags):
     ):
         """
         Search images by username (available to moderators and administrators).
+
+        This function searches for images associated with a specific user by their username.
+        It performs a case-insensitive search and returns a list of matching images.
+
+        Args:
+            username (str): The username of the user to search for.
+            session (AsyncSession): An asynchronous database session.
+
+        Returns:
+            list: A list of Image objects that match the search criteria.
+
+        Raises:
+            HTTPException: If an error occurs during the search operation.
         """
         try:
             result = await session.execute(

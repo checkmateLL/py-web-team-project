@@ -269,6 +269,24 @@ async def update_image_description(
     session: AsyncSession = Depends(get_conn_db),
     current_user: User = role_deps.admin_moderator(),
 ):
+    """
+    Update the description of an image (available to moderators and administrators).
+
+    This function updates the description of an image in the database.
+    It ensures that only moderators and administrators can perform this action.
+
+    Args:
+        image_id (int): The ID of the image to update.
+        description (str): The new description for the image.
+        session (AsyncSession): An asynchronous database session.
+        current_user (User): The current user performing the update.
+
+    Returns:
+        ImageResponseUpdateSchema: A schema representing the updated image.
+
+    Raises:
+        HTTPException: If the image with the specified ID does not exist or if the current user is not a moderator or administrator.
+    """
     update_image_object = await crud_images.update_image_description(
         image_id, description, session, current_user
     )

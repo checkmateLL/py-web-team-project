@@ -79,7 +79,7 @@ class CommentCrud:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Cannot edit another user's comment")
 
-        if not text.strip():  # Double check to prevent empty comments
+        if not text.strip():
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Comment text cannot be empty")
