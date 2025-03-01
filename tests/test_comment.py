@@ -14,7 +14,7 @@ async def test_create_comment(client, db_session):
 
 
     user_email="deadpool@example.com"
-    user_password = "123"
+    user_password = "New123"
     
     login_data = {
         "username": user_email,
@@ -57,7 +57,7 @@ async def test_update_comment(client, db_session):
     assert image_from_db is not None, "Image not found"
 
     user_email="deadpool@example.com"
-    user_password = "123"
+    user_password = "New123"
     
     login_data = {
         "username": user_email,
@@ -98,7 +98,7 @@ async def test_update_comment(client, db_session):
     new_user_data = {
         "email": "newuser2@example.com",
         "user_name": "new_user",
-        "password": "securepassword123"
+        "password": "Securepassword123"
     }
     response = client.post("/app/auth/register", json=new_user_data)
     assert response.status_code == status.HTTP_200_OK
@@ -129,7 +129,7 @@ async def test_delete_comment(client, db_session):
     assert image_from_db is not None, "Image not found"
 
     user_email="deadpool@example.com"
-    user_password = "123"
+    user_password = "New123"
     
     login_data = {
         "username": user_email,
@@ -152,7 +152,7 @@ async def test_delete_comment(client, db_session):
     new_user_data = {
         "email": "newuser3@example.com",
         "user_name": "new_user",
-        "password": "securepassword123"
+        "password": "Securepassword123"
     }
     response = client.post("/app/auth/register", json=new_user_data)
     assert response.status_code == status.HTTP_200_OK
@@ -185,7 +185,7 @@ async def test_get_comment(client, db_session):
     assert image_from_db is not None, "Image not found"
 
     user_email="deadpool@example.com"
-    user_password = "123"
+    user_password = "New123"
     
     login_data = {
         "username": user_email,
@@ -225,7 +225,7 @@ async def test_get_comments_for_image(client, db_session):
     assert image_from_db is not None, "Image not found"
 
     user_email = "deadpool@example.com"
-    user_password = "123"
+    user_password = "New123"
 
     login_data = {"username": user_email, "password": user_password}
     response_login = client.post("/app/auth/login", data=login_data)
@@ -275,7 +275,7 @@ async def test_empty_comment(client, db_session):
 
 
     user_email="deadpool@example.com"
-    user_password = "123"
+    user_password = "New123"
     
     login_data = {
         "username": user_email,

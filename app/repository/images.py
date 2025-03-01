@@ -407,24 +407,23 @@ class ImageCrud(CrudTags):
         Ability to sort by rating or upload date.
         """
         try:
-            stmt = select(Image).options(selectinload(Image.tags))
-
+            stmt = select(Image).options(joinedload(Image.tags)).group_by(Image.id)
+                
             if query:
                 stmt = stmt.filter(Image.description.ilike(f"%{query}%"))
-
+                
             if tag:
                 stmt = stmt.join(Image.tags).filter(Tag.name.ilike(f"%{tag}%"))
-
+                
             if order_by == "rating":
                 stmt = stmt.order_by(desc(func.coalesce(Image.average_rating, 0)))
             elif order_by == "date":
                 stmt = stmt.order_by(desc(Image.created_at))
-
+                
             result = await session.execute(stmt)
-            images = result.scalars().all()
-
+            images = result.scalars().unique().all()
             return images
-    
+        
         except Exception as err:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

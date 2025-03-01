@@ -22,7 +22,7 @@ async def test_create_new_user(client, db_session):
     new_user = {
         "email": "test1@gmail.com",
         "user_name":"test1",
-        "password":"123"
+        "password":"New123"
     }
 
     result_before = await db_session.execute(select(User))

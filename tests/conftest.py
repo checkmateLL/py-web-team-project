@@ -32,7 +32,7 @@ TestingSessionLocal = async_sessionmaker(
 test_user = {
     "username": "test",
     "email": "deadpool@example.com",
-    "password": "123",
+    "password": "New123",
     "role": "ADMIN"
 }
 test_image = {

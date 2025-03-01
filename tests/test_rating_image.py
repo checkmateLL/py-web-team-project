@@ -18,7 +18,7 @@ async def test_added_rates(client, db_session):
     new_user_data = {
         "email": "newuser2@example.com",
         "user_name": "new_user",
-        "password": "securepassword123"
+        "password": "Securepassword123"
     }
     response = client.post("/app/auth/register", json=new_user_data)
     assert response.status_code == status.HTTP_200_OK
@@ -70,7 +70,7 @@ async def test_user_cant_added_rates_twice(client, db_session):
 
     login_data = {
         "username": 'newuser2@example.com',
-        "password": "securepassword123"
+        "password": "Securepassword123"
     }
     response_login = client.post("/app/auth/login", data=login_data)
     assert response_login.status_code == 200
@@ -98,7 +98,7 @@ async def test_user_cant_added_rates_out_of_range(client, db_session):
     new_user_data = {
         "email": "newuser3@example.com",
         "user_name": "new_user",
-        "password": "securepassword123"
+        "password": "Securepassword123"
     }
     response = client.post("/app/auth/register", json=new_user_data)
     assert response.status_code == status.HTTP_200_OK
@@ -130,7 +130,7 @@ async def test_user_role_USER_cant_delete_rate(client, db_session):
 
     login_data = {
         "username": 'newuser3@example.com',
-        "password": "securepassword123"
+        "password": "Securepassword123"
     }
     response_login = client.post("/app/auth/login", data=login_data)
     assert response_login.status_code == 200

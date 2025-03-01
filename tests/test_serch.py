@@ -6,7 +6,7 @@ from fastapi import status
 async def test_search_by_fail_param(client, db_session):
 
     user_email="deadpool@example.com"
-    user_password = "123"
+    user_password = "New123"
     
     login_data = {
         "username": user_email,
@@ -20,7 +20,7 @@ async def test_search_by_fail_param(client, db_session):
     assert access_token, 'Failed to get access token'
 
     search_response =  client.get(
-            f"/app/search/images/",
+            f"/app/search_images/",
             params={"query": "fatal", "tag": "fatal"},
             headers={"Authorization": f"Bearer {access_token}"}
         )
@@ -34,7 +34,7 @@ async def test_search_without_params_but_have_bind_image(client, db_session):
     """
 
     user_email="deadpool@example.com"
-    user_password = "123"
+    user_password = "New123"
     
     login_data = {
         "username": user_email,
@@ -48,7 +48,7 @@ async def test_search_without_params_but_have_bind_image(client, db_session):
     assert access_token, 'Failed to get access token'
 
     search_response =  client.get(
-            f"/app/search/images/",
+            f"/app/search_images/",
             params={"query": "", "tag": ""},
             headers={"Authorization": f"Bearer {access_token}"}
         )
@@ -78,13 +78,13 @@ async def test_search_not_params_and_image_not_bing_user(client, db_session):
     new_user_data = {
         "email": "newuser3@example.com",
         "user_name": "new_user",
-        "password": "securepassword123"
+        "password": "Securepassword123"
     }
     response = client.post("/app/auth/register", json=new_user_data)
     assert response.status_code == status.HTTP_200_OK
 
     user_email="deadpool@example.com"
-    user_password = "123"
+    user_password = "New123"
     
     login_data = {
         "username": user_email,
@@ -113,7 +113,7 @@ async def test_search_variable_parameter(client, db_session):
     """
 
     user_email="deadpool@example.com"
-    user_password = "123"
+    user_password = "New123"
     
     login_data = {
         "username": user_email,
@@ -127,7 +127,7 @@ async def test_search_variable_parameter(client, db_session):
     assert access_token, 'Failed to get access token'
 
     search_response =  client.get(
-            f"/app/search/images/",
+            f"/app/search_images/",
             params={"query": "testingmegadescription", "tag": ""},
             headers={"Authorization": f"Bearer {access_token}"}
         )

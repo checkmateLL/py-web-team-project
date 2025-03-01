@@ -8,7 +8,7 @@ from app.repository.users import crud_users
 async def test_check_first_user_admin(client, db_session):
 
     user_email="deadpool@example.com"
-    user_password = "123"
+    user_password = "New123"
     
     login_data = {
         "username": user_email,
@@ -31,7 +31,7 @@ async def test_second_user_role_user(client, db_session):
     new_user_data = {
         "email": "newuser2@example.com",
         "user_name": "new_user",
-        "password": "securepassword123"
+        "password": "Securepassword123"
     }
     response = client.post("/app/auth/register", json=new_user_data)
     assert response.status_code == status.HTTP_200_OK
@@ -45,7 +45,7 @@ async def test_second_user_role_user(client, db_session):
 
     login_data = {
         "username": "newuser2@example.com",
-        "password": "securepassword123"
+        "password": "Securepassword123"
     }
 
     response = client.post("/app/auth/login", data=login_data)
@@ -63,7 +63,7 @@ async def test_second_user_role_user(client, db_session):
 @pytest.mark.asyncio
 async def test_access_for_admin(client, db_session):
     user_email="deadpool@example.com"
-    user_password = "123"
+    user_password = "New123"
     
     login_data = {
         "username": user_email,
@@ -79,7 +79,7 @@ async def test_access_for_admin(client, db_session):
     new_user_data = {
         "email": "newuser@example.com",
         "user_name": "new_user",
-        "password": "securepassword123",
+        "password": "Securepassword123",
     }
     response = client.post("/app/auth/register", json=new_user_data)
     
@@ -102,7 +102,7 @@ async def test_access_for_not_admin(client, db_session):
     new_user_data = {
         "email": "first@example.com",
         "user_name": "new_user",
-        "password": "securepassword123",
+        "password": "Securepassword123",
     }
     response = client.post("/app/auth/register", json=new_user_data)
     assert response.status_code == status.HTTP_200_OK
@@ -124,7 +124,7 @@ async def test_access_for_not_admin(client, db_session):
     next_user_data = {
         "email": "second@example.com",
         "user_name": "another_user",
-        "password": "securepassword123",
+        "password": "Securepassword123",
     }
     response = client.post("/app/auth/register", json=next_user_data)
     

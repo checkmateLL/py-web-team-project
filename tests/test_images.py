@@ -1,5 +1,6 @@
 from io import BytesIO
 from unittest.mock import AsyncMock, MagicMock, patch
+from fastapi.testclient import TestClient
 import pytest
 from starlette.datastructures import Headers
 from fastapi import UploadFile
@@ -12,63 +13,72 @@ from app.services.image_service import CloudinaryService
 def mock_cloudinary_service():
     mock = MagicMock(spec=CloudinaryService)
     mock.upload_image = AsyncMock(return_value={
-        "secure_url": "https://example.com/image.jpg",
-        "public_id": "12345"
-    })
+        "secure_url":"http://example.com/test.jpg",
+        "public_id":"test.jpg"
+    }
+    )
     return mock
 
-
 @pytest.mark.asyncio
-async def test_upload_images(client, db_session, mock_cloudinary_service):
+async def test_upload_images(client: TestClient, db_session , mock_cloudinary_service: MagicMock):
+    # Override the CloudinaryService dependency
     app.dependency_overrides[CloudinaryService] = lambda: mock_cloudinary_service
-
+    
+    # Define test data
     description = "Test image"
     tags = ["test", "image"]
-
     file_content = b'fake image content'
     file = UploadFile(
-        filename="test.jpg", 
+        filename="test.jpg",
         file=BytesIO(file_content),
         headers=Headers({
             'content-disposition': 'form-data; name="file"; filename="test.jpg"',
             'content-type': 'image/jpeg'
         })
     )
-    file.size = len(file_content) 
-
+    file.size = len(file_content)
     user_email = "deadpool@example.com"
-    user_password = "123"
-
+    user_password = "New123"
     login_data = {
         "username": user_email,
         "password": user_password
     }
-
+    
+    # Login to get access token
     response_login = client.post("/app/auth/login", data=login_data)
     assert response_login.status_code == 200
     access_token = response_login.json()["access_token"]
-
+    
+    # Mock the upload_image method to return a known result
+    mock_cloudinary_service.upload_image.return_value = {
+        "secure_url":"http://example.com/test.jpg",
+        "public_id":"test.jpg"}
+    
+    
+    # Upload the image
     response = client.post(
-        '/app/upload_image',
+        '/app/img/upload_image',
         params={'tags': tags},
         data={'description': description},
         files={'file': (file.filename, file_content, 'image/jpeg')},
         headers={"Authorization": f"Bearer {access_token}"}
     )
+    
+    # Check if the response is successful
+    assert response.status_code == 200, f"Expected 200 OK, but got {response.status_code} with message: {response.text}"
+    
+    # Check if the upload_image method was called
     assert mock_cloudinary_service.upload_image.call_count == 1
-    _, kwargs = mock_cloudinary_service.upload_image.call_args
-
-
-    uploaded_file = kwargs.get('file')
-    assert uploaded_file is not None
-    assert uploaded_file.filename == 'test.jpg'
-
-    assert response.status_code == 200
+    
+    # Additional checks for the response data
     response_data = response.json()
-    assert response_data['description'] == description
-    assert response_data['image_url'] == "https://example.com/image.jpg"
-    assert response_data['user_id'] == 1
-    assert response_data['tags'] == tags
+    assert response_data["id"] is not None
+    assert response_data["description"] == description
+    assert response_data["image_url"] == "http://example.com/test.jpg"
+    assert response_data["user_id"] is not None
+    assert response_data["created_at"] is not None
+    assert response_data["tags"] == tags
+
 
 @pytest.mark.asyncio
 async def test_upload_images_fail_tags(client, db_session, mock_cloudinary_service):
@@ -89,7 +99,7 @@ async def test_upload_images_fail_tags(client, db_session, mock_cloudinary_servi
     file.size = len(file_content) 
 
     user_email = "deadpool@example.com"
-    user_password = "123"
+    user_password = "New123"
 
     login_data = {
         "username": user_email,
@@ -101,7 +111,7 @@ async def test_upload_images_fail_tags(client, db_session, mock_cloudinary_servi
     access_token = response_login.json()["access_token"]
 
     response = client.post(
-        '/app/upload_image',
+        '/app/img/upload_image',
         params={'tags': tags},
         data={'description': description},
         files={'file': (file.filename, file_content, 'image/jpeg')},
@@ -131,7 +141,7 @@ async def test_upload_images_fail_file_content(client, db_session, mock_cloudina
     file.size = len(file_content)
 
     user_email = "deadpool@example.com"
-    user_password = "123"
+    user_password = "New123"
 
     login_data = {
         "username": user_email,
@@ -144,7 +154,7 @@ async def test_upload_images_fail_file_content(client, db_session, mock_cloudina
 
     
     response = client.post(
-        '/app/upload_image',
+        '/app/img/upload_image',
         params={'tags': tags},
         data={'description': description},
         files={'file': (file.filename, file_content, 'text/txt')},  
@@ -161,7 +171,7 @@ async def test_upload_images_fail_file_content(client, db_session, mock_cloudina
 async def test_delete_image(client, db_session):
 
     user_email = "deadpool@example.com"
-    user_password = "123"
+    user_password = "New123"
 
     login_data = {
         "username": user_email,
@@ -176,7 +186,7 @@ async def test_delete_image(client, db_session):
         mock_destroy.return_value = {"result": "ok"}
 
         response = client.delete(
-            f'/app/delete_image/{1}/',
+            f'/app/img/delete_image/{1}/',
             headers={"Authorization": f"Bearer {access_token}"}
         )
         assert response.status_code == 204

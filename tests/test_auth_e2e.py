@@ -18,7 +18,7 @@ async def test_corect_logout(client, db_session):
     new_user_data = {
         "email": "newuser2@example.com",
         "user_name": "new_user",
-        "password": "securepassword123"
+        "password": "Securepassword123"
     }
 
     # Register the new user
@@ -35,7 +35,7 @@ async def test_corect_logout(client, db_session):
     # 2. Login with the new user
     login_data = {
         "username": "newuser2@example.com",
-        "password": "securepassword123"
+        "password": "Securepassword123"
     }
 
     response = client.post("/app/auth/login", data=login_data)
@@ -44,7 +44,7 @@ async def test_corect_logout(client, db_session):
     access_token = response.json()["access_token"]
     assert access_token, 'Failed to get access token'
 
-    mock_redis.is_token_blacklisted_access.return_value = False # token not in bl
+    mock_redis.is_token_blacklisted_access.return_value = False
     app.dependency_overrides[get_token_blacklist] = lambda: mock_redis
 
     # Perform logout

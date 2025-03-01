@@ -16,7 +16,7 @@ async def test_register_user_success(client):
     new_user_data = {
         "email": "newuser@example.com",
         "user_name": "new_user",
-        "password": "securepassword123"
+        "password": "Securepassword123"
     }
     response = client.post("/app/auth/register", json=new_user_data)
     
@@ -32,7 +32,7 @@ async def test_register_existing_email(client):
     existing_user_data = {
         "email": "deadpool@example.com", 
         "user_name": "duplicate_user",
-        "password": "anotherpassword"
+        "password": "Anotherpassword123"
     }
 
     response = client.post("app/auth/register", json=existing_user_data)
@@ -46,7 +46,7 @@ async def test_register_invalid_data(client):
     """invalid data by refister form"""
     invalid_data = {
         "user_name": "invalid_user",
-        "password": "short"
+        "password": "Short"
     }
 
     response = client.post("app/auth/register", json=invalid_data)
@@ -62,7 +62,7 @@ async def test_user_persisted_in_db(client, db_session):
     test_data = {
         "email": "persistence_check@example.com",
         "user_name": "persistence_user",
-        "password": "testpassword123"
+        "password": "Testpassword123"
     }
     
     response = client.post("/app/auth/register", json=test_data)
@@ -84,7 +84,7 @@ async def test_login_success(client):
     """
     login_data = {
         "username": "deadpool@example.com", 
-        "password": "123" 
+        "password": "New123" 
     }
     
     response = client.post(
@@ -159,7 +159,7 @@ async def test_login_response_format(client):
     """
     login_data = {
         "username": "deadpool@example.com",
-        "password": "123"
+        "password": "New123"
     }
     
     response = client.post("/app/auth/login", data=login_data)
@@ -181,12 +181,12 @@ async def test_blacklisted_token_reuse(client):
     mock_redis.setex = AsyncMock(return_value=None)
     # -
     # reuturned set value is_token_blacklisted in Depends AuthService
-    mock_redis.is_token_blacklisted.return_value = True
+    mock_redis.is_token_blacklisted_access.return_value = True
     # set Depends get_token_blacklist
     app.dependency_overrides[get_token_blacklist] = lambda: mock_redis
     
     # login user part
-    login_data = {"username": "deadpool@example.com", "password": "123"}
+    login_data = {"username": "deadpool@example.com", "password": "New123"}
     login_response = client.post("/app/auth/login", data=login_data)
     print(login_response.json())
     access_token = login_response.json()["access_token"]
