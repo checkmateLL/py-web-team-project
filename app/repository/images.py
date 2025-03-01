@@ -407,7 +407,7 @@ class ImageCrud(CrudTags):
         Ability to sort by rating or upload date.
         """
         try:
-            stmt = select(Image).options(joinedload(Image.tags))
+            stmt = select(Image).options(selectinload(Image.tags))
 
             if query:
                 stmt = stmt.filter(Image.description.ilike(f"%{query}%"))
