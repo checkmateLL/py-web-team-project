@@ -13,7 +13,7 @@ router = APIRouter(tags=['search'])
 async def search_images(
     query: str = Query(None, description="Search by description"),
     tag: str = Query(None, description="Filter by tag"),
-    order_by: str = Query("date", description="Sort by 'date' or 'rating'"),
+    order_by: str = Query(None, enum=["date","rating"], description="Sort by 'date' or 'rating'"),
     session: AsyncSession = Depends(get_conn_db),
     _: User = role_deps.all_users(),
 ):

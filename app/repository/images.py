@@ -1,11 +1,11 @@
-from sqlalchemy import insert, select, desc
+from sqlalchemy import insert, select, desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from fastapi import HTTPException, status
 import cloudinary
 import cloudinary.uploader 
 import cloudinary.api
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import settings
@@ -407,17 +407,17 @@ class ImageCrud(CrudTags):
         Ability to sort by rating or upload date.
         """
         try:
-            stmt = select(Image)
+            stmt = select(Image).options(joinedload(Image.tags))
 
-            if query: # filter by key_word description
+            if query:
                 stmt = stmt.filter(Image.description.ilike(f"%{query}%"))
 
-            if tag: # filter by tag
-                stmt = stmt.join(Image.tags).filter(Tag.name == tag) #todo {ilike}
+            if tag:
+                stmt = stmt.join(Image.tags).filter(Tag.name.ilike(f"%{tag}%"))
 
             if order_by == "rating":
-                stmt = stmt.order_by(desc(Image.average_rating))
-            else:
+                stmt.order_by(desc(func.coalesce(Image.average_rating, 0)))
+            elif order_by == "date":
                 stmt = stmt.order_by(desc(Image.created_at))
 
             result = await session.execute(stmt)
