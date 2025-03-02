@@ -21,6 +21,6 @@ def test_custom_exceptions(exception_class, expected_detail):
     """
     with pytest.raises(HTTPException) as exc_info:
         raise exception_class()
-    
+
     assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
     assert exc_info.value.detail == expected_detail

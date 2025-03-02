@@ -12,48 +12,41 @@ import app.schemas as sch
 from app.repository.images import crud_images
 from app.repository.ratings import crud_ratings
 
-router = APIRouter(prefix='/admin_panel')
+router = APIRouter(prefix="/admin_panel")
+
 
 @router.put(
-        '/ban-user/{user_id}',
-        status_code=status.HTTP_200_OK,
-        responses={
+    "/ban-user/{user_id}",
+    status_code=status.HTTP_200_OK,
+    responses={
         200: {
             "description": "User is already deactivated",
             "content": {
                 "application/json": {
                     "example": {
                         "message": "User is already deactivated",
-                        "user": {
-                            "id": 1,
-                            "username": "john_doe",
-                            "is_active": False
-                        }
+                        "user": {"id": 1, "username": "john_doe", "is_active": False},
                     }
                 }
-            }
+            },
         },
         204: {
             "description": "User successfully deactivated",
             "content": {
                 "application/json": {
-                    "example": {
-                        "id": 1,
-                        "username": "john_doe",
-                        "is_active": False
-                    }
+                    "example": {"id": 1, "username": "john_doe", "is_active": False}
                 }
-            }
+            },
         },
         404: {"description": "User not found"},
         500: {"description": "Database error occurred"},
-        403: {"description": "Forbidden. Only admin can perform this action"}
-    }
+        403: {"description": "Forbidden. Only admin can perform this action"},
+    },
 )
 async def desactivate_user(
-    user_id:int = Path(..., description='ID of the user to deactivate', gt=0),
-    session : AsyncSession = Depends(get_conn_db),
-    _ : User = role_deps.admin_only()
+    user_id: int = Path(..., description="ID of the user to deactivate", gt=0),
+    session: AsyncSession = Depends(get_conn_db),
+    _: User = role_deps.admin_only(),
 ):
     """
     Deactivate a user by settings 'is_active' to False
@@ -62,53 +55,43 @@ async def desactivate_user(
     - **Requires admin previleges**:
     """
     result = await crud_users.desactivate_user(user_id, session)
-    if isinstance (result, dict):
+    if isinstance(result, dict):
         return result
-    return Response(
-        status_code=status.HTTP_204_NO_CONTENT
-    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.put(
-        '/unban-user/{user_id}',
-        status_code=status.HTTP_200_OK,
-        responses={
+    "/unban-user/{user_id}",
+    status_code=status.HTTP_200_OK,
+    responses={
         200: {
             "description": "User is already activated",
             "content": {
                 "application/json": {
                     "example": {
                         "message": "User is already activated",
-                        "user": {
-                            "id": 1,
-                            "username": "john_doe",
-                            "is_active": True
-                        }
+                        "user": {"id": 1, "username": "john_doe", "is_active": True},
                     }
                 }
-            }
+            },
         },
         204: {
             "description": "User successfully activated",
             "content": {
                 "application/json": {
-                    "example": {
-                        "id": 1,
-                        "username": "john_doe",
-                        "is_active": True
-                    }
+                    "example": {"id": 1, "username": "john_doe", "is_active": True}
                 }
-            }
+            },
         },
         404: {"description": "User not found"},
         500: {"description": "Database error occurred"},
-        403: {"description": "Forbidden. Only admin can perform this action"}
-    }
+        403: {"description": "Forbidden. Only admin can perform this action"},
+    },
 )
 async def activate_user(
-    user_id:int = Path(..., description='ID of the user to activate', gt=0),
-    session : AsyncSession = Depends(get_conn_db),
-    _ : User = role_deps.admin_only()
+    user_id: int = Path(..., description="ID of the user to activate", gt=0),
+    session: AsyncSession = Depends(get_conn_db),
+    _: User = role_deps.admin_only(),
 ):
     """
     Aactivate a user by settings 'is_active' to True
@@ -117,16 +100,14 @@ async def activate_user(
     - **Requires admin previleges**:
     """
     result = await crud_users.activate_user(user_id, session)
-    if isinstance (result, dict):
+    if isinstance(result, dict):
         return result
-    return Response(
-        status_code=status.HTTP_204_NO_CONTENT
-    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 
 @router.get(
-        "/get_all_images_by_admin/{user_id}/", 
-        response_model=list[sch.ImageResponseSchema]
-    )
+    "/get_all_images_by_admin/{user_id}/", response_model=list[sch.ImageResponseSchema]
+)
 async def get_all_images_by_admin(
     user_id: int,
     session: AsyncSession = Depends(get_conn_db),
@@ -148,14 +129,14 @@ async def get_all_images_by_admin(
     if not user_exists:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User with ID {user_id} not found."
+            detail=f"User with ID {user_id} not found.",
         )
 
     images = await crud_images.get_images_by_user_id(user_id, session)
     if not images:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No images found for user with ID {user_id}."
+            detail=f"No images found for user with ID {user_id}.",
         )
 
     return [
@@ -170,12 +151,16 @@ async def get_all_images_by_admin(
         for image in images
     ]
 
+
 @router.get("/serch/by_user/", response_model=list[sch.ImageResponseSchema])
 async def search_images_by_username(
-    username: str = Query(..., description="Username to search images", 
-                         min_length=sch.USERNAME_MIN_LENGTH, 
-                         max_length=sch.USERNAME_MAX_LENGTH,
-                         regex=sch.USERNAME_PATTERN),
+    username: str = Query(
+        ...,
+        description="Username to search images",
+        min_length=sch.USERNAME_MIN_LENGTH,
+        max_length=sch.USERNAME_MAX_LENGTH,
+        regex=sch.USERNAME_PATTERN,
+    ),
     session: AsyncSession = Depends(get_conn_db),
     _: User = role_deps.admin_moderator(),
 ):
@@ -184,69 +169,68 @@ async def search_images_by_username(
     """
     images = await crud_images.search_by_user(username, session)
 
-    return [sch.ImageResponseSchema(
-        id=img.id,
-        description=img.description,
-        image_url=img.image_url,
-        user_id=img.user_id,
-        tags=[tag.name for tag in img.tags],
-        average_rating=getattr(img, 'average_rating', 0.0),
-        created_at=getattr(img, 'created_at', datetime.now())
-    ) for img in images]
+    return [
+        sch.ImageResponseSchema(
+            id=img.id,
+            description=img.description,
+            image_url=img.image_url,
+            user_id=img.user_id,
+            tags=[tag.name for tag in img.tags],
+            average_rating=getattr(img, "average_rating", 0.0),
+            created_at=getattr(img, "created_at", datetime.now()),
+        )
+        for img in images
+    ]
+
 
 @router.delete("/delete_rating/{rating_id}/")
 async def delete_rating(
-    rating_id: int, 
-    session: AsyncSession = Depends(get_conn_db), 
-    _: User = role_deps.admin_moderator()
+    rating_id: int,
+    session: AsyncSession = Depends(get_conn_db),
+    _: User = role_deps.admin_moderator(),
 ):
     """
     Delete rating(Only moderators and admins).
     """
     return await crud_ratings.delete_rating(rating_id, session)
 
-@router.delete(
-        "/delete_image/{image_id}/", 
-        status_code=status.HTTP_204_NO_CONTENT
-    )
+
+@router.delete("/delete_image/{image_id}/", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_image_admin(
     image_id: int,
     session: AsyncSession = Depends(get_conn_db),
     current_user: User = role_deps.admin_moderator(),
-    ):
+):
     """
     Delete image by ID
     """
     try:
-        deleted = await crud_images.delete_image_admin(
-            image_id, 
-            session, 
-            current_user
-        )
-    
+        deleted = await crud_images.delete_image_admin(image_id, session, current_user)
+
         if not deleted:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, 
-                detail="Image not found or access denied"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Image not found or access denied",
             )
-        return {
-            "message": "Image deleted successfully"
-        }
+        return {"message": "Image deleted successfully"}
     except SQLAlchemyError as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Database error: {str(e)}")
-    
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error: {str(e)}",
+        )
+
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Unexpected error: {str(e)}")
-    
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )
+
+
 @router.get("/get_image/{image_id}/")
 async def get_image_by_id(
     image_id: int,
     session: AsyncSession = Depends(get_conn_db),
-    _ : User = role_deps.admin_moderator(),
+    _: User = role_deps.admin_moderator(),
 ):
     """
     Find URL by ImageId.
@@ -254,11 +238,11 @@ async def get_image_by_id(
     image_object = await crud_images.get_image_url(image_id, session)
     if not image_object:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail="Image not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Image not found"
         )
     return RedirectResponse(url=image_object.image_url)
-    
+
+
 @router.put(
     "/update_image_description/{image_id}/",
     response_model=sch.ImageResponseUpdateSchema,
@@ -269,6 +253,24 @@ async def update_image_description(
     session: AsyncSession = Depends(get_conn_db),
     current_user: User = role_deps.admin_moderator(),
 ):
+    """
+    Update the description of an image (available to moderators and administrators).
+
+    This function updates the description of an image in the database.
+    It ensures that only moderators and administrators can perform this action.
+
+    Args:
+        image_id (int): The ID of the image to update.
+        description (str): The new description for the image.
+        session (AsyncSession): An asynchronous database session.
+        current_user (User): The current user performing the update.
+
+    Returns:
+        ImageResponseUpdateSchema: A schema representing the updated image.
+
+    Raises:
+        HTTPException: If the image with the specified ID does not exist or if the current user is not a moderator or administrator.
+    """
     update_image_object = await crud_images.update_image_description(
         image_id, description, session, current_user
     )
@@ -280,11 +282,12 @@ async def update_image_description(
         user_id=update_image_object.user_id,
     )
 
-@router.get('/image-info')
+
+@router.get("/image-info")
 async def get_image_info(
-    image_id:int,
-    session:AsyncSession = Depends(get_conn_db),
-    current_user:User = role_deps.admin_moderator(),
+    image_id: int,
+    session: AsyncSession = Depends(get_conn_db),
+    current_user: User = role_deps.admin_moderator(),
 ):
     """
     Get info about image.
@@ -295,24 +298,27 @@ async def get_image_info(
         session=session,
     )
     crud_images.check_permission(
-        image_obj=image_object, 
-        current_user_id=current_user.id 
+        image_obj=image_object, current_user_id=current_user.id
     )
-    
+
     return sch.ImageResponseSchema(
         id=image_object.id,
         description=image_object.description,
         image_url=image_object.image_url,
         user_id=image_object.user_id,
-        tags=[tag.name for tag in image_object.tags] 
+        tags=[tag.name for tag in image_object.tags],
     )
+
 
 @router.get("/search_by_user/", response_model=list[sch.ImageResponseSchema])
 async def search_images_by_user(
-    username: str = Query(..., description="Username to search images",
-                         min_length=sch.USERNAME_MIN_LENGTH, 
-                         max_length=sch.USERNAME_MAX_LENGTH,
-                         regex=sch.USERNAME_PATTERN),
+    username: str = Query(
+        ...,
+        description="Username to search images",
+        min_length=sch.USERNAME_MIN_LENGTH,
+        max_length=sch.USERNAME_MAX_LENGTH,
+        regex=sch.USERNAME_PATTERN,
+    ),
     session: AsyncSession = Depends(get_conn_db),
     _: User = role_deps.admin_moderator(),
 ):
@@ -367,12 +373,15 @@ async def search_images_by_user(
     **Note**: This endpoint is only accessible to users with an admin or moderator role.
     """
     images = await crud_images.search_by_user(username, session)
-    return [sch.ImageResponseSchema(
-        id=img.id,
-        description=img.description,
-        image_url=img.image_url,
-        user_id=img.user_id,
-        tags=[tag.name for tag in img.tags],
-        average_rating=getattr(img, 'average_rating', 0.0),
-        created_at=getattr(img, 'created_at', datetime.now())
-    ) for img in images]
+    return [
+        sch.ImageResponseSchema(
+            id=img.id,
+            description=img.description,
+            image_url=img.image_url,
+            user_id=img.user_id,
+            tags=[tag.name for tag in img.tags],
+            average_rating=getattr(img, "average_rating", 0.0),
+            created_at=getattr(img, "created_at", datetime.now()),
+        )
+        for img in images
+    ]

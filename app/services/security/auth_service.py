@@ -18,8 +18,8 @@ class ConstructionAuthService(ABC):
 
     @abstractmethod
     async def get_current_user(
-        self, token: str, session:AsyncSession
-    ) -> Optional['User']: ...
+        self, token: str, session: AsyncSession
+    ) -> Optional["User"]: ...
 
     @abstractmethod
     async def get_token(self) -> str: ...
@@ -33,10 +33,7 @@ class ConstructionAuthService(ABC):
 
     @abstractmethod
     async def added_resets_email_token_blacklist(
-        self,
-        token,
-        token_blacklist,
-        message
+        self, token, token_blacklist, message
     ) -> dict:
         """
         Added email tolen to bl
@@ -45,16 +42,13 @@ class ConstructionAuthService(ABC):
 
     @abstractmethod
     async def added_resets_password_token_blacklist(
-        self,
-        token,
-        token_blacklist,
-        message
+        self, token, token_blacklist, message
     ) -> dict:
         """
         Added password token to bl.
         """
         pass
-    
+
 
 class AuthService(ConstructionAuthService):
 
@@ -63,7 +57,7 @@ class AuthService(ConstructionAuthService):
     async def get_current_user(
         self,
         token: str = Depends(oauth2_scheme),
-        session : AsyncSession = Depends(get_conn_db)
+        session: AsyncSession = Depends(get_conn_db),
     ):
 
         credentials_exception = HTTPException(
@@ -73,163 +67,166 @@ class AuthService(ConstructionAuthService):
         )
         try:
             pyload = await token_manager.decode_token(
-                token_type=TokenType.ACCESS,
-                token=token
+                token_type=TokenType.ACCESS, token=token
             )
-            email = pyload.get('sub')
-            
+            email = pyload.get("sub")
+
             if email is None:
                 raise credentials_exception
-            user = await crud_users.get_user_by_email(
-                email=email,
-                session=session)
-            
+            user = await crud_users.get_user_by_email(email=email, session=session)
+
             if not user:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail='User not found'
+                    status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
                 )
-            
+
             if not user.is_active:
                 raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail='User is banned'
+                    status_code=status.HTTP_403_FORBIDDEN, detail="User is banned"
                 )
-            
+
             return user
-        
+
         except JWTError:
             raise credentials_exception
 
     async def logout_set(
-            self,
-            token:str = Depends(oauth2_scheme),
-            token_blacklist: TokenBlackList = Depends(get_token_blacklist)
+        self,
+        token: str = Depends(oauth2_scheme),
+        token_blacklist: TokenBlackList = Depends(get_token_blacklist),
     ):
-            
+
         if await token_blacklist.is_token_blacklisted_access(token):
-            raise HTTPException(
-                status_code=401,
-                detail='Invalid token'
-            )
-        
+            raise HTTPException(status_code=401, detail="Invalid token")
+
         try:
             pyload = await token_manager.decode_token(
-                token_type=TokenType.ACCESS,
-                token=token
+                token_type=TokenType.ACCESS, token=token
             )
-            exp_timestamp = pyload.get('exp')
+            exp_timestamp = pyload.get("exp")
             if not exp_timestamp:
                 raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+                )
+            expires_in = max(
+                exp_timestamp - int(datetime.now(timezone.utc).timestamp()), 0
             )
-            expires_in = max(exp_timestamp - int(datetime.now(timezone.utc).timestamp()), 0)
 
             await token_blacklist.blacklist_access_token(token, expires_in)
-            return {
-                'message':'Logged out successfully'
-            }
-        
+            return {"message": "Logged out successfully"}
+
         except JWTError:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
             )
-    
+
     async def added_resets_email_token_blacklist(
-            self,
-            token:str,
-            token_blacklist: TokenBlackList = Depends(get_token_blacklist),
-            message='Successfully added.'
+        self,
+        token: str,
+        token_blacklist: TokenBlackList = Depends(get_token_blacklist),
+        message="Successfully added.",
     ):
         if await token_blacklist.is_token_blacklisted_email(token):
-            raise HTTPException(
-                status_code=401,
-                detail='Invalid token'
-            )
-        
+            raise HTTPException(status_code=401, detail="Invalid token")
+
         try:
             pyload = await token_manager.decode_token(
-                token_type=TokenType.RESET_EMAIL,
-                token=token
+                token_type=TokenType.RESET_EMAIL, token=token
             )
-            exp_timestamp = pyload.get('exp')
+            exp_timestamp = pyload.get("exp")
             if not exp_timestamp:
                 raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+                )
+            expires_in = max(
+                exp_timestamp - int(datetime.now(timezone.utc).timestamp()), 0
             )
-            expires_in = max(exp_timestamp - int(datetime.now(timezone.utc).timestamp()), 0)
 
             await token_blacklist.blecklist_reset_email_token(token, expires_in)
-            return {
-                'message': message,
-                'sub':pyload.get('sub')
-            }
-        
+            return {"message": message, "sub": pyload.get("sub")}
+
         except JWTError:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
             )
-    
+
     async def added_resets_password_token_blacklist(
-            self,
-            token:str,
-            token_blacklist: TokenBlackList = Depends(get_token_blacklist),
-            message='Successfully added.'
+        self,
+        token: str,
+        token_blacklist: TokenBlackList = Depends(get_token_blacklist),
+        message="Successfully added.",
     ):
         if await token_blacklist.is_token_blacklisted_password(token):
-            raise HTTPException(
-                status_code=401,
-                detail='Invalid token'
-            )
-        
+            raise HTTPException(status_code=401, detail="Invalid token")
+
         try:
             pyload = await token_manager.decode_token(
-                token_type=TokenType.RESET_PASSWORD,
-                token=token
+                token_type=TokenType.RESET_PASSWORD, token=token
             )
-            exp_timestamp = pyload.get('exp')
+            exp_timestamp = pyload.get("exp")
             if not exp_timestamp:
                 raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+                )
+            expires_in = max(
+                exp_timestamp - int(datetime.now(timezone.utc).timestamp()), 0
             )
-            expires_in = max(exp_timestamp - int(datetime.now(timezone.utc).timestamp()), 0)
 
             await token_blacklist.blecklist_reset_email_token(token, expires_in)
-            return {
-                'message': message,
-                'sub':pyload.get('sub')
-            }
-        
+            return {"message": message, "sub": pyload.get("sub")}
+
         except JWTError:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
             )
-        
+
+    async def added_access_token_blacklist(
+        self,
+        token: str,
+        token_blacklist: TokenBlackList = Depends(get_token_blacklist),
+        message="Successfully added.",
+    ):
+        if await token_blacklist.is_token_blacklisted_access(token):
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        try:
+            pyload = await token_manager.decode_token(
+                token_type=TokenType.ACCESS, token=token
+            )
+            exp_timestamp = pyload.get("exp")
+            if not exp_timestamp:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+                )
+            expires_in = max(
+                exp_timestamp - int(datetime.now(timezone.utc).timestamp()), 0
+            )
+
+            await token_blacklist.blecklist_reset_email_token(token, expires_in)
+            return {"message": message, "sub": pyload.get("sub")}
+
+        except JWTError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+            )
 
     @staticmethod
-    async def get_token(
-            token:str = Depends(oauth2_scheme)
-    ):
+    async def get_token(token: str = Depends(oauth2_scheme)):
         """
         Return oauth2_scheme token.
         """
         return token
 
+
 class IRokeProtect(ABC):
 
     @abstractmethod
-    def role_required(self, required_role:list[RoleSet]):
+    def role_required(self, required_role: list[RoleSet]):
         """
         Check role userObject.
         """
         ...
-    
+
     @abstractmethod
     def all_users(self):
         """
@@ -243,68 +240,51 @@ class IRokeProtect(ABC):
         Access granted admin and moderator.
         """
         ...
-    
+
     @abstractmethod
     def admin_only(self):
         """
         Access admin.
         """
         ...
-    
+
     @abstractmethod
     def moderator_only(self):
         """
         Access granted moderator.
         """
         ...
-        
+
 
 class RoleProtect(IRokeProtect):
 
-    def __init__(self, auth_service:AuthService):
+    def __init__(self, auth_service: AuthService):
         self.auth_service = auth_service
 
     def role_required(self, required_roles: list[RoleSet]):
         async def check_role(
-                current_user:User = Depends(self.auth_service.get_current_user)
+            current_user: User = Depends(self.auth_service.get_current_user),
         ):
             if current_user.role not in required_roles:
                 raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f'Access denied'
+                    status_code=status.HTTP_403_FORBIDDEN, detail=f"Access denied"
                 )
             return current_user
+
         return Depends(check_role)
-    
+
     def all_users(self):
-        return self.role_required(
-            [
-                RoleSet.admin, 
-                RoleSet.moderator, 
-                RoleSet.user
-            ]
-        )
-    
+        return self.role_required([RoleSet.admin, RoleSet.moderator, RoleSet.user])
+
     def admin_moderator(self):
-        return self.role_required(
-            [
-                RoleSet.admin, 
-                RoleSet.moderator
-            ]
-        )
+        return self.role_required([RoleSet.admin, RoleSet.moderator])
 
     def admin_only(self):
-        return self.role_required(
-            [
-                RoleSet.admin
-            ]
-        )
+        return self.role_required([RoleSet.admin])
 
     def moderator_only(self):
-        return self.role_required(
-            [
-                RoleSet.moderator
-            ]
-        )
+        return self.role_required([RoleSet.moderator])
+
+
 auth_service = AuthService()
 role_deps = RoleProtect(auth_service)

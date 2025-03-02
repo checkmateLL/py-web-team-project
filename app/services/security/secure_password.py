@@ -1,5 +1,6 @@
-import bcrypt #typing: ignore
+import bcrypt  # typing: ignore
 from fastapi import HTTPException, status
+
 
 class Hasher:
     @staticmethod

@@ -10,21 +10,19 @@ from app.database.models import Comment, Image, Rating, User
 from fastapi import HTTPException, status
 from app.schemas import validate_username, validate_password
 
+
 class UserCrud:
 
-    async def exist_user(self, email: str, session: AsyncSession) -> bool:
+    async def exist_user(self, email: str, username:str, session: AsyncSession) -> bool:
         """check if email exist in tableUser, unicValue"""
-        query = select(User).filter(User.email == email)
+        query = select(User).filter((User.email == email) | (User.username == username))
         result = await session.execute(query)
         user = result.scalar_one_or_none()
         return user is not None
-    
+
     async def create_new_user(
-            self, 
-            email : str,
-            user_name : str,
-            password : str,
-            session: AsyncSession):
+        self, email: str, user_name: str, password: str, session: AsyncSession
+    ):
         """
         if userObject is first do admin role
         else userObject exist in database do user role
@@ -33,18 +31,14 @@ class UserCrud:
             validate_username(user_name)
             validate_password(password)
         except ValueError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=str(e)
-            )
-        if await self.is_no_users(session=
-                                 session):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        if await self.is_no_users(session=session):
             new_user = User(
                 email=email,
                 username=user_name,
                 password_hash=password,
                 is_active=True,
-                role=RoleSet.admin
+                role=RoleSet.admin,
             )
         else:
             new_user = User(
@@ -57,35 +51,27 @@ class UserCrud:
         session.add(new_user)
         await session.commit()
         await session.refresh(new_user)
-    
+
         return new_user
 
-    async def get_user_by_email(
-            self, 
-            email: str, 
-            session:AsyncSession):
+    async def get_user_by_email(self, email: str, session: AsyncSession):
         result = await session.execute(select(User).filter(User.email == email))
         user = result.scalars().first()
         return user
 
-    async def get_user_by_id(self, user_id, session:AsyncSession):
+    async def get_user_by_id(self, user_id, session: AsyncSession):
         result = await session.execute(select(User).filter(User.id == user_id))
         user = result.scalar_one_or_none()
         return user
-    
-    async def autenticate_user(
-            self, 
-            email: str, 
-            password: str, 
-            session: AsyncSession
-        ):
+
+    async def autenticate_user(self, email: str, password: str, session: AsyncSession):
         user = await self.get_user_by_email(email, session)
         if not user:
             return False
         if not Hasher.verify_password(password, user.password_hash):
             return False
         return user
-    
+
     async def is_no_users(self, session: AsyncSession) -> bool:
         """
         Check, userobject in database.
@@ -94,25 +80,24 @@ class UserCrud:
         result = await session.execute(select(func.count(User.id)))
         count = result.scalar_one()
         return count == 0
-    
+
     async def get_user_by_username(
-            self, 
-            username: str, 
-            session: AsyncSession) -> User | None:
+        self, username: str, session: AsyncSession
+    ) -> User | None:
         """Get user by username"""
         result = await session.execute(select(User).filter(User.username == username))
         return result.scalar_one_or_none()
-    
+
     def _calculate_member_duration(self, register_date: datetime) -> str:
         """Calculate duration of membership"""
         if not register_date:
             return "Unknown"
-        
+
         days_since = max(0, (datetime.now() - register_date).days)
         years = days_since // 365
         months = (days_since % 365) // 30
         days = days_since % 30
-        
+
         if years > 0:
             member_since = f"{years} year{'s' if years != 1 else ''}"
             if months > 0:
@@ -126,31 +111,34 @@ class UserCrud:
                 member_since = f"{days} day{'s' if days != 1 else ''}"
             else:
                 member_since = "Less than a day"
-                
+
         return member_since
 
     async def get_user_profile(self, username: str, session: AsyncSession):
-        """Get user profile with statistics"""        
-        query = select(
-            User,
-            func.count(distinct(Image.id)).label('total_images'),
-            func.count(distinct(Comment.id)).label('total_comments'),
-            func.count(distinct(Rating.id)).label('total_ratings')
-        ).outerjoin(Image, User.id == Image.user_id)\
-         .outerjoin(Comment, User.id == Comment.user_id)\
-         .outerjoin(Rating, User.id == Rating.user_id)\
-         .filter(User.username == username)\
-         .group_by(User.id)
+        """Get user profile with statistics"""
+        query = (
+            select(
+                User,
+                func.count(distinct(Image.id)).label("total_images"),
+                func.count(distinct(Comment.id)).label("total_comments"),
+                func.count(distinct(Rating.id)).label("total_ratings"),
+            )
+            .outerjoin(Image, User.id == Image.user_id)
+            .outerjoin(Comment, User.id == Comment.user_id)
+            .outerjoin(Rating, User.id == Rating.user_id)
+            .filter(User.username == username)
+            .group_by(User.id)
+        )
 
         result = await session.execute(query)
         user_data = result.first()
-        
+
         if not user_data:
             return None
-            
+
         user, total_images, total_comments, total_ratings = user_data
-        
-        member_since = self._calculate_member_duration(user.register_on)        
+
+        member_since = self._calculate_member_duration(user.register_on)
 
         return {
             "username": user.username,
@@ -164,18 +152,18 @@ class UserCrud:
             "email": user.email,
             "is_active": user.is_active,
             "role": user.role.value,
-            "id": user.id
+            "id": user.id,
         }
 
     async def update_user_profile(
-        self, 
-        user_id: int, 
+        self,
+        user_id: int,
         session: AsyncSession,
         username: str | None = None,
         email: str | None = None,
         password_hash: Optional[str] = None,
         bio: str | None = None,
-        avatar_url: str | None = None        
+        avatar_url: str | None = None,
     ) -> User | None:
         """Update user profile"""
         try:
@@ -184,54 +172,53 @@ class UserCrud:
             user = result.scalar_one_or_none()
 
             if not user:
-                return None 
-            
+                return None
+
             if username is not None:
                 try:
                     validate_username(username)
                 except ValueError as e:
                     raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=str(e)
+                        status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
                     )
-                
+
             update_data = {
                 "username": username,
                 "email": email,
                 "bio": bio,
                 "avatar_url": avatar_url,
-                "password_hash": password_hash
+                "password_hash": password_hash,
             }
-            
+
             for key, value in update_data.items():
                 if value is not None:
                     setattr(user, key, value)
-                    
+
             await session.commit()
-            await session.refresh(user)                
+            await session.refresh(user)
             return user
-        
+
         except SQLAlchemyError as e:
             raise
 
-    async def desactivate_user(self, user_id, session:AsyncSession):
+    async def desactivate_user(self, user_id, session: AsyncSession):
         """
         Ban user crud operation
         """
         user = await self.get_user_by_id(user_id, session)
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='User not found'
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
         if user.is_active == False:
             return {
-                'message': 'User is already deactivated',
-                'user': {
-                    'id':user.id,
-                    'username':user.username,
-                    'email':user.email,
-                    'is-active-profile':user.is_active}
+                "message": "User is already deactivated",
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "is-active-profile": user.is_active,
+                },
             }
         try:
             user.is_active = False
@@ -242,42 +229,42 @@ class UserCrud:
         except SQLAlchemyError as err:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Database error occurred"
+                detail="Database error occurred",
             ) from err
 
-    async def activate_user(self, user_id, session:AsyncSession):
+    async def activate_user(self, user_id, session: AsyncSession):
         """
         Unban user crud operation
         """
         user = await self.get_user_by_id(user_id, session)
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail='User not found'
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
-        
+
         if user.is_active == True:
             return {
-                'message': 'User is already activated',
-                'user': {
-                    'id':user.id,
-                    'username':user.username,
-                    'email':user.email,
-                    'is-active-profile':user.is_active}
+                "message": "User is already activated",
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "is-active-profile": user.is_active,
+                },
             }
-        
+
         try:
             user.is_active = True
             session.add(user)
             await session.commit()
             await session.refresh(user)
-            
+
         except SQLAlchemyError as err:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Database error occurred"
+                detail="Database error occurred",
             ) from err
-    
+
     async def change_email(self, old_email, new_email, session):
         current_user = await self.get_user_by_email(old_email, session)
         current_user.email = new_email
@@ -287,5 +274,6 @@ class UserCrud:
         await session.refresh(current_user)
 
         return current_user
+
 
 crud_users = UserCrud()

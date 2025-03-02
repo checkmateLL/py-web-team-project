@@ -38,6 +38,11 @@ libmagic = "^1.0"
 fastapi-mail = "^1.4.2"
 aiosmtplib = "^3.0.2"
 fastapi-limiter = "^0.1.6"
+flake8 = "^7.1.2"
+
+[tool.poetry.group.dev.dependencies]
+autopep8 = "^2.3.2"
+black = "^25.1.0"
 
 [tool.mypy]
 ignore_missing_imports = true
