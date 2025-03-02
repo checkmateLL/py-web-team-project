@@ -1,0 +1,69 @@
+name: App CI
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Установка Poetry
+        run: pip install poetry
+
+      - name: cashind depens Poetry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            poetry-${{ runner.os }}-
+
+      - name: Install depends
+        run: poetry install
+
+      - name: Run tests
+        run: poetry run pytest
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: install Poetry
+        run: pip install poetry
+
+      - name: cache dependencies Poetry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            poetry-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Install flake8
+        run: poetry add --dev flake8
+
+      - name: Run flake8
+        run: poetry run flake8 .
