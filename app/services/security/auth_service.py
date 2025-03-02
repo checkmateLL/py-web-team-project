@@ -85,7 +85,7 @@ class AuthService(ConstructionAuthService):
 
             if not user.is_active:
                 raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN, 
+                    status_code=status.HTTP_403_FORBIDDEN,
                     detail="User is banned"
                 )
 
@@ -110,7 +110,7 @@ class AuthService(ConstructionAuthService):
             exp_timestamp = pyload.get("exp")
             if not exp_timestamp:
                 raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED, 
+                    status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid token"
                 )
             expires_in = max(
@@ -122,7 +122,7 @@ class AuthService(ConstructionAuthService):
 
         except JWTError:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, 
+                status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token"
             )
 
@@ -142,7 +142,7 @@ class AuthService(ConstructionAuthService):
             exp_timestamp = pyload.get("exp")
             if not exp_timestamp:
                 raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED, 
+                    status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid token"
                 )
             expires_in = max(
@@ -156,7 +156,7 @@ class AuthService(ConstructionAuthService):
 
         except JWTError:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, 
+                status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token"
             )
 
@@ -176,19 +176,21 @@ class AuthService(ConstructionAuthService):
             exp_timestamp = pyload.get("exp")
             if not exp_timestamp:
                 raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED, 
+                    status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid token"
                 )
             expires_in = max(
                 exp_timestamp - int(datetime.now(timezone.utc).timestamp()), 0
             )
 
-            await token_blacklist.blecklist_reset_email_token(token, expires_in)
+            await token_blacklist.blecklist_reset_email_token(
+                token, expires_in
+            )
             return {"message": message, "sub": pyload.get("sub")}
 
         except JWTError:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, 
+                status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token"
             )
 
@@ -208,19 +210,21 @@ class AuthService(ConstructionAuthService):
             exp_timestamp = pyload.get("exp")
             if not exp_timestamp:
                 raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED, 
+                    status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid token"
                 )
             expires_in = max(
                 exp_timestamp - int(datetime.now(timezone.utc).timestamp()), 0
             )
 
-            await token_blacklist.blecklist_reset_email_token(token, expires_in)
+            await token_blacklist.blecklist_reset_email_token(
+                token, expires_in
+            )
             return {"message": message, "sub": pyload.get("sub")}
 
         except JWTError:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, 
+                status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token"
             )
 
@@ -281,7 +285,7 @@ class RoleProtect(IRokeProtect):
         ):
             if current_user.role not in required_roles:
                 raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN, 
+                    status_code=status.HTTP_403_FORBIDDEN,
                     detail="Access denied"
                 )
             return current_user

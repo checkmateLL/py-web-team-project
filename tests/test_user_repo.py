@@ -10,14 +10,16 @@ from app.services.security.secure_password import Hasher
 
 @pytest.mark.asyncio
 async def test_exists_user_true(client, db_session):
-    result = await crud_users.exist_user("deadpool@example.com", "test", db_session)
-    assert result == True
+    result = await crud_users.exist_user(
+        "deadpool@example.com", "test", db_session)
+    assert result is True
 
 
 @pytest.mark.asyncio
 async def test_exists_user_false(client, db_session):
-    result = await crud_users.exist_user("fail@example.com", "test_fail", db_session)
-    assert result == False
+    result = await crud_users.exist_user(
+        "fail@example.com", "test_fail", db_session)
+    assert result is False
 
 
 @pytest.mark.asyncio
@@ -32,12 +34,13 @@ async def test_create_new_user(client, db_session):
     assert len(users_before) == 1
 
     result = await crud_users.create_new_user(
-        new_user["email"], new_user["user_name"], new_user["password"], db_session
+        new_user["email"],
+        new_user["user_name"], new_user["password"], db_session
     )
 
     assert result.email == new_user["email"]
     assert result.username == new_user["user_name"]
-    assert result.is_active == True
+    assert result.is_active is True
     assert result.role == "USER"
 
     result_after = await db_session.execute(select(User))
@@ -73,8 +76,9 @@ async def test_get_user_by_id_fail(client, db_session):
 async def test_autenticate_user_fail_case1(client, db_session):
     email_fail = "test11@gmail.com"
     password_fail = "fail_password"
-    result = await crud_users.autenticate_user(email_fail, password_fail, db_session)
-    assert result == False
+    result = await crud_users.autenticate_user(
+        email_fail, password_fail, db_session)
+    assert result is False
 
 
 @pytest.mark.asyncio
@@ -82,7 +86,8 @@ async def test_autenticate_user_fail_case2(client, db_session):
     email_real = "test1@gmail.com"
     password_fail = "fail_password"
     with pytest.raises(HTTPException) as excinfo:
-        await crud_users.autenticate_user(email_real, password_fail, db_session)
+        await crud_users.autenticate_user(
+            email_real, password_fail, db_session)
 
     assert excinfo.value.status_code == 500
     assert excinfo.value.detail == "Password verification failed"
@@ -104,7 +109,7 @@ async def test_autenticate_user_correct(client, db_session):
 @pytest.mark.asyncio
 async def test_coun_user(client, db_session):
     result = await crud_users.is_no_users(db_session)
-    assert result == False
+    assert not result
 
 
 @pytest.mark.asyncio

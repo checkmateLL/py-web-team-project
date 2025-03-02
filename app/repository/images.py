@@ -86,8 +86,8 @@ class CrudTags:
     @staticmethod
     async def _check_size_file(
         file,
-          detail="File too large. Maximus size is 5MB."
-        ):
+        detail="File too large. Maximus size is 5MB."
+    ):
         """
         Check the size of the uploaded file.
 
@@ -402,7 +402,7 @@ class ImageCrud(CrudTags):
                 status_code=status.HTTP_404_NOT_FOUND, detail="Image not found"
             )
         self.check_permission(
-            image_obj=image_obj, 
+            image_obj=image_obj,
             current_user_id=current_user.id
             )
         try:
@@ -411,7 +411,7 @@ class ImageCrud(CrudTags):
         except Exception:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Error deleting image form Cloudinary",
+                detail="Error deleting image form Cloudinary",
             )
         try:
             await session.delete(image_obj)

@@ -36,7 +36,9 @@ async def test_create_comment(client, db_session):
     assert data["text"] == "Nice photo!"
     assert data["image_id"] == image_from_db.id
 
-    result = await db_session.execute(select(Comment).where(Comment.id == data["id"]))
+    result = await db_session.execute(
+        select(Comment).where(Comment.id == data["id"])
+    )
     comment_from_db = result.scalar_one_or_none()
 
     assert comment_from_db is not None, "Comment dont record"

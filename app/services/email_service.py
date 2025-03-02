@@ -28,7 +28,9 @@ class EmailService:
 
     def __init__(self):
         self.template_dir = Path(__file__).parent.parent / "templates"
-        self.jinja_env = Environment(loader=FileSystemLoader(self.template_dir))
+        self.jinja_env = Environment(
+            loader=FileSystemLoader(self.template_dir)
+            )
 
         self.conf = ConnectionConfig(
             MAIL_USERNAME=settings.MAIL_USERNAME,
@@ -53,8 +55,9 @@ class EmailService:
                 token_type=TokenType.RESET_EMAIL,
                 data={"sub": user.email},
             )
-
-            template = self.jinja_env.get_template("email_change_template.html")
+            template = self.jinja_env.get_template(
+                "email_change_template.html"
+                )
 
             body = template.render(
                 username=user.username, host=host, token=token_cahage_email
@@ -74,7 +77,10 @@ class EmailService:
             logger.error(f"Failed to send email: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to send email due to high intensity of connections",
+                detail=(
+                    "Failed to send email due to high",
+                    "intensity of connections"
+                )
             )
 
         except ConnectionError as err:
@@ -98,7 +104,9 @@ class EmailService:
                 data={"sub": user.email},
             )
 
-            template = self.jinja_env.get_template("reset_password_template.html")
+            template = self.jinja_env.get_template(
+                "reset_password_template.html"
+            )
 
             body = template.render(
                 username=user.username, host=host, token=toke_change_password
@@ -119,7 +127,10 @@ class EmailService:
             logger.error(f"Failed to send email: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to send email due to high intensity of connections",
+                detail=(
+                    "Failed to send email due to high",
+                    "intensity of connections"
+                )
             )
 
         except ConnectionError as err:

@@ -60,7 +60,8 @@ async def test_is_token_blacklisted_access_not_in_list():
     mock_redis = AsyncMock()
     mock_redis.exists = AsyncMock(return_value=0)
     token_blacklist = await get_token_blacklist(mock_redis)
-    result = await token_blacklist.is_token_blacklisted_access("test_token_not_in_list")
+    result = await token_blacklist.is_token_blacklisted_access(
+        "test_token_not_in_list")
     assert result is False
     mock_redis.exists.assert_called_once_with(
         "blacklist:test_token_not_in_list")
@@ -86,7 +87,8 @@ async def test_blacklist_reset_email_token():
     mock_redis.exists = AsyncMock(return_value=0)
     mock_redis.setex = AsyncMock(return_value=None)
     token_blacklist = await get_token_blacklist(mock_redis)
-    await token_blacklist.blecklist_reset_email_token("email_reset_token", 3600)
+    await token_blacklist.blecklist_reset_email_token(
+        "email_reset_token", 3600)
     mock_redis.setex.assert_called_once_with(
         "blacklist:email_reset_token", 3600, "blacklisted"
     )
@@ -98,7 +100,8 @@ async def test_blacklist_reset_password_token():
     mock_redis.exists = AsyncMock(return_value=0)
     mock_redis.setex = AsyncMock(return_value=None)
     token_blacklist = await get_token_blacklist(mock_redis)
-    await token_blacklist.blecklist_reset_password_token("password_reset_token", 3600)
+    await token_blacklist.blecklist_reset_password_token(
+        "password_reset_token", 3600)
     mock_redis.setex.assert_called_once_with(
         "blacklist:password_reset_token", 3600, "blacklisted"
     )

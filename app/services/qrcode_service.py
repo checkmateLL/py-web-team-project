@@ -63,7 +63,7 @@ class ImageEncoder:
 
 class ImageGenerator:
     """
-    High-level service 
+    High-level service
     That uses other services to generate and encode a QR code.
     """
 

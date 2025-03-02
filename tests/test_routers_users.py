@@ -42,7 +42,7 @@ async def test_get_my_success(
     assert response.status_code == 200
     access_token = response.json()["access_token"]
     response = client.get(
-        f"/app/users/me/profile",
+        "/app/users/me/profile",
         headers={"Authorization": f"Bearer {access_token}"}
     )
     assert response.status_code == 200
@@ -57,7 +57,7 @@ async def test_get_my_fail(
     assert response.status_code == 200
     access_token = 'fail_token'
     response = client.get(
-        f"/app/users/me/profile",
+        "/app/users/me/profile",
         headers={"Authorization": f"Bearer {access_token}"}
     )
     assert response.status_code == 401

@@ -34,7 +34,7 @@ def rate_limited(max_calls: int, time_frame: int):
             time_frame_in_seconds = time_frame * 60
 
             ip_calls[ip] = deque(
-                call for call in ip_calls[ip] 
+                call for call in ip_calls[ip]
                 if call > now - time_frame_in_seconds
             )
 

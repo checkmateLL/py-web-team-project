@@ -3,12 +3,10 @@ from fastapi import status
 from sqlalchemy import select
 from app.database.models import User
 from unittest.mock import AsyncMock, patch
-from unittest.mock import AsyncMock
 
 from app.main import app
 from app.services.user_service import get_token_blacklist
 from app.services.security.secure_password import Hasher
-
 
 
 @pytest.mark.asyncio
@@ -98,7 +96,9 @@ async def test_login_wrong_password(client):
     """
     test wrong password login router
     """
-    login_data = {"username": "deadpool@example.com", "password": "wrong_password"}
+    login_data = {
+        "username": "deadpool@example.com", "password": "wrong_password"
+        }
 
     response = client.post("/app/auth/login", data=login_data)
 
@@ -108,7 +108,9 @@ async def test_login_wrong_password(client):
 
 @pytest.mark.asyncio
 async def test_login_user_not_exist(client):
-    login_data = {"username": "not_exist@example.com", "password": "any_password"}
+    login_data = {
+        "username": "not_exist@example.com", "password": "any_password"
+        }
 
     response = client.post("/app/auth/login", data=login_data)
 

@@ -34,7 +34,7 @@ class ITokenStrategy(ABC):
 
         expire = datetime.now(ZoneInfo("UTC")) + (
             timedelta(days=expire_delta)
-            if expire_delta 
+            if expire_delta
             else self._get_default_expiry()
         )
 
@@ -60,7 +60,7 @@ class ITokenStrategy(ABC):
 
             if "exp" in payload and payload["exp"] < time.time():
                 raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED, 
+                    status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Tokec has expired"
                 )
 

@@ -1,7 +1,6 @@
 import pytest
 from fastapi import status
 from unittest.mock import AsyncMock
-from unittest.mock import AsyncMock
 
 from app.main import app
 from app.services.user_service import get_token_blacklist
@@ -54,7 +53,7 @@ async def test_corect_logout(client, db_session):
         "/app/auth/logout", headers={"Authorization": f"Bearer {access_token}"}
     )
     # verufy logout response
-    assert logout_response.status_code == 200, "Logout failed with 401 Unauthorized"
+    assert logout_response.status_code == 200
     assert logout_response.json()["message"] == "Logged out successfully"
 
     # Verify that the token is blacklisted in Redis

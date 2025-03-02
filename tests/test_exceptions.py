@@ -17,7 +17,8 @@ from fastapi import HTTPException, status
 )
 def test_custom_exceptions(exception_class, expected_detail):
     """
-    Check that exceptions are created with the correct status codes and messages
+    Check that exceptions are created with the correct status codes
+    and messages
     """
     with pytest.raises(HTTPException) as exc_info:
         raise exception_class()

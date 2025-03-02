@@ -50,7 +50,7 @@ class TokenBlackList:
 
     async def blecklist_reset_email_token(
             self, email_token: str, expires_in: int
-        ):
+    ):
         """
         Added reset token in blacklist
         """
@@ -194,7 +194,7 @@ class UserService:
 
             if not user:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, 
+                    status_code=status.HTTP_404_NOT_FOUND,
                     detail="User not found"
                 )
 
