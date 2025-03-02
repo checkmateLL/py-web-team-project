@@ -6,14 +6,14 @@ from app.services.security.secure_password import Hasher
 def test_verify_password_correct():
     plain_password = "mysecretpassword"
     hashed_password = Hasher.get_password_hash(plain_password)
-    assert Hasher.verify_password(plain_password, hashed_password) == True
+    assert Hasher.verify_password(plain_password, hashed_password) is True
 
 
 def test_verify_password_incorrect():
     plain_password = "mysecretpassword"
     wrong_password = "wrongpassword"
     hashed_password = Hasher.get_password_hash(plain_password)
-    assert Hasher.verify_password(wrong_password, hashed_password) == False
+    assert Hasher.verify_password(wrong_password, hashed_password) is False
 
 
 def test_verify_password_invalid_hash():

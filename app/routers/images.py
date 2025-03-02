@@ -29,7 +29,8 @@ router = APIRouter(tags=["images"])
 
 
 @router.post(
-    "/upload_image", response_model=sch.ImageResponseSchema, summary="Upload image"
+    "/upload_image", response_model=sch.ImageResponseSchema, 
+    summary="Upload image"
 )
 @rate_limited(
     max_calls=settings.RL_TIMES_UPLOAD_PHOTO,
@@ -44,7 +45,8 @@ async def upload_image_endpoint(
         description="Image Description (3 - 255 symbol).",
     ),
     file: UploadFile = File(..., description="Image file (to 5MB)."),
-    tags: list[str] = Query(default_factory=list, description="List tags, max 5 tags"),
+    tags: list[str] = Query(
+        default_factory=list, description="List tags, max 5 tags"),
     session: AsyncSession = Depends(get_conn_db),
     current_user: User = role_deps.all_users(),
     cloudinary_service: CloudinaryService = Depends(CloudinaryService),
@@ -69,9 +71,12 @@ async def upload_image_endpoint(
     upload_result = await cloudinary_service.upload_image(
         file=file, folder=current_user.email
     )
-    secure_url, public_id = await crud_images.get_data_cloudinary(upload_result)
+    secure_url, public_id = await crud_images.get_data_cloudinary(
+        upload_result
+        )
 
-    tags_object = await crud_images.handle_tags(tags_names=tags, session=session)
+    tags_object = await crud_images.handle_tags(
+        tags_names=tags, session=session)
 
     image_object = await crud_images.create_image(
         url=secure_url,
@@ -103,7 +108,10 @@ async def upload_image_endpoint(
     },
 )
 async def delete_image(
-    image_id: int = Path(..., gt=0, description="The ID of the image to delete"),
+    image_id: int = Path(
+        ..., 
+        gt=0, 
+        description="The ID of the image to delete"),
     session: AsyncSession = Depends(get_conn_db),
     current_user: User = role_deps.all_users(),
 ):
@@ -112,20 +120,23 @@ async def delete_image(
 
     ### Parameters:
     - **image_id**: The ID of the image to delete. Must be greater than 0.
-    - **current_user**: The currently authenticated user (automatically injected).
+    - **current_user**: The currently authenticated user 
+    (automatically injected).
 
     ### Returns:
     - **204 No Content**: If the image was successfully deleted.
     - **404 Not Found**: If the image does not exist or the user does not have
     permission to delete it.
-    - **500 Internal Server Error**: If a database error or unexpected error occurs.
+    - **500 Internal Server Error**: If a database error or unexpected 
+    error occurs.
 
     ### Example:
     - **Request**: `DELETE /images/delete_image/1/`
     - **Response**: 204 No Content
     """
     try:
-        deleted = await crud_images.delete_image(image_id, session, current_user)
+        deleted = await crud_images.delete_image(
+            image_id, session, current_user)
 
         if not deleted:
             raise HTTPException(
@@ -160,7 +171,11 @@ async def delete_image(
     },
 )
 async def add_tags_to_image(
-    image_id: int = Path(..., gt=0, description="The ID of the image to add tags to."),
+    image_id: int = Path(
+        ..., 
+        gt=0, 
+        description="The ID of the image to add tags to."
+        ),
     tags: list[str] = Body(
         ..., embed=True, dedcriptions="List if tags to add to the image."
     ),
@@ -173,12 +188,15 @@ async def add_tags_to_image(
     ### Parameters:
     - **image_id**: The ID of the image to add tags to. Must be greater than 0.
     - **tags**: A list of tags to add to the image.
-    - **current_user**: The currently authenticated user (automatically injected).
+    - **current_user**: The currently authenticated user 
+    (automatically injected).
 
     ### Returns:
     - **200 OK**: Tags added successfully. Returns the updated image details.
-    - **400 Bad Request**: If the image already has 5 tags or the new tags exceed the limit.
-    - **403 Forbidden**: If the current user does not have permission to add tags to the image.
+    - **400 Bad Request**: If the image already has 5 tags or the new tags 
+    exceed the limit.
+    - **403 Forbidden**: If the current user does not have permission to add 
+    tags to the image.
     - **404 Not Found**: If the image does not exist.
     - **500 Internal Server Error**: If an unexpected error occurs.
 
@@ -202,7 +220,8 @@ async def add_tags_to_image(
       ```
     """
     try:
-        user_image = await crud_images.get_image_obj(image_id=image_id, session=session)
+        user_image = await crud_images.get_image_obj(
+            image_id=image_id, session=session)
 
         crud_images.check_permission(
             image_obj=user_image, current_user_id=current_user.id
@@ -247,7 +266,8 @@ async def get_image_info(
     Get information about an image. Image owner permission.
 
     - **image_id**: The ID of the image whose information is requested.
-    - Returns detailed information about the image, including its description, URL,
+    - Returns detailed information about the image, including its 
+    description, URL,
     associated user ID, creation date, and tags.
 
     **Permissions**:
@@ -317,7 +337,8 @@ async def update_image_description(
     Update the description of an image.
 
     - **image_id**: The ID of the image to update.
-    - **description**: A new description for the image, with a length between 3 and 255 characters.
+    - **description**: A new description for the image, with a length between 
+    3 and 255 characters.
 
     **Permissions**:
     - The user must have permission to update the image description.
@@ -351,7 +372,8 @@ async def update_image_description(
 
     **Errors**:
     - `400 Bad Request`: If the description is too short or too long.
-    - `401 Unauthorized`: If the user is not authorized to update the image description.
+    - `401 Unauthorized`: If the user is not authorized to update the image 
+    description.
     - `403 Forbidden`: If the user does not have permission to update the image.
     - `404 Not Found`: If the image with the given `image_id` does not exist.
     """
@@ -391,7 +413,8 @@ async def get_image_by_id(
     Location: http://example.com/images/1.jpg
     ```
 
-    **Note**: If the image is not found, the server will respond with a `404 Not Found` error.
+    **Note**: If the image is not found, the server will respond with a 
+    `404 Not Found` error.
     """
     image_object = await crud_images.get_image_url(image_id, session)
     if not image_object:
@@ -405,7 +428,8 @@ async def get_image_by_id(
     status_code=status.HTTP_200_OK,
 )
 @rate_limited(
-    max_calls=settings.RL_TIMES_TF_IMAGE, time_frame=settings.RL_MINUTES_TF_IMAGE
+    max_calls=settings.RL_TIMES_TF_IMAGE, 
+    time_frame=settings.RL_MINUTES_TF_IMAGE
 )
 async def transform_image(
     request: Request,
@@ -417,16 +441,22 @@ async def transform_image(
     qr_service: ImageGenerator = Depends(get_image_generator),
 ):
     """
-    Transform an image using the specified transformation parameters and generate a QR code for it.
+    Transform an image using the specified transformation parameters and 
+    generate a QR code for it.
 
     ### Arguments:
     - **image_id** (int): The ID of the image to transform.
-    - **transformation_params** (TransformationParameters): Transformation parameters such as cropping,
+    - **transformation_params** (TransformationParameters): Transformation 
+    parameters such as cropping,
       blurring, circular cropping, and grayscale options.
-    - **session** (AsyncSession): The database session used to interact with the database.
-    - **current_user** (User): The user making the request, whose permissions will be checked.
-    - **cloudinary_service** (CloudinaryService): Service responsible for applying transformations to the image.
-    - **qr_service** (ImageGenerator): Service responsible for generating the QR code for the transformed image.
+    - **session** (AsyncSession): The database session used to interact with 
+    the database.
+    - **current_user** (User): The user making the request, whose permissions 
+    will be checked.
+    - **cloudinary_service** (CloudinaryService): Service responsible for 
+    applying transformations to the image.
+    - **qr_service** (ImageGenerator): Service responsible for generating 
+    the QR code for the transformed image.
 
     ### Returns:
     A `TransformationResponseSchema` object containing:
@@ -448,7 +478,7 @@ async def transform_image(
     ```json
     {
         "transformed_image_url": "https://res.cloudinary.com/image.jpg",
-        "qr_code_url": "https://api.qrserver.com/v1/create-qr-code/?data=https://res.cloudinary.com/image.jpg",
+        "qr_code_url": "https://api.qrserver.com/v1/create-qr-c...",
         "image_id": 1
     }
     ```
@@ -458,9 +488,11 @@ async def transform_image(
     - `401 Unauthorized`: If the user is not authorized to transform the image.
     - `403 Forbidden`: If the user does not have permission to modify the image.
     - `404 Not Found`: If the image with the given `image_id` does not exist.
-    - `422 Unprocessable Entity`: If the transformation fails due to incorrect parameters or a service issue.
+    - `422 Unprocessable Entity`: If the transformation fails due to incorrect 
+    parameters or a service issue.
     """
-    current_image = await crud_images.get_image_obj(image_id=image_id, session=session)
+    current_image = await crud_images.get_image_obj(
+        image_id=image_id, session=session)
 
     crud_images.check_permission(
         image_obj=current_image, current_user_id=current_user.id
@@ -494,18 +526,23 @@ async def get_user_images(
     Get all images uploaded by the current authenticated user.
 
     ### Arguments:
-    - **session** (AsyncSession): The database session for interacting with the database.
-    - **current_user** (User): The currently authenticated user making the request.
+    - **session** (AsyncSession): The database session for interacting 
+    with the database.
+    - **current_user** (User): The currently authenticated user making 
+    the request.
 
     ### Returns:
-    A list of `ImageResponseSchema` objects containing the following image details:
+    A list of `ImageResponseSchema` objects containing the following image 
+    details:
     - **id**: ID of the image.
     - **description**: Description of the image.
     - **image_url**: URL of the image.
     - **user_id**: ID of the user who uploaded the image.
     - **tags**: List of tags associated with the image.
-    - **average_rating**: Average rating of the image (defaults to 0.0 if not available).
-    - **created_at**: Date and time when the image was uploaded (defaults to the current time if not available).
+    - **average_rating**: Average rating of the image 
+    (defaults to 0.0 if not available).
+    - **created_at**: Date and time when the image was uploaded (defaults to 
+    the current time if not available).
 
     ### Errors:
     - `404 Not Found`: If the user has no uploaded images.
@@ -534,7 +571,8 @@ async def get_user_images(
     ]
     ```
 
-    **Note**: If the user has no images, the response will return a `404 Not Found` error with the message "You have no images."
+    **Note**: If the user has no images, the response will return a 
+    `404 Not Found` error with the message "You have no images."
     """
     images = await crud_images.get_images_by_user_id(current_user.id, session)
     if not images:

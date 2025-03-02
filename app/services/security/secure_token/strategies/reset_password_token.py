@@ -1,4 +1,6 @@
-from app.services.security.secure_token.strategies.base_strategy import ITokenStrategy
+from app.services.security.secure_token.strategies.base_strategy import (
+    ITokenStrategy
+)
 from datetime import timedelta
 
 

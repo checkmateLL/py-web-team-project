@@ -59,7 +59,8 @@ async def test_search_without_params_but_have_bind_image(client, db_session):
         },
     ]
     search_response = search_response.json()
-    for img, expected_img in zip(search_response, testing_image_bing_first_user):
+    for img, expected_img in zip(
+            search_response, testing_image_bing_first_user):
         # remove elements
         img.pop("created_at", None)
         expected_img.pop("created_at", None)
@@ -132,7 +133,8 @@ async def test_search_variable_parameter(client, db_session):
         },
     ]
     search_response = search_response.json()
-    for img, expected_img in zip(search_response, testing_image_bing_first_user):
+    for img, expected_img in zip(
+            search_response, testing_image_bing_first_user):
         # remove elements
         img.pop("created_at", None)
         expected_img.pop("created_at", None)

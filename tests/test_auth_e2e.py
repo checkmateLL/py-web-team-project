@@ -36,7 +36,9 @@ async def test_corect_logout(client, db_session):
     assert created_user_from_db is not None, "User not found in DB"
 
     # 2. Login with the new user
-    login_data = {"username": "newuser2@example.com", "password": "Securepassword123"}
+    login_data = {
+        "username": "newuser2@example.com",
+        "password": "Securepassword123"}
 
     response = client.post("/app/auth/login", data=login_data)
     assert response.status_code == status.HTTP_200_OK

@@ -49,8 +49,10 @@ async def test_blacklist_multiple_tokens():
     await token_blacklist.blacklist_access_token("test_token_1", 3600)
     await token_blacklist.blacklist_access_token("test_token_2", 3600)
 
-    mock_redis.setex.assert_any_call("blacklist:test_token_1", 3600, "blacklisted")
-    mock_redis.setex.assert_any_call("blacklist:test_token_2", 3600, "blacklisted")
+    mock_redis.setex.assert_any_call(
+        "blacklist:test_token_1", 3600, "blacklisted")
+    mock_redis.setex.assert_any_call(
+        "blacklist:test_token_2", 3600, "blacklisted")
 
 
 @pytest.mark.asyncio
@@ -60,7 +62,8 @@ async def test_is_token_blacklisted_access_not_in_list():
     token_blacklist = await get_token_blacklist(mock_redis)
     result = await token_blacklist.is_token_blacklisted_access("test_token_not_in_list")
     assert result is False
-    mock_redis.exists.assert_called_once_with("blacklist:test_token_not_in_list")
+    mock_redis.exists.assert_called_once_with(
+        "blacklist:test_token_not_in_list")
 
 
 @pytest.mark.asyncio
@@ -71,8 +74,10 @@ async def test_blacklist_tokens_with_different_expiry():
     token_blacklist = await get_token_blacklist(mock_redis)
     await token_blacklist.blacklist_access_token("test_token_1", 3600)
     await token_blacklist.blacklist_access_token("test_token_2", 7200)
-    mock_redis.setex.assert_any_call("blacklist:test_token_1", 3600, "blacklisted")
-    mock_redis.setex.assert_any_call("blacklist:test_token_2", 7200, "blacklisted")
+    mock_redis.setex.assert_any_call(
+        "blacklist:test_token_1", 3600, "blacklisted")
+    mock_redis.setex.assert_any_call(
+        "blacklist:test_token_2", 7200, "blacklisted")
 
 
 @pytest.mark.asyncio

@@ -33,18 +33,24 @@ class ITokenStrategy(ABC):
         to_encode = data.copy()
 
         expire = datetime.now(ZoneInfo("UTC")) + (
-            timedelta(days=expire_delta) if expire_delta else self._get_default_expiry()
+            timedelta(days=expire_delta)
+            if expire_delta 
+            else self._get_default_expiry()
         )
 
         to_encode.update({"exp": expire, "scope": scope})
-        return jwt.encode(to_encode, self.secret_key, algorithm=self.algorithm)
+        return jwt.encode(
+            to_encode, self.secret_key, algorithm=self.algorithm
+        )
 
     def _decode_token(self, token: str, scope: str):
         """
         returned payload, mean {'sub':useremail}
         """
         try:
-            payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
+            payload = jwt.decode(
+                token, self.secret_key, algorithms=[self.algorithm]
+            )
 
             if payload.get("scope") != scope:
                 raise HTTPException(
@@ -54,7 +60,8 @@ class ITokenStrategy(ABC):
 
             if "exp" in payload and payload["exp"] < time.time():
                 raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Tokec has expired"
+                    status_code=status.HTTP_401_UNAUTHORIZED, 
+                    detail="Tokec has expired"
                 )
 
             return payload

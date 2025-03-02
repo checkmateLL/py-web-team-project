@@ -21,6 +21,10 @@ async def rate_image(
     Add rating to image.
     """
     if value < 1 or value > 5:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail=detail)
 
-    return await crud_ratings.add_rating(image_id, current_user.id, value, session)
+    return await crud_ratings.add_rating(
+        image_id, current_user.id, value, session
+        )

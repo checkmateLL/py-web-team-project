@@ -13,7 +13,8 @@ class DatabaseSessionManager:
     Attributes:
         _url (str): The database URL.
         _engine (Optional[AsyncEngine]): The asynchronous engine instance.
-        _session_maker (Optional[async_sessionmaker]): The session maker instance.
+        _session_maker (Optional[async_sessionmaker]): The session maker 
+        instance.
     """
 
     def __init__(self, url: str):
@@ -29,7 +30,8 @@ class DatabaseSessionManager:
 
     async def initialize(self):
         """
-        Initialize the database engine and session maker if they are not already initialized.
+        Initialize the database engine and session maker if they are not 
+        already initialized.
         """
         if self._engine is None or self._session_maker is None:
             self._engine = create_async_engine(self._url)
@@ -67,7 +69,7 @@ class DatabaseSessionManager:
 
         try:
             yield session
-        except Exception as err:
+        except Exception:
             await session.rollback()
             raise
         finally:
@@ -76,9 +78,11 @@ class DatabaseSessionManager:
     @contextlib.asynccontextmanager
     async def lifespan(self):
         """
-        Provide an asynchronous context manager for the lifecycle of the database session manager.
+        Provide an asynchronous context manager for the lifecycle of the 
+        database session manager.
 
-        This ensures that the session manager is properly initialized and closed.
+        This ensures that the session manager is properly initialized and 
+        closed.
         """
         await self.initialize()
         try:
@@ -94,7 +98,8 @@ async def get_conn_db() -> AsyncGenerator[AsyncSession, None]:
     """
     Provide an asynchronous context manager for a database connection.
 
-    This function uses the sessionmanager to ensure that the session is properly managed.
+    This function uses the sessionmanager to ensure that the session is 
+    properly managed.
 
     Yields:
         AsyncSession: An asynchronous session object.

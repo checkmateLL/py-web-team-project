@@ -73,16 +73,20 @@ class AuthService(ConstructionAuthService):
 
             if email is None:
                 raise credentials_exception
-            user = await crud_users.get_user_by_email(email=email, session=session)
+            user = await crud_users.get_user_by_email(
+                email=email, session=session
+            )
 
             if not user:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User not found"
                 )
 
             if not user.is_active:
                 raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN, detail="User is banned"
+                    status_code=status.HTTP_403_FORBIDDEN, 
+                    detail="User is banned"
                 )
 
             return user
@@ -106,7 +110,8 @@ class AuthService(ConstructionAuthService):
             exp_timestamp = pyload.get("exp")
             if not exp_timestamp:
                 raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+                    status_code=status.HTTP_401_UNAUTHORIZED, 
+                    detail="Invalid token"
                 )
             expires_in = max(
                 exp_timestamp - int(datetime.now(timezone.utc).timestamp()), 0
@@ -117,7 +122,8 @@ class AuthService(ConstructionAuthService):
 
         except JWTError:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+                status_code=status.HTTP_401_UNAUTHORIZED, 
+                detail="Invalid token"
             )
 
     async def added_resets_email_token_blacklist(
@@ -136,18 +142,22 @@ class AuthService(ConstructionAuthService):
             exp_timestamp = pyload.get("exp")
             if not exp_timestamp:
                 raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+                    status_code=status.HTTP_401_UNAUTHORIZED, 
+                    detail="Invalid token"
                 )
             expires_in = max(
                 exp_timestamp - int(datetime.now(timezone.utc).timestamp()), 0
             )
 
-            await token_blacklist.blecklist_reset_email_token(token, expires_in)
+            await token_blacklist.blecklist_reset_email_token(
+                token, expires_in
+            )
             return {"message": message, "sub": pyload.get("sub")}
 
         except JWTError:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+                status_code=status.HTTP_401_UNAUTHORIZED, 
+                detail="Invalid token"
             )
 
     async def added_resets_password_token_blacklist(
@@ -166,7 +176,8 @@ class AuthService(ConstructionAuthService):
             exp_timestamp = pyload.get("exp")
             if not exp_timestamp:
                 raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+                    status_code=status.HTTP_401_UNAUTHORIZED, 
+                    detail="Invalid token"
                 )
             expires_in = max(
                 exp_timestamp - int(datetime.now(timezone.utc).timestamp()), 0
@@ -177,7 +188,8 @@ class AuthService(ConstructionAuthService):
 
         except JWTError:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+                status_code=status.HTTP_401_UNAUTHORIZED, 
+                detail="Invalid token"
             )
 
     async def added_access_token_blacklist(
@@ -196,7 +208,8 @@ class AuthService(ConstructionAuthService):
             exp_timestamp = pyload.get("exp")
             if not exp_timestamp:
                 raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+                    status_code=status.HTTP_401_UNAUTHORIZED, 
+                    detail="Invalid token"
                 )
             expires_in = max(
                 exp_timestamp - int(datetime.now(timezone.utc).timestamp()), 0
@@ -207,7 +220,8 @@ class AuthService(ConstructionAuthService):
 
         except JWTError:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+                status_code=status.HTTP_401_UNAUTHORIZED, 
+                detail="Invalid token"
             )
 
     @staticmethod
@@ -267,14 +281,16 @@ class RoleProtect(IRokeProtect):
         ):
             if current_user.role not in required_roles:
                 raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN, detail=f"Access denied"
+                    status_code=status.HTTP_403_FORBIDDEN, 
+                    detail="Access denied"
                 )
             return current_user
 
         return Depends(check_role)
 
     def all_users(self):
-        return self.role_required([RoleSet.admin, RoleSet.moderator, RoleSet.user])
+        return self.role_required(
+            [RoleSet.admin, RoleSet.moderator, RoleSet.user])
 
     def admin_moderator(self):
         return self.role_required([RoleSet.admin, RoleSet.moderator])

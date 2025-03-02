@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock
 from app.main import app
 from app.services.user_service import get_token_blacklist
 from app.services.security.secure_password import Hasher
-from tests.conftest import mock_rate_limited
+
 
 
 @pytest.mark.asyncio

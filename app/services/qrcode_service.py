@@ -57,12 +57,14 @@ class ImageEncoder:
         """
         Encodes the image stream to a base64 string.
         """
-        return f"data:image/png;base64,{base64.b64encode(image_bytes).decode('utf-8')}"
+        base64_encoded = base64.b64encode(image_bytes).decode('utf-8')
+        return f"data:image/png;base64,{base64_encoded}"
 
 
 class ImageGenerator:
     """
-    High-level service that uses other services to generate and encode a QR code.
+    High-level service 
+    That uses other services to generate and encode a QR code.
     """
 
     def generate_qr_code(self, url) -> str:

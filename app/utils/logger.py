@@ -20,7 +20,9 @@ class LoggerSetup:
     def setup_logger(self) -> logging.Logger:
         if self.logger is None:
 
-            formating = f"%(levelname)s - %(asctime)s  -%(filename)s - %(message)s"
+            formating = (
+                "%(levelname)s - %(asctime)s  -%(filename)s - %(message)s"
+            )
             formatter = logging.Formatter(formating)
 
             handler = logging.FileHandler(self.log_file)

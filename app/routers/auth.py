@@ -41,13 +41,19 @@ async def register_user(
 
     password = Hasher.get_password_hash(body.password)
     new_user = await crud_users.create_new_user(
-        email=body.email, user_name=body.user_name, password=password, session=session
+        email=body.email, 
+        user_name=body.user_name, 
+        password=password, 
+        session=session
     )
     return sch.ResponseUser.from_orm(new_user)
 
 
 @router.post("/login", response_model=sch.ResponseLogin)
-@rate_limited(max_calls=settings.RL_TIMES_AUTH, time_frame=settings.RL_MINUTES_AUTH)
+@rate_limited(
+    max_calls=settings.RL_TIMES_AUTH, 
+    time_frame=settings.RL_MINUTES_AUTH
+    )
 async def login(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -56,16 +62,20 @@ async def login(
     """
     login user in system
     """
-    user = await crud_users.autenticate_user(form_data.username, form_data.password, db)
+    user = await crud_users.autenticate_user(
+        form_data.username, 
+        form_data.password, db
+        )
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
         )
 
-    if user.is_active == False:
+    if user.is_active is False:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="You dont have access"
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="You dont have access"
         )
 
     encode_access_token = await token_manager.create_token(

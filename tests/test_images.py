@@ -87,7 +87,8 @@ async def test_upload_images(
 
 
 @pytest.mark.asyncio
-async def test_upload_images_fail_tags(client, db_session, mock_cloudinary_service):
+async def test_upload_images_fail_tags(
+        client, db_session, mock_cloudinary_service):
     app.dependency_overrides[CloudinaryService] = lambda: mock_cloudinary_service
 
     description = "Test image"
@@ -170,7 +171,8 @@ async def test_upload_images_fail_file_content(
     assert mock_cloudinary_service.upload_image.call_count == 0
 
     assert response.status_code == 400
-    assert response.json()["detail"] == "Invalid file type. Only JPG, PNG and GIF"
+    assert response.json()[
+        "detail"] == "Invalid file type. Only JPG, PNG and GIF"
 
 
 @pytest.mark.asyncio

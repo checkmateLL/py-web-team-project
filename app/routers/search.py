@@ -21,17 +21,22 @@ async def search_images(
     _: User = role_deps.all_users(),
 ):
     """
-    Search for images by description or tag with the ability to sort by rating or upload date.
+    Search for images by description or tag with the ability to sort by rating 
+    or upload date.
 
     ### Arguments:
-    - **query** (str, optional): Search query to filter images by their description.
+    - **query** (str, optional): Search query to filter images by their 
+    description.
     - **tag** (str, optional): Filter images by a specific tag.
-    - **order_by** (str, default "date"): Sort images by either 'date' (upload date) or 'rating' (average rating).
-    - **session** (AsyncSession): The database session for interacting with the database.
+    - **order_by** (str, default "date"): Sort images by either 'date' 
+    (upload date) or 'rating' (average rating).
+    - **session** (AsyncSession): The database session for interacting with 
+    the database.
     - **_** (User): The current authenticated user making the request.
 
     ### Returns:
-    A list of `ImageResponseSchema` objects containing the following image details:
+    A list of `ImageResponseSchema` objects containing the following image 
+    details:
     - **id**: ID of the image.
     - **description**: Description of the image.
     - **image_url**: URL of the image.
@@ -68,11 +73,14 @@ async def search_images(
     ```
 
     ### Query Parameters:
-    - **query**: Optional query string to search image descriptions (e.g., "sunset", "mountain").
+    - **query**: Optional query string to search image descriptions 
+    (e.g., "sunset", "mountain").
     - **tag**: Optional tag to filter images (e.g., "nature", "travel").
-    - **order_by**: Sort images by either `date` (upload date) or `rating` (average rating).
+    - **order_by**: Sort images by either `date` (upload date) or `rating` 
+    (average rating).
 
-    **Note**: If the `order_by` value is invalid (not 'date' or 'rating'), a `400 Bad Request` error will be raised.
+    **Note**: If the `order_by` value is invalid (not 'date' or 'rating'), a 
+    `400 Bad Request` error will be raised.
     """
     images = await crud_images.search_images(session, query, tag, order_by)
 

@@ -91,10 +91,18 @@ class TransformationGenerator:
         """
         transformations: dict = {}
 
-        transformations = CropTransformation().apply(transformations, crop)
-        transformations = BlurTransformation().apply(transformations, blur)
-        transformations = CircularTransformation().apply(transformations, circular)
-        transformations = GrayscaleTransformation().apply(transformations, grayscale)
+        transformations = CropTransformation().apply(
+            transformations, crop
+        )
+        transformations = BlurTransformation().apply(
+            transformations, blur
+        )
+        transformations = CircularTransformation().apply(
+            transformations, circular
+        )
+        transformations = GrayscaleTransformation().apply(
+            transformations, grayscale
+        )
 
         return transformations
 
@@ -173,7 +181,8 @@ class CloudinaryService(IcloudinaryService):
 
         Args:
             image (Image): Image model instance containing the public_id
-            transformation_params (dict, optional): Custom transformation parameters
+            transformation_params (dict, optional): Custom transformation 
+            parameters
             crop (bool): Apply 200x200 crop
             blur (bool): Apply blur effect
             circular (bool): Make image circular
@@ -186,10 +195,13 @@ class CloudinaryService(IcloudinaryService):
                 - original_image_id: Database ID of original image
 
         Raises:
-            HTTPException: If transformation fails or Cloudinary returns an error
+            HTTPException: If transformation fails or Cloudinary returns an 
+            error
         """
         try:
-            if not transformation_params and not any([crop, blur, circular, grayscale]):
+            if not transformation_params and not any(
+                [crop, blur, circular, grayscale]
+                ):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Not transformations were applied.",
@@ -198,12 +210,17 @@ class CloudinaryService(IcloudinaryService):
             if not transformation_params:
                 transformation_params = (
                     self.transformation_generator.generate_transformation_string(
-                        crop=crop, blur=blur, circular=circular, grayscale=grayscale
+                        crop=crop, 
+                        blur=blur, 
+                        circular=circular, 
+                        grayscale=grayscale
                     )
                 )
 
                 transformed_image = cloudinary.uploader.explicit(
-                    image.public_id, type="upload", eager=[transformation_params]
+                    image.public_id, 
+                    type="upload", 
+                    eager=[transformation_params]
                 )
             eager_transformations = transformed_image.get("eager", [])
             transformed_url = (

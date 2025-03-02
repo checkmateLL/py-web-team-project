@@ -43,7 +43,9 @@ async def test_added_rates(client, db_session):
     assert add_rate_response.status_code == status.HTTP_200_OK
     await db_session.commit()
     result_rating = await db_session.execute(
-        select(Rating).where(Rating.image_id == image_from_db.id, Rating.user_id == 2)
+        select(Rating).where(
+            Rating.image_id == image_from_db.id,
+            Rating.user_id == 2)
     )
     rating_from_db = result_rating.scalar_one_or_none()
     assert rating_from_db is not None, "Rating was not added to the database"
@@ -75,7 +77,9 @@ async def test_user_cant_added_rates_twice(client, db_session):
     image_from_db = result.scalar_one_or_none()
     assert image_from_db is not None, "Image not found"
 
-    login_data = {"username": "newuser2@example.com", "password": "Securepassword123"}
+    login_data = {
+        "username": "newuser2@example.com",
+        "password": "Securepassword123"}
     response_login = client.post("/app/auth/login", data=login_data)
     assert response_login.status_code == 200
     access_token = response_login.json()["access_token"]
@@ -134,7 +138,9 @@ async def test_user_role_USER_cant_delete_rate(client, db_session):
     image_from_db = result.scalar_one_or_none()
     assert image_from_db is not None, "Image not found"
 
-    login_data = {"username": "newuser3@example.com", "password": "Securepassword123"}
+    login_data = {
+        "username": "newuser3@example.com",
+        "password": "Securepassword123"}
     response_login = client.post("/app/auth/login", data=login_data)
     assert response_login.status_code == 200
     access_token_USER = response_login.json()["access_token"]

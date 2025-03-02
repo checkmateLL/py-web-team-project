@@ -10,7 +10,7 @@ class Hasher:
             return bcrypt.checkpw(
                 plain_password.encode("utf-8"), hashed_password.encode("utf-8")
             )
-        except Exception as e:
+        except Exception:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Password verification failed",
@@ -23,7 +23,7 @@ class Hasher:
             salt = bcrypt.gensalt()
             hashed_password = bcrypt.hashpw(password.encode("utf-8"), salt)
             return hashed_password.decode("utf-8")
-        except Exception as e:
+        except Exception:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Password hashing failed",

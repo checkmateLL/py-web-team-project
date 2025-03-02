@@ -4,12 +4,9 @@ from pydantic import (
     Field,
     constr,
     HttpUrl,
-    ConfigDict,
     field_validator,
     StringConstraints,
-    ValidationInfo,
     ConfigDict,
-    validator,
 )
 from datetime import datetime
 from typing import Optional, Annotated
@@ -38,11 +35,13 @@ def validate_username(username: str) -> str:
         )
 
     if len(username) > USERNAME_MAX_LENGTH:
-        raise ValueError(f"Username cannot exceed {USERNAME_MAX_LENGTH} characters")
+        raise ValueError(
+            f"Username cannot exceed {USERNAME_MAX_LENGTH} characters")
 
     if not re.match(USERNAME_PATTERN, username):
         raise ValueError(
-            "Username can only contain letters, numbers, underscores, and hyphens"
+            "Username can only contain letters, "
+            "numbers, underscores, and hyphens"
         )
 
     return username
@@ -59,7 +58,8 @@ def validate_password(password: str) -> str:
         )
 
     if len(password) > PASSWORD_MAX_LENGTH:
-        raise ValueError(f"Password cannot exceed {PASSWORD_MAX_LENGTH} characters")
+        raise ValueError(
+            f"Password cannot exceed {PASSWORD_MAX_LENGTH} characters")
 
     if not any(char.isdigit() for char in password):
         raise ValueError("Password must contain at least one digit")
@@ -296,7 +296,8 @@ class TransformationResponseSchema(BaseModel):
 
 
 class RatingCreate(BaseModel):
-    value: float = Field(ge=1, le=5, description="Rating value between 1 and 5")
+    value: float = Field(
+        ge=1, le=5, description="Rating value between 1 and 5")
     image_id: int
 
 

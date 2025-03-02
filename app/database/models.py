@@ -65,7 +65,8 @@ class Image(BaseModel):
         "User", back_populates="images", lazy="selectin"
     )
     tags: Mapped[list["Tag"]] = relationship(
-        "Tag", secondary=image_tag_association, back_populates="images", lazy="selectin"
+        "Tag", secondary=image_tag_association, back_populates="images", 
+        lazy="selectin"
     )
     comments: Mapped[list["Comment"]] = relationship(
         "Comment", back_populates="image", lazy="selectin"
@@ -83,7 +84,8 @@ class Tag(BaseModel):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     images: Mapped[list["Image"]] = relationship(
-        "Image", secondary=image_tag_association, back_populates="tags", lazy="selectin"
+        "Image", 
+        secondary=image_tag_association, back_populates="tags", lazy="selectin"
     )
 
 

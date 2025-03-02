@@ -16,13 +16,16 @@ async def test_exists_user_true(client, db_session):
 
 @pytest.mark.asyncio
 async def test_exists_user_false(client, db_session):
-    result = await crud_users.exist_user("fail@example.com", "test_fail",db_session)
+    result = await crud_users.exist_user("fail@example.com", "test_fail", db_session)
     assert result == False
 
 
 @pytest.mark.asyncio
 async def test_create_new_user(client, db_session):
-    new_user = {"email": "test1@gmail.com", "user_name": "test1", "password": "New123"}
+    new_user = {
+        "email": "test1@gmail.com",
+        "user_name": "test1",
+        "password": "New123"}
 
     result_before = await db_session.execute(select(User))
     users_before = result_before.scalars().all()

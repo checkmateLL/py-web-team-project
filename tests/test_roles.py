@@ -46,7 +46,9 @@ async def test_second_user_role_user(client, db_session):
     )
     assert created_user_from_db is not None, "User not found in DB"
 
-    login_data = {"username": "newuser2@example.com", "password": "Securepassword123"}
+    login_data = {
+        "username": "newuser2@example.com",
+        "password": "Securepassword123"}
 
     response = client.post("/app/auth/login", data=login_data)
     assert response.status_code == status.HTTP_200_OK

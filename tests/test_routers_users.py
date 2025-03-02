@@ -1,10 +1,5 @@
-from io import BytesIO
-from fastapi import UploadFile
 import pytest
-from unittest.mock import AsyncMock, MagicMock
-from starlette.datastructures import Headers
-from app.services.image_service import CloudinaryService
-from app.main import app
+
 
 @pytest.mark.asyncio
 async def test_get_user_profile_success(
@@ -21,6 +16,7 @@ async def test_get_user_profile_success(
     )
     assert response.status_code == 200
 
+
 @pytest.mark.asyncio
 async def test_get_user_profile_fail(
     client
@@ -36,6 +32,7 @@ async def test_get_user_profile_fail(
     )
     assert response.status_code == 404
 
+
 @pytest.mark.asyncio
 async def test_get_my_success(
     client
@@ -49,6 +46,7 @@ async def test_get_my_success(
         headers={"Authorization": f"Bearer {access_token}"}
     )
     assert response.status_code == 200
+
 
 @pytest.mark.asyncio
 async def test_get_my_fail(
@@ -64,9 +62,10 @@ async def test_get_my_fail(
     )
     assert response.status_code == 401
 
+
 @pytest.mark.asyncio
 async def test_update_user_profile_succes(client):
-    #create new user
+    # create new user
     new_user_data = {
         "email": "newuser2@example.com",
         "user_name": "new_user",

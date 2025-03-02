@@ -13,9 +13,15 @@ from app.schemas import validate_username, validate_password
 
 class UserCrud:
 
-    async def exist_user(self, email: str, username:str, session: AsyncSession) -> bool:
+    async def exist_user(
+            self, email: str, 
+            username:str, 
+            session: AsyncSession
+            ) -> bool:
         """check if email exist in tableUser, unicValue"""
-        query = select(User).filter((User.email == email) | (User.username == username))
+        query = select(User).filter(
+            (User.email == email) | (User.username == username)
+            )
         result = await session.execute(query)
         user = result.scalar_one_or_none()
         return user is not None
@@ -31,7 +37,9 @@ class UserCrud:
             validate_username(user_name)
             validate_password(password)
         except ValueError as e:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail=str(e))
         if await self.is_no_users(session=session):
             new_user = User(
                 email=email,
@@ -55,7 +63,8 @@ class UserCrud:
         return new_user
 
     async def get_user_by_email(self, email: str, session: AsyncSession):
-        result = await session.execute(select(User).filter(User.email == email))
+        result = await session.execute(select(User).filter(User.email == email)
+                                       )
         user = result.scalars().first()
         return user
 
@@ -64,7 +73,8 @@ class UserCrud:
         user = result.scalar_one_or_none()
         return user
 
-    async def autenticate_user(self, email: str, password: str, session: AsyncSession):
+    async def autenticate_user(
+            self, email: str, password: str, session: AsyncSession):
         user = await self.get_user_by_email(email, session)
         if not user:
             return False
@@ -85,7 +95,8 @@ class UserCrud:
         self, username: str, session: AsyncSession
     ) -> User | None:
         """Get user by username"""
-        result = await session.execute(select(User).filter(User.username == username))
+        result = await session.execute(
+            select(User).filter(User.username == username))
         return result.scalar_one_or_none()
 
     def _calculate_member_duration(self, register_date: datetime) -> str:
@@ -198,7 +209,7 @@ class UserCrud:
             await session.refresh(user)
             return user
 
-        except SQLAlchemyError as e:
+        except SQLAlchemyError:
             raise
 
     async def desactivate_user(self, user_id, session: AsyncSession):
@@ -210,7 +221,7 @@ class UserCrud:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
-        if user.is_active == False:
+        if user.is_active is False:
             return {
                 "message": "User is already deactivated",
                 "user": {
@@ -242,7 +253,7 @@ class UserCrud:
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
             )
 
-        if user.is_active == True:
+        if user.is_active is True:
             return {
                 "message": "User is already activated",
                 "user": {

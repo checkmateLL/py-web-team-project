@@ -1,5 +1,4 @@
 import redis.asyncio as redis
-from app.config import settings
 from fastapi import Depends, HTTPException, status, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 import magic
@@ -7,7 +6,6 @@ import magic
 from app.repository.users import crud_users
 from app.services.image_service import CloudinaryService
 from app.utils.logger import logger
-from app.repository.users import crud_users
 from app.config import settings
 
 
@@ -50,7 +48,9 @@ class TokenBlackList:
             f"blacklist:{access_token}", expires_in, "blacklisted"
         )
 
-    async def blecklist_reset_email_token(self, email_token: str, expires_in: int):
+    async def blecklist_reset_email_token(
+            self, email_token: str, expires_in: int
+        ):
         """
         Added reset token in blacklist
         """
@@ -153,7 +153,9 @@ class UserService:
         if mime_type not in settings.ALLOWED_IMAGE_TYPE:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid file type. Only JPEG, PNG and WebP are allowed.",
+                detail=(
+                    "Invalid file type. Only JPEG, PNG and WebP are allowed."
+                ),
             )
 
     async def check_size(self, first_chunk):
@@ -192,7 +194,8 @@ class UserService:
 
             if not user:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+                    status_code=status.HTTP_404_NOT_FOUND, 
+                    detail="User not found"
                 )
 
             if user.avatar_url and "/" in user.avatar_url:

@@ -34,7 +34,10 @@ async def create_comment(
         CommentResponse: The newly created comment.
     """
     new_comment = await crud_comments.create_comment(
-        text=body.text, user_id=current_user.id, image_id=photo_id, session=session
+        text=body.text, 
+        user_id=current_user.id, 
+        image_id=photo_id, 
+        session=session
     )
 
     return {
@@ -71,7 +74,10 @@ async def update_comment(
         HTTPException: 403 if the user is not the owner of the comment.
     """
     return await crud_comments.update_comment(
-        comment_id=comment_id, text=body.text, user=current_user, session=session
+        comment_id=comment_id, 
+        text=body.text, 
+        user=current_user, 
+        session=session
     )
 
 

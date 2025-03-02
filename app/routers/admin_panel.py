@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
+from fastapi import (
+    APIRouter, Depends, HTTPException, Path, Query, Response, status
+    )
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 from fastapi.responses import RedirectResponse
@@ -25,7 +27,9 @@ router = APIRouter(prefix="/admin_panel")
                 "application/json": {
                     "example": {
                         "message": "User is already deactivated",
-                        "user": {"id": 1, "username": "john_doe", "is_active": False},
+                        "user": {
+                            "id": 1, "username": "john_doe", "is_active": False
+                        },
                     }
                 }
             },
@@ -34,7 +38,8 @@ router = APIRouter(prefix="/admin_panel")
             "description": "User successfully deactivated",
             "content": {
                 "application/json": {
-                    "example": {"id": 1, "username": "john_doe", "is_active": False}
+                    "example": {
+                        "id": 1, "username": "john_doe", "is_active": False}
                 }
             },
         },
@@ -70,7 +75,9 @@ async def desactivate_user(
                 "application/json": {
                     "example": {
                         "message": "User is already activated",
-                        "user": {"id": 1, "username": "john_doe", "is_active": True},
+                        "user": {
+                            "id": 1, "username": "john_doe", "is_active": True
+                            },
                     }
                 }
             },
@@ -79,7 +86,8 @@ async def desactivate_user(
             "description": "User successfully activated",
             "content": {
                 "application/json": {
-                    "example": {"id": 1, "username": "john_doe", "is_active": True}
+                    "example": {
+                        "id": 1, "username": "john_doe", "is_active": True}
                 }
             },
         },
@@ -106,7 +114,8 @@ async def activate_user(
 
 
 @router.get(
-    "/get_all_images_by_admin/{user_id}/", response_model=list[sch.ImageResponseSchema]
+    "/get_all_images_by_admin/{user_id}/", 
+    response_model=list[sch.ImageResponseSchema]
 )
 async def get_all_images_by_admin(
     user_id: int,
@@ -195,7 +204,8 @@ async def delete_rating(
     return await crud_ratings.delete_rating(rating_id, session)
 
 
-@router.delete("/delete_image/{image_id}/", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/delete_image/{image_id}/", 
+               status_code=status.HTTP_204_NO_CONTENT)
 async def delete_image_admin(
     image_id: int,
     session: AsyncSession = Depends(get_conn_db),
@@ -205,7 +215,8 @@ async def delete_image_admin(
     Delete image by ID
     """
     try:
-        deleted = await crud_images.delete_image_admin(image_id, session, current_user)
+        deleted = await crud_images.delete_image_admin(
+            image_id, session, current_user)
 
         if not deleted:
             raise HTTPException(
@@ -254,7 +265,8 @@ async def update_image_description(
     current_user: User = role_deps.admin_moderator(),
 ):
     """
-    Update the description of an image (available to moderators and administrators).
+    Update the description of an image (available to moderators and 
+    administrators).
 
     This function updates the description of an image in the database.
     It ensures that only moderators and administrators can perform this action.
@@ -269,7 +281,8 @@ async def update_image_description(
         ImageResponseUpdateSchema: A schema representing the updated image.
 
     Raises:
-        HTTPException: If the image with the specified ID does not exist or if the current user is not a moderator or administrator.
+        HTTPException: If the image with the specified ID does not exist or
+          if the current user is not a moderator or administrator.
     """
     update_image_object = await crud_images.update_image_description(
         image_id, description, session, current_user
@@ -323,15 +336,19 @@ async def search_images_by_user(
     _: User = role_deps.admin_moderator(),
 ):
     """
-    Search images uploaded by a specific user. This endpoint is available only to moderators and administrators.
+    Search images uploaded by a specific user. This endpoint is available 
+    only to moderators and administrators.
 
     ### Arguments:
-    - **username** (str): The username of the user whose images are being searched.
-    - **session** (AsyncSession): The database session for interacting with the database.
+    - **username** (str): The username of the user whose images are being 
+    searched.
+    - **session** (AsyncSession): The database session for interacting with 
+    the database.
     - **_** (User): The current authenticated user with moderator or admin role.
 
     ### Returns:
-    A list of `ImageResponseSchema` objects containing the following image details:
+    A list of `ImageResponseSchema` objects containing the following image 
+    details:
     - **id**: ID of the image.
     - **description**: Description of the image.
     - **image_url**: URL of the image.
@@ -370,7 +387,8 @@ async def search_images_by_user(
     ### Query Parameters:
     - **username**: The username of the user whose images you want to search.
 
-    **Note**: This endpoint is only accessible to users with an admin or moderator role.
+    **Note**: This endpoint is only accessible to users with an admin or 
+    moderator role.
     """
     images = await crud_images.search_by_user(username, session)
     return [
