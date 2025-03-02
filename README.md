@@ -4,13 +4,13 @@
 ## 1. Introdusion to PhotoShare
 *PhotoShare is a user-friendly and intuitive social media platform designed to revolutionize the way users share, discover, and interact with visual content. Our app offers a seamless experience for capturing, editing, and sharing photos, all while fostering a community of like-minded individuals who appreciate the beauty of visual storytelling.*
 ## 2. Precondition
-```
+
 Before starting the project, make sure that you have the following tools installed:
-```
+
 ### 2.1. Python 3.11+
-```
+
 Make sure you have Python 3.11 or higher installed. You can check the current version of Python with the command:
-```
+
 ```bash
 python --version
 ```
@@ -133,6 +133,6 @@ pytest
 pytest --cov=.
 ```
 ## 5. Other information in Wiki project
-```
+
 https://github.com/checkmateLL/py-web-team-project/wiki
-```
+
