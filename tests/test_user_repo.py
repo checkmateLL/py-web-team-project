@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from sqlalchemy import select
 import pytest
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 
 from app.database.models import User
 from app.repository.users import crud_users
@@ -10,13 +10,13 @@ from app.services.security.secure_password import Hasher
 
 @pytest.mark.asyncio
 async def test_exists_user_true(client, db_session):
-    result = await crud_users.exist_user("deadpool@example.com", db_session)
+    result = await crud_users.exist_user("deadpool@example.com", "test", db_session)
     assert result == True
 
 
 @pytest.mark.asyncio
 async def test_exists_user_false(client, db_session):
-    result = await crud_users.exist_user("fail@example.com", db_session)
+    result = await crud_users.exist_user("fail@example.com", "test_fail",db_session)
     assert result == False
 
 

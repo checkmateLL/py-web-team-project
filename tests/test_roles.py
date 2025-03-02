@@ -79,7 +79,7 @@ async def test_access_for_admin(client, db_session):
 
     new_user_data = {
         "email": "newuser@example.com",
-        "user_name": "new_user",
+        "user_name": "new_user2",
         "password": "Securepassword123",
     }
     response = client.post("/app/auth/register", json=new_user_data)
@@ -105,7 +105,7 @@ async def test_access_for_not_admin(client, db_session):
 
     new_user_data = {
         "email": "first@example.com",
-        "user_name": "new_user",
+        "user_name": "new_user3",
         "password": "Securepassword123",
     }
     response = client.post("/app/auth/register", json=new_user_data)

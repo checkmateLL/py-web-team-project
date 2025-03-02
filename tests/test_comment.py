@@ -145,7 +145,7 @@ async def test_delete_comment(client, db_session):
 
     new_user_data = {
         "email": "newuser3@example.com",
-        "user_name": "new_user",
+        "user_name": "new_user2",
         "password": "Securepassword123",
     }
     response = client.post("/app/auth/register", json=new_user_data)
