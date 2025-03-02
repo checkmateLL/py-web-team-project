@@ -29,7 +29,7 @@ class Settings(BaseSettings):
 
     MAIL_SERVER: str = "test"
     MAIL_PORT: int = 1
-    MAIL_USERNAME: str = "test"
+    MAIL_USERNAME: str = "example@example.com"
     MAIL_PASSWORD: SecretStr = SecretStr("secret_password")
     MAIL_FROM: str = "example@example.com"
     MAIL_FROM_NAME: str = "example@example.com"
