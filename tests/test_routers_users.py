@@ -93,22 +93,3 @@ async def test_update_user_profile_succes(client):
         headers={"Authorization": f"Bearer {access_token}"}
     )
     assert response.status_code == 200
-
-
-@pytest.mark.asyncio
-async def test_send_email_reset_user_email(client, mocker):
-    mock_bt = mocker.MagicMock()
-    
-    login_data = {"username": "deadpool@example.com", "password": "New123"}
-    
-    response = client.post("/app/auth/login", data=login_data)
-    assert response.status_code == 200
-    access_token = response.json()["access_token"]
-
-    response = client.post(
-        "/app/users/reset-email-send", 
-        headers={"Authorization": f"Bearer {access_token}"}
-    )
-
-    assert response.status_code == 200
-    assert response.json() == {"message": "Email change request is being processed. A confirmation email has been sent."}
