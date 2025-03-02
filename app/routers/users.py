@@ -472,7 +472,7 @@ async def change_email(
         await auth_service.added_access_token_blacklist(
             access_token, token_blacklist
         )
-    return {"status": "correct", "message": "login with new password"}
+    return {"status": "correct", "message": "login with new email"}
     # return RedirectResponse(url='/app/auth/login')
 
 
