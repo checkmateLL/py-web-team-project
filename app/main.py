@@ -52,6 +52,6 @@ async def healthchecker(
         return {"message": "Database normally works"}
     except Exception:
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail="Error connecting to the database"
             )

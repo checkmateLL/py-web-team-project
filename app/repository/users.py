@@ -14,7 +14,8 @@ from app.schemas import validate_username, validate_password
 class UserCrud:
 
     async def exist_user(
-            self, email: str,
+            self,
+            email: str,
             username: str,
             session: AsyncSession
             ) -> bool:

@@ -28,7 +28,7 @@ class CrudTags:
         """
         if image_obj.user_id != current_user_id:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, 
+                status_code=status.HTTP_403_FORBIDDEN,
                 detail=detail
             )
 
@@ -43,7 +43,7 @@ class CrudTags:
         """
         if image_obj_user_id == current_user_id:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, 
+                status_code=status.HTTP_403_FORBIDDEN,
                 detail=detail
             )
 
@@ -85,7 +85,9 @@ class CrudTags:
 
     @staticmethod
     async def _check_size_file(
-        file, detail="File too large. Maximus size is 5MB."):
+        file,
+          detail="File too large. Maximus size is 5MB."
+        ):
         """
         Check the size of the uploaded file.
 
@@ -96,7 +98,7 @@ class CrudTags:
         Args:
             file: The uploaded file to check.
             detail (str): The error message to include in the exception if the
-              file is too large.
+            file is too large.
 
         Raises:
             HTTPException: If the file size exceeds the maximum allowed size.
@@ -399,7 +401,6 @@ class ImageCrud(CrudTags):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Image not found"
             )
-
         self.check_permission(
             image_obj=image_obj, 
             current_user_id=current_user.id
@@ -412,7 +413,6 @@ class ImageCrud(CrudTags):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Error deleting image form Cloudinary",
             )
-
         try:
             await session.delete(image_obj)
             await session.commit()
@@ -550,13 +550,13 @@ class ImageCrud(CrudTags):
 
         except SQLAlchemyError as e:
             raise HTTPException(
-                status_code=500, 
+                status_code=500,
                 detail=f"Database error occurred: {str(e)}"
             )
 
         except Exception as e:
             raise HTTPException(
-                status_code=500, 
+                status_code=500,
                 detail=f"An unexpected error occurred: {str(e)}"
             )
 
