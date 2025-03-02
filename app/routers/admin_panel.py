@@ -114,7 +114,7 @@ async def activate_user(
 
 
 @router.get(
-    "/get_all_images_by_admin/{user_id}/", 
+    "/get_all_images_by_admin/{user_id}/",
     response_model=list[sch.ImageResponseSchema]
 )
 async def get_all_images_by_admin(
@@ -204,7 +204,7 @@ async def delete_rating(
     return await crud_ratings.delete_rating(rating_id, session)
 
 
-@router.delete("/delete_image/{image_id}/", 
+@router.delete("/delete_image/{image_id}/",
                status_code=status.HTTP_204_NO_CONTENT)
 async def delete_image_admin(
     image_id: int,
@@ -265,7 +265,7 @@ async def update_image_description(
     current_user: User = role_deps.admin_moderator(),
 ):
     """
-    Update the description of an image (available to moderators and 
+    Update the description of an image (available to moderators and
     administrators).
 
     This function updates the description of an image in the database.
@@ -336,18 +336,19 @@ async def search_images_by_user(
     _: User = role_deps.admin_moderator(),
 ):
     """
-    Search images uploaded by a specific user. This endpoint is available 
+    Search images uploaded by a specific user. This endpoint is available
     only to moderators and administrators.
 
     ### Arguments:
-    - **username** (str): The username of the user whose images are being 
+    - **username** (str): The username of the user whose images are being
     searched.
-    - **session** (AsyncSession): The database session for interacting with 
+    - **session** (AsyncSession): The database session for interacting with
     the database.
-    - **_** (User): The current authenticated user with moderator or admin role.
+    - **_** (User): The current authenticated user with moderator or
+      admin role.
 
     ### Returns:
-    A list of `ImageResponseSchema` objects containing the following image 
+    A list of `ImageResponseSchema` objects containing the following image
     details:
     - **id**: ID of the image.
     - **description**: Description of the image.
@@ -387,7 +388,7 @@ async def search_images_by_user(
     ### Query Parameters:
     - **username**: The username of the user whose images you want to search.
 
-    **Note**: This endpoint is only accessible to users with an admin or 
+    **Note**: This endpoint is only accessible to users with an admin or
     moderator role.
     """
     images = await crud_images.search_by_user(username, session)

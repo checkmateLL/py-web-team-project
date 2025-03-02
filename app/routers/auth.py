@@ -15,7 +15,9 @@ router = APIRouter(prefix="/auth")
 
 
 @router.post("/register", status_code=200, response_model=sch.ResponseUser)
-@rate_limited(max_calls=settings.RL_TIMES_AUTH, time_frame=settings.RL_MINUTES_AUTH)
+@rate_limited(
+    max_calls=settings.RL_TIMES_AUTH, 
+    time_frame=settings.RL_MINUTES_AUTH)
 async def register_user(
     request: Request,
     body: sch.RegisterUser,
@@ -36,18 +38,17 @@ async def register_user(
 
     if await crud_users.exist_user(body.email, body.user_name, session):
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="User already register"
+            status_code=status.HTTP_409_CONFLICT, 
+            detail="User already register"
         )
-
     password = Hasher.get_password_hash(body.password)
     new_user = await crud_users.create_new_user(
-        email=body.email, 
+        email=body.email,
         user_name=body.user_name, 
         password=password, 
         session=session
     )
     return sch.ResponseUser.from_orm(new_user)
-
 
 @router.post("/login", response_model=sch.ResponseLogin)
 @rate_limited(
@@ -63,7 +64,7 @@ async def login(
     login user in system
     """
     user = await crud_users.autenticate_user(
-        form_data.username, 
+        form_data.username,
         form_data.password, db
         )
     if not user:
@@ -74,7 +75,7 @@ async def login(
 
     if user.is_active is False:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
+            status_code=status.HTTP_403_FORBIDDEN,
             detail="You dont have access"
         )
 

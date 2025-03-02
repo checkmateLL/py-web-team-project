@@ -15,7 +15,8 @@ from app.config import RoleSet
 from datetime import datetime
 
 
-class BaseModel(DeclarativeBase): ...
+class BaseModel(DeclarativeBase):
+    pass
 
 
 image_tag_association = Table(
@@ -65,7 +66,7 @@ class Image(BaseModel):
         "User", back_populates="images", lazy="selectin"
     )
     tags: Mapped[list["Tag"]] = relationship(
-        "Tag", secondary=image_tag_association, back_populates="images", 
+        "Tag", secondary=image_tag_association, back_populates="images",
         lazy="selectin"
     )
     comments: Mapped[list["Comment"]] = relationship(
@@ -84,7 +85,7 @@ class Tag(BaseModel):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     images: Mapped[list["Image"]] = relationship(
-        "Image", 
+        "Image",
         secondary=image_tag_association, back_populates="tags", lazy="selectin"
     )
 

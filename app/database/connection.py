@@ -13,7 +13,7 @@ class DatabaseSessionManager:
     Attributes:
         _url (str): The database URL.
         _engine (Optional[AsyncEngine]): The asynchronous engine instance.
-        _session_maker (Optional[async_sessionmaker]): The session maker 
+        _session_maker (Optional[async_sessionmaker]): The session maker
         instance.
     """
 
@@ -30,7 +30,7 @@ class DatabaseSessionManager:
 
     async def initialize(self):
         """
-        Initialize the database engine and session maker if they are not 
+        Initialize the database engine and session maker if they are not
         already initialized.
         """
         if self._engine is None or self._session_maker is None:
@@ -78,10 +78,10 @@ class DatabaseSessionManager:
     @contextlib.asynccontextmanager
     async def lifespan(self):
         """
-        Provide an asynchronous context manager for the lifecycle of the 
+        Provide an asynchronous context manager for the lifecycle of the
         database session manager.
 
-        This ensures that the session manager is properly initialized and 
+        This ensures that the session manager is properly initialized and
         closed.
         """
         await self.initialize()
@@ -98,7 +98,7 @@ async def get_conn_db() -> AsyncGenerator[AsyncSession, None]:
     """
     Provide an asynchronous context manager for a database connection.
 
-    This function uses the sessionmanager to ensure that the session is 
+    This function uses the sessionmanager to ensure that the session is
     properly managed.
 
     Yields:

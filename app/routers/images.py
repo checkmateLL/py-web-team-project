@@ -29,7 +29,7 @@ router = APIRouter(tags=["images"])
 
 
 @router.post(
-    "/upload_image", response_model=sch.ImageResponseSchema, 
+    "/upload_image", response_model=sch.ImageResponseSchema,
     summary="Upload image"
 )
 @rate_limited(
@@ -109,8 +109,8 @@ async def upload_image_endpoint(
 )
 async def delete_image(
     image_id: int = Path(
-        ..., 
-        gt=0, 
+        ...,
+        gt=0,
         description="The ID of the image to delete"),
     session: AsyncSession = Depends(get_conn_db),
     current_user: User = role_deps.all_users(),
@@ -120,14 +120,14 @@ async def delete_image(
 
     ### Parameters:
     - **image_id**: The ID of the image to delete. Must be greater than 0.
-    - **current_user**: The currently authenticated user 
+    - **current_user**: The currently authenticated user
     (automatically injected).
 
     ### Returns:
     - **204 No Content**: If the image was successfully deleted.
     - **404 Not Found**: If the image does not exist or the user does not have
     permission to delete it.
-    - **500 Internal Server Error**: If a database error or unexpected 
+    - **500 Internal Server Error**: If a database error or unexpected
     error occurs.
 
     ### Example:
@@ -172,8 +172,8 @@ async def delete_image(
 )
 async def add_tags_to_image(
     image_id: int = Path(
-        ..., 
-        gt=0, 
+        ...,
+        gt=0,
         description="The ID of the image to add tags to."
         ),
     tags: list[str] = Body(
@@ -188,14 +188,14 @@ async def add_tags_to_image(
     ### Parameters:
     - **image_id**: The ID of the image to add tags to. Must be greater than 0.
     - **tags**: A list of tags to add to the image.
-    - **current_user**: The currently authenticated user 
+    - **current_user**: The currently authenticated user
     (automatically injected).
 
     ### Returns:
     - **200 OK**: Tags added successfully. Returns the updated image details.
-    - **400 Bad Request**: If the image already has 5 tags or the new tags 
+    - **400 Bad Request**: If the image already has 5 tags or the new tags
     exceed the limit.
-    - **403 Forbidden**: If the current user does not have permission to add 
+    - **403 Forbidden**: If the current user does not have permission to add
     tags to the image.
     - **404 Not Found**: If the image does not exist.
     - **500 Internal Server Error**: If an unexpected error occurs.
@@ -266,7 +266,7 @@ async def get_image_info(
     Get information about an image. Image owner permission.
 
     - **image_id**: The ID of the image whose information is requested.
-    - Returns detailed information about the image, including its 
+    - Returns detailed information about the image, including its
     description, URL,
     associated user ID, creation date, and tags.
 
@@ -337,7 +337,7 @@ async def update_image_description(
     Update the description of an image.
 
     - **image_id**: The ID of the image to update.
-    - **description**: A new description for the image, with a length between 
+    - **description**: A new description for the image, with a length between
     3 and 255 characters.
 
     **Permissions**:
@@ -372,9 +372,10 @@ async def update_image_description(
 
     **Errors**:
     - `400 Bad Request`: If the description is too short or too long.
-    - `401 Unauthorized`: If the user is not authorized to update the image 
+    - `401 Unauthorized`: If the user is not authorized to update the image
     description.
-    - `403 Forbidden`: If the user does not have permission to update the image.
+    - `403 Forbidden`: If the user does not have permission to
+    update the image.
     - `404 Not Found`: If the image with the given `image_id` does not exist.
     """
     update_image_object = await crud_images.update_image_description(
@@ -412,8 +413,7 @@ async def get_image_by_id(
     HTTP/1.1 302 Found
     Location: http://example.com/images/1.jpg
     ```
-
-    **Note**: If the image is not found, the server will respond with a 
+    **Note**: If the image is not found, the server will respond with a
     `404 Not Found` error.
     """
     image_object = await crud_images.get_image_url(image_id, session)
@@ -428,7 +428,7 @@ async def get_image_by_id(
     status_code=status.HTTP_200_OK,
 )
 @rate_limited(
-    max_calls=settings.RL_TIMES_TF_IMAGE, 
+    max_calls=settings.RL_TIMES_TF_IMAGE,
     time_frame=settings.RL_MINUTES_TF_IMAGE
 )
 async def transform_image(
@@ -441,21 +441,21 @@ async def transform_image(
     qr_service: ImageGenerator = Depends(get_image_generator),
 ):
     """
-    Transform an image using the specified transformation parameters and 
+    Transform an image using the specified transformation parameters and
     generate a QR code for it.
 
     ### Arguments:
     - **image_id** (int): The ID of the image to transform.
-    - **transformation_params** (TransformationParameters): Transformation 
+    - **transformation_params** (TransformationParameters): Transformation
     parameters such as cropping,
       blurring, circular cropping, and grayscale options.
-    - **session** (AsyncSession): The database session used to interact with 
+    - **session** (AsyncSession): The database session used to interact with
     the database.
-    - **current_user** (User): The user making the request, whose permissions 
+    - **current_user** (User): The user making the request, whose permissions
     will be checked.
-    - **cloudinary_service** (CloudinaryService): Service responsible for 
+    - **cloudinary_service** (CloudinaryService): Service responsible for
     applying transformations to the image.
-    - **qr_service** (ImageGenerator): Service responsible for generating 
+    - **qr_service** (ImageGenerator): Service responsible for generating
     the QR code for the transformed image.
 
     ### Returns:
@@ -486,7 +486,8 @@ async def transform_image(
     ### Errors:
     - `400 Bad Request`: If the transformation parameters are invalid.
     - `401 Unauthorized`: If the user is not authorized to transform the image.
-    - `403 Forbidden`: If the user does not have permission to modify the image.
+    - `403 Forbidden`: If the user does not have permission to modify the
+      image.
     - `404 Not Found`: If the image with the given `image_id` does not exist.
     - `422 Unprocessable Entity`: If the transformation fails due to incorrect 
     parameters or a service issue.

@@ -14,8 +14,8 @@ from app.schemas import validate_username, validate_password
 class UserCrud:
 
     async def exist_user(
-            self, email: str, 
-            username:str, 
+            self, email: str,
+            username: str,
             session: AsyncSession
             ) -> bool:
         """check if email exist in tableUser, unicValue"""
@@ -38,7 +38,7 @@ class UserCrud:
             validate_password(password)
         except ValueError as e:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, 
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(e))
         if await self.is_no_users(session=session):
             new_user = User(
@@ -112,7 +112,9 @@ class UserCrud:
         if years > 0:
             member_since = f"{years} year{'s' if years != 1 else ''}"
             if months > 0:
-                member_since += f" and {months} month{'s' if months != 1 else ''}"
+                member_since += (
+                    f" and {months} month{'s' if months != 1 else ''}"
+                    )
         elif months > 0:
             member_since = f"{months} month{'s' if months != 1 else ''}"
             if days > 0 and months < 2:

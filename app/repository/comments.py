@@ -11,7 +11,8 @@ from app.database.models import Comment, User
 
 class CommentCrud:
     """
-    Handles CRUD operations for comments, ensuring only authorized users can modify or delete.
+    Handles CRUD operations for comments, ensuring only authorized
+      users can modify or delete.
     """
 
     async def create_comment(
@@ -44,7 +45,8 @@ class CommentCrud:
         Args:
             comment_id (int): The ID of the comment to update.
             text (str): The new text content for the comment.
-            user (User): The authenticated user attempting to update the comment.
+            user (User): The authenticated user attempting to update
+              the comment.
             session (AsyncSession): The database session.
 
         Returns:
@@ -88,7 +90,8 @@ class CommentCrud:
 
         Args:
             comment_id (int): The ID of the comment to delete.
-            user (User): The authenticated user attempting to delete the comment.
+            user (User): The authenticated user attempting to delete the
+              comment.
             session (AsyncSession): The database session.
 
         Returns:
@@ -110,7 +113,7 @@ class CommentCrud:
             await session.delete(comment)
             await session.commit()
             return comment
-        except SQLAlchemyError as e:
+        except SQLAlchemyError:
             await session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

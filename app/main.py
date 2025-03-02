@@ -22,7 +22,8 @@ base_dir = Path(__file__).parent
 templates = Jinja2Templates(directory=base_dir / "templates")
 
 app.mount(
-    "/static", StaticFiles(directory=base_dir / "templates" / "static"), name="static"
+    "/static", StaticFiles(
+        directory=base_dir / "templates" / "static"), name="static"
 )
 
 
@@ -34,7 +35,8 @@ async def index(request: Request):
 
 @app.get("/check-connection-db")
 async def healthchecker(
-    db: AsyncSession = Depends(get_conn_db), current_user=role_deps.admin_only()
+    db: AsyncSession = Depends(get_conn_db),
+    current_user=role_deps.admin_only()
 ):
     try:
         if not current_user:
@@ -49,4 +51,7 @@ async def healthchecker(
             )
         return {"message": "Database normally works"}
     except Exception:
-        raise HTTPException(status_code=500, detail="Error connecting to the database")
+        raise HTTPException(
+            status_code=500, 
+            detail="Error connecting to the database"
+            )

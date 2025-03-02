@@ -26,7 +26,8 @@ class BaseRatingCrud(ABC):
         ...
 
     @abstractmethod
-    async def _get_average_rating(self, image_id: int, session: AsyncSession) -> float:
+    async def _get_average_rating(
+        self, image_id: int, session: AsyncSession) -> float:
         """Get average rating for image."""
         ...
 
@@ -80,7 +81,8 @@ class RatingCrud(BaseRatingCrud):
         await session.commit()
         return new_rating
 
-    async def _get_average_rating(self, image_id: int, session: AsyncSession) -> float:
+    async def _get_average_rating(
+            self, image_id: int, session: AsyncSession) -> float:
         """
         returned AVG rating bu image.
         """
@@ -104,7 +106,9 @@ class RatingCrud(BaseRatingCrud):
         existing_rating = result.scalar_one_or_none()
 
         if existing_rating:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                detail=detail)
 
         return existing_rating
 
@@ -142,9 +146,14 @@ class RatingCrud(BaseRatingCrud):
         }
 
     async def _get_rating_object(
-        self, rating_id: int, session: AsyncSession, detail="Rating not found."
+        self, 
+        rating_id: int, 
+        session: AsyncSession, 
+        detail="Rating not found."
     ):
-        result = await session.execute(select(Rating).filter(Rating.id == rating_id))
+        result = await session.execute(
+            select(Rating).filter(Rating.id == rating_id)
+            )
         rating = result.scalar_one_or_none()
 
         if not rating:
@@ -176,7 +185,8 @@ class RatingCrud(BaseRatingCrud):
         except SQLAlchemyError:
             await session.rollback()
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=detail
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                detail=detail
             )
 
 
