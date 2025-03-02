@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout репозитория
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Установка Python
+      - name: install Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -22,7 +22,7 @@ jobs:
       - name: Установка Poetry
         run: pip install poetry
 
-      - name: Кеширование зависимостей Poetry
+      - name: cashind depens Poetry
         uses: actions/cache@v3
         with:
           path: ~/.cache/pypoetry
@@ -30,8 +30,40 @@ jobs:
           restore-keys: |
             poetry-${{ runner.os }}-
 
-      - name: Установка зависимостей
+      - name: Install depends
         run: poetry install
 
-      - name: Запуск тестов
+      - name: Run tests
         run: poetry run pytest
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: install Poetry
+        run: pip install poetry
+
+      - name: cache dependencies Poetry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            poetry-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Install flake8
+        run: poetry add --dev flake8
+
+      - name: Run flake8
+        run: poetry run flake8 .
