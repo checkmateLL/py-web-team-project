@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from sqlalchemy import text, insert
 from app.services.security.secure_password import Hasher
 
-from app.database.models import User
+from app.database.models import User, Image
 from app.config import RoleSet
 
 async def create_admin_user(db_session):
@@ -151,10 +151,10 @@ async def test_admin_delete_image(client, db_session):
 
 
 @pytest.mark.asyncio
-async def test_admin_update_image_description(client, db_session):    
+async def test_admin_update_image_description(client, db_session):
     from app.services.security.secure_password import Hasher
     from app.config import RoleSet    
-   
+    
     admin_password = "AdminPass123"
     hashed_password = Hasher.get_password_hash(admin_password)
     admin = User(
@@ -167,17 +167,34 @@ async def test_admin_update_image_description(client, db_session):
     db_session.add(admin)
     await db_session.commit()
     await db_session.refresh(admin)    
- 
+
+    # Create an image
+    image = Image(
+        id=1,
+        description="Old description",
+        image_url="http://example.com/image.jpg",
+        user_id=admin.id,
+        public_id="test_public_id"
+    )
+    db_session.add(image)
+    await db_session.commit()
+    await db_session.refresh(image)
+
+    # Ensure the image exists
+    result = await db_session.execute(
+        text("SELECT id FROM images WHERE id = 1")
+    )
+    assert result.scalar() is not None, "Image not found in database"
+
+    # Login as admin
     login_data = {"username": admin.email, "password": admin_password}
     response = client.post("/app/auth/login", data=login_data)
     assert response.status_code == status.HTTP_200_OK
-    admin_token = response.json()["access_token"]    
+    admin_token = response.json()["access_token"]
 
-    image_id = 1  
     new_description = "Updated by admin"
-     
     response = client.put(
-        f"/app/admin_panel/update_image_description/{image_id}/",
+        f"/app/admin_panel/update_image_description/{image.id}/",
         params={"description": new_description},
         headers={"Authorization": f"Bearer {admin_token}"}
     )
