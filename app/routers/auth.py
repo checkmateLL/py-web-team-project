@@ -34,7 +34,7 @@ async def register_user(
     - Contains at least one uppercase letter
     """
 
-    if await crud_users.exist_user(body.email, session):
+    if await crud_users.exist_user(body.email, body.user_name, session):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="User already register"
         )

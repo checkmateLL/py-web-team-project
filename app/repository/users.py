@@ -13,9 +13,9 @@ from app.schemas import validate_username, validate_password
 
 class UserCrud:
 
-    async def exist_user(self, email: str, session: AsyncSession) -> bool:
+    async def exist_user(self, email: str, username:str, session: AsyncSession) -> bool:
         """check if email exist in tableUser, unicValue"""
-        query = select(User).filter(User.email == email)
+        query = select(User).filter((User.email == email) | (User.username == username))
         result = await session.execute(query)
         user = result.scalar_one_or_none()
         return user is not None
