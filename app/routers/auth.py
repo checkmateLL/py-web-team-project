@@ -16,7 +16,7 @@ router = APIRouter(prefix="/auth")
 
 @router.post("/register", status_code=200, response_model=sch.ResponseUser)
 @rate_limited(
-    max_calls=settings.RL_TIMES_AUTH, 
+    max_calls=settings.RL_TIMES_AUTH,
     time_frame=settings.RL_MINUTES_AUTH)
 async def register_user(
     request: Request,
@@ -38,21 +38,22 @@ async def register_user(
 
     if await crud_users.exist_user(body.email, body.user_name, session):
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, 
+            status_code=status.HTTP_409_CONFLICT,
             detail="User already register"
         )
     password = Hasher.get_password_hash(body.password)
     new_user = await crud_users.create_new_user(
         email=body.email,
-        user_name=body.user_name, 
-        password=password, 
+        user_name=body.user_name,
+        password=password,
         session=session
     )
     return sch.ResponseUser.from_orm(new_user)
 
+
 @router.post("/login", response_model=sch.ResponseLogin)
 @rate_limited(
-    max_calls=settings.RL_TIMES_AUTH, 
+    max_calls=settings.RL_TIMES_AUTH,
     time_frame=settings.RL_MINUTES_AUTH
     )
 async def login(

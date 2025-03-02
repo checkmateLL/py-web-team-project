@@ -26,11 +26,15 @@ class TokenStrategyFactory:
 
 
 class TokenManager:
-    def __init__(self, strategy_factory: TokenStrategyFactory = TokenStrategyFactory()):
+    def __init__(
+            self,
+            strategy_factory: TokenStrategyFactory = TokenStrategyFactory()):
         self.strategy_factory = strategy_factory
 
     async def create_token(
-        self, token_type: TokenType, data: dict, expire_delta: Optional[float] = None
+        self,
+        token_type: TokenType,
+        data: dict, expire_delta: Optional[float] = None
     ) -> str:
         strategy = self.strategy_factory.get_strategy(token_type)
         return await strategy.create_token(data, expire_delta)

@@ -1,6 +1,14 @@
 from fastapi import APIRouter
 
-from app.routers import auth, images, comments, admin_panel, search, ratings, users
+from app.routers import (
+    auth,
+    images,
+    comments,
+    admin_panel,
+    search,
+    ratings,
+    users
+)
 from app.routers.represent import auth_represent as auth_r
 from app.routers.represent import other
 

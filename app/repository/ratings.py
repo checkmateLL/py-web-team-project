@@ -27,8 +27,13 @@ class BaseRatingCrud(ABC):
 
     @abstractmethod
     async def _get_average_rating(
-        self, image_id: int, session: AsyncSession) -> float:
-        """Get average rating for image."""
+        self,
+        image_id: int,
+        session: AsyncSession
+    ) -> float:
+        """
+        Get average rating for image.
+        """
         ...
 
     @abstractmethod
@@ -107,7 +112,7 @@ class RatingCrud(BaseRatingCrud):
 
         if existing_rating:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, 
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail=detail)
 
         return existing_rating
@@ -146,9 +151,9 @@ class RatingCrud(BaseRatingCrud):
         }
 
     async def _get_rating_object(
-        self, 
-        rating_id: int, 
-        session: AsyncSession, 
+        self,
+        rating_id: int,
+        session: AsyncSession,
         detail="Rating not found."
     ):
         result = await session.execute(
@@ -164,7 +169,7 @@ class RatingCrud(BaseRatingCrud):
         self,
         rating_id: int,
         session: AsyncSession,
-        detail=f"An error occurred while deleting the rating.",
+        detail="An error occurred while deleting the rating.",
     ):
         """
         Delete rating (available to moderators and administrators).
@@ -185,7 +190,7 @@ class RatingCrud(BaseRatingCrud):
         except SQLAlchemyError:
             await session.rollback()
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=detail
             )
 

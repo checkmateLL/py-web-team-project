@@ -1,7 +1,7 @@
 import pytest
 from fastapi import status
 
-from app.database.models import Image, Rating, User
+from app.database.models import Image, Rating
 from sqlalchemy import select
 
 

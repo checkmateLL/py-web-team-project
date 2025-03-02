@@ -4,7 +4,6 @@ from fastapi.testclient import TestClient
 import pytest
 from starlette.datastructures import Headers
 from fastapi import UploadFile
-import cloudinary.uploader
 
 from app.main import app
 from app.services.image_service import CloudinaryService
@@ -27,7 +26,8 @@ async def test_upload_images(
     client: TestClient, db_session, mock_cloudinary_service: MagicMock
 ):
     # Override the CloudinaryService dependency
-    app.dependency_overrides[CloudinaryService] = lambda: mock_cloudinary_service
+    app.dependency_overrides[
+        CloudinaryService] = lambda: mock_cloudinary_service
 
     # Define test data
     description = "Test image"
@@ -38,7 +38,9 @@ async def test_upload_images(
         file=BytesIO(file_content),
         headers=Headers(
             {
-                "content-disposition": 'form-data; name="file"; filename="test.jpg"',
+                "content-disposition": (
+                    'form-data; name="file"; filename="test.jpg"'
+                ),
                 "content-type": "image/jpeg",
             }
         ),
@@ -71,7 +73,7 @@ async def test_upload_images(
     # Check if the response is successful
     assert (
         response.status_code == 200
-    ), f"Expected 200 OK, but got {response.status_code} with message: {response.text}"
+    )
 
     # Check if the upload_image method was called
     assert mock_cloudinary_service.upload_image.call_count == 1
@@ -89,7 +91,8 @@ async def test_upload_images(
 @pytest.mark.asyncio
 async def test_upload_images_fail_tags(
         client, db_session, mock_cloudinary_service):
-    app.dependency_overrides[CloudinaryService] = lambda: mock_cloudinary_service
+    app.dependency_overrides[
+        CloudinaryService] = lambda: mock_cloudinary_service
 
     description = "Test image"
     tags = ["test", "image", "fail", "tags", "foo", "baz", "bar"]
@@ -100,7 +103,9 @@ async def test_upload_images_fail_tags(
         file=BytesIO(file_content),
         headers=Headers(
             {
-                "content-disposition": 'form-data; name="file"; filename="test.jpg"',
+                "content-disposition": (
+                    'form-data; name="file"; filename="test.jpg"'
+                ),
                 "content-type": "image/jpeg",
             }
         ),
@@ -133,18 +138,20 @@ async def test_upload_images_fail_tags(
 async def test_upload_images_fail_file_content(
     client, db_session, mock_cloudinary_service
 ):
-    app.dependency_overrides[CloudinaryService] = lambda: mock_cloudinary_service
+    app.dependency_overrides[
+        CloudinaryService] = lambda: mock_cloudinary_service
 
     description = "Test image"
     tags = ["test", "image", "fail"]
-
     file_content = b"fake image content"
     file = UploadFile(
         filename="test.txt",
         file=BytesIO(file_content),
         headers=Headers(
             {
-                "content-disposition": 'form-data; name="file"; filename="test.txt"',
+                "content-disposition": (
+                    'form-data; name="file"; filename="test.txt"'
+                ),
                 "content-type": "text/txt",
             }
         ),

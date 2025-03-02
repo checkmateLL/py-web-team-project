@@ -17,7 +17,7 @@ async def test_search_by_fail_param(client, db_session):
     assert access_token, "Failed to get access token"
 
     search_response = client.get(
-        f"/app/search_images/",
+        "/app/search_images/",
         params={"query": "fatal", "tag": "fatal"},
         headers={"Authorization": f"Bearer {access_token}"},
     )
@@ -43,7 +43,7 @@ async def test_search_without_params_but_have_bind_image(client, db_session):
     assert access_token, "Failed to get access token"
 
     search_response = client.get(
-        f"/app/search_images/",
+        "/app/search_images/",
         params={"query": "", "tag": ""},
         headers={"Authorization": f"Bearer {access_token}"},
     )
@@ -90,7 +90,7 @@ async def test_search_not_params_and_image_not_bing_user(client, db_session):
     assert access_token, "Failed to get access token"
 
     search_response = client.get(
-        f"/app/admin_panel/serch/by_user/",
+        "/app/admin_panel/serch/by_user/",
         params={"username": f'{new_user_data.get("user_name")}'},
         headers={"Authorization": f"Bearer {access_token}"},
     )
@@ -117,7 +117,7 @@ async def test_search_variable_parameter(client, db_session):
     assert access_token, "Failed to get access token"
 
     search_response = client.get(
-        f"/app/search_images/",
+        "/app/search_images/",
         params={"query": "testingmegadescription", "tag": ""},
         headers={"Authorization": f"Bearer {access_token}"},
     )

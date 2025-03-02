@@ -489,7 +489,7 @@ async def transform_image(
     - `403 Forbidden`: If the user does not have permission to modify the
       image.
     - `404 Not Found`: If the image with the given `image_id` does not exist.
-    - `422 Unprocessable Entity`: If the transformation fails due to incorrect 
+    - `422 Unprocessable Entity`: If the transformation fails due to incorrect
     parameters or a service issue.
     """
     current_image = await crud_images.get_image_obj(
@@ -527,22 +527,22 @@ async def get_user_images(
     Get all images uploaded by the current authenticated user.
 
     ### Arguments:
-    - **session** (AsyncSession): The database session for interacting 
+    - **session** (AsyncSession): The database session for interacting
     with the database.
-    - **current_user** (User): The currently authenticated user making 
+    - **current_user** (User): The currently authenticated user making
     the request.
 
     ### Returns:
-    A list of `ImageResponseSchema` objects containing the following image 
+    A list of `ImageResponseSchema` objects containing the following image
     details:
     - **id**: ID of the image.
     - **description**: Description of the image.
     - **image_url**: URL of the image.
     - **user_id**: ID of the user who uploaded the image.
     - **tags**: List of tags associated with the image.
-    - **average_rating**: Average rating of the image 
+    - **average_rating**: Average rating of the image
     (defaults to 0.0 if not available).
-    - **created_at**: Date and time when the image was uploaded (defaults to 
+    - **created_at**: Date and time when the image was uploaded (defaults to
     the current time if not available).
 
     ### Errors:
@@ -572,7 +572,7 @@ async def get_user_images(
     ]
     ```
 
-    **Note**: If the user has no images, the response will return a 
+    **Note**: If the user has no images, the response will return a
     `404 Not Found` error with the message "You have no images."
     """
     images = await crud_images.get_images_by_user_id(current_user.id, session)

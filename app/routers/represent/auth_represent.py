@@ -20,7 +20,11 @@ async def login_form(request: Request):
     error_message = None
     return templates.TemplateResponse(
         "login_form.html",
-        {"request": request, "message": message, "error_message": error_message},
+        {
+            "request": request,
+            "message": message,
+            "error_message": error_message
+        },
     )
 
 

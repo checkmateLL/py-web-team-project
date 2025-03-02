@@ -143,7 +143,8 @@ class CloudinaryService(IcloudinaryService):
 
         Args:
             file (UploadFile): Image file to upload.
-            folder (str): Folder in Cloudinary where the image will be uploaded.
+            folder (str): Folder in Cloudinary where the image will be
+            uploaded.
 
         Returns:
             dict: Contains:
@@ -181,7 +182,7 @@ class CloudinaryService(IcloudinaryService):
 
         Args:
             image (Image): Image model instance containing the public_id
-            transformation_params (dict, optional): Custom transformation 
+            transformation_params (dict, optional): Custom transformation
             parameters
             crop (bool): Apply 200x200 crop
             blur (bool): Apply blur effect
@@ -195,13 +196,13 @@ class CloudinaryService(IcloudinaryService):
                 - original_image_id: Database ID of original image
 
         Raises:
-            HTTPException: If transformation fails or Cloudinary returns an 
+            HTTPException: If transformation fails or Cloudinary returns an
             error
         """
         try:
             if not transformation_params and not any(
                 [crop, blur, circular, grayscale]
-                ):
+            ):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Not transformations were applied.",
@@ -209,17 +210,17 @@ class CloudinaryService(IcloudinaryService):
 
             if not transformation_params:
                 transformation_params = (
-                    self.transformation_generator.generate_transformation_string(
-                        crop=crop, 
-                        blur=blur, 
-                        circular=circular, 
+                    self.transformation_generator.generate_transformation_string(  # noqa: E501
+                        crop=crop,
+                        blur=blur,
+                        circular=circular,
                         grayscale=grayscale
                     )
                 )
 
                 transformed_image = cloudinary.uploader.explicit(
-                    image.public_id, 
-                    type="upload", 
+                    image.public_id,
+                    type="upload",
                     eager=[transformation_params]
                 )
             eager_transformations = transformed_image.get("eager", [])

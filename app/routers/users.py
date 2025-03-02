@@ -115,7 +115,7 @@ async def get_user_profile(
     },
 )
 async def get_my_profile(
-    current_user: User = role_deps.all_users(), 
+    current_user: User = role_deps.all_users(),
     db: AsyncSession = Depends(get_conn_db)
 ):
     """
@@ -184,7 +184,9 @@ async def get_my_profile(
                             "value": {"detail": "Email already registered"}
                         },
                         "incorrect_password": {
-                            "value": {"detail": "Current password is incorrect"}
+                            "value": {
+                                "detail": "Current password is incorrect"
+                                }
                         },
                     }
                 }
@@ -202,9 +204,8 @@ async def update_my_profile(
 ):
     """
     Update authenticated user's profile.
-
     Updates profile information for the currently authenticated user.
-    If the email or password is changed, the current access token is 
+    If the email or password is changed, the current access token is
     blacklisted to force a logout.
 
     Args:
@@ -217,7 +218,7 @@ async def update_my_profile(
         email_service (EmailService): Email service for notifications.
 
     Returns:
-        UserProfileWithLogout: Updated profile information, 
+        UserProfileWithLogout: Updated profile information,
         potentially with logout flag.
 
     Raises:
@@ -239,7 +240,7 @@ async def update_my_profile(
                 current_user.username, db)
             return profile
 
-        if profile_update.username and profile_update.username != current_user.username:
+        if profile_update.username and profile_update.username != current_user.username:  # noqa: E501
             existing_user = await crud_users.get_user_by_username(
                 profile_update.username, db
             )
@@ -324,7 +325,8 @@ async def update_avatar(
     file: UploadFile,
     current_user: User = role_deps.all_users(),
     db: AsyncSession = Depends(get_conn_db),
-    cloudinary_service: CloudinaryService = Depends(lambda: CloudinaryService()),
+    cloudinary_service: CloudinaryService = Depends(
+        lambda: CloudinaryService()),
 ):
     """
     Update user's avatar.
@@ -336,7 +338,7 @@ async def update_avatar(
         file (UploadFile): Image file to use as avatar.
         current_user (User): Currently authenticated user (from dependency).
         db (AsyncSession): Database session (from dependency).
-        cloudinary_service (CloudinaryService): Cloudinary service for image 
+        cloudinary_service (CloudinaryService): Cloudinary service for image
         operations.
 
     Returns:
@@ -365,7 +367,7 @@ async def update_avatar(
 
 @router.post("/reset-email-send")
 @rate_limited(
-    max_calls=settings.RL_TIMES_EMAIL, 
+    max_calls=settings.RL_TIMES_EMAIL,
     time_frame=settings.RL_TIMES_EMAIL
 )
 async def send_email_reset_user_email(
@@ -374,7 +376,7 @@ async def send_email_reset_user_email(
     current_user: User = role_deps.all_users(),
 ):
     """
-    Initiates the email reset process by sending a confirmation email to 
+    Initiates the email reset process by sending a confirmation email to
     the user.
 
     This endpoint triggers an email to be sent to the user with a link to reset
@@ -392,12 +394,12 @@ async def send_email_reset_user_email(
     minute.
 
     Returns:
-    - dict: A message confirming that the email change request is being 
+    - dict: A message confirming that the email change request is being
     processed and the confirmation email has been sent.
 
     Example response:
     {
-        "message": "Email change request is being processed. A confirmation 
+        "message": "Email change request is being processed. A confirmation
         email has been sent."
     }
     """
@@ -411,7 +413,7 @@ async def send_email_reset_user_email(
 
 @router.post("/change-email")
 @rate_limited(
-    max_calls=settings.RL_TIMES_CHANGE_SET, 
+    max_calls=settings.RL_TIMES_CHANGE_SET,
     time_frame=settings.RL_TIMES_CHANGE_SET
 )
 async def change_email(
@@ -422,22 +424,22 @@ async def change_email(
     token_blacklist=Depends(get_token_blacklist),
 ):
     """
-    Confirm and change user email to a new one, and add the token to the 
+    Confirm and change user email to a new one, and add the token to the
     blacklist.
 
-    This endpoint is used to change the user's email address. It validates the 
+    This endpoint is used to change the user's email address. It validates the
     provided token,
-    checks if the new email is already in use, and updates the email if valid. 
+    checks if the new email is already in use, and updates the email if valid.
     The token is added
     to the blacklist to prevent reuse.
 
     Parameters:
     - token (str): The token used to confirm the email change request.
-    - body (EmailSchemaUpdate): The new email address that the user wants to 
+    - body (EmailSchemaUpdate): The new email address that the user wants to
     set.
     - session: Database session dependency.
     - token_blacklist: A dependency that checks if the token is blacklisted.
-    - rate_limiter (RateLimiter): A rate limiter that allows up to 5 requests 
+    - rate_limiter (RateLimiter): A rate limiter that allows up to 5 requests
     per minute.
 
     Returns:
@@ -459,7 +461,7 @@ async def change_email(
     flag = await crud_users.get_user_by_email(body.new_email, session)
     if flag:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="User already exists"
         )
     current_user_email = payload.get("sub")
@@ -486,11 +488,11 @@ async def change_email_confirm_token(token: str):
     If the token is invalid or expired, an error is raised.
 
     Parameters:
-    - token (str): The token that was provided to confirm the email change 
+    - token (str): The token that was provided to confirm the email change
     request.
 
     Returns:
-    - dict: A message indicating the validity of the token, the associated 
+    - dict: A message indicating the validity of the token, the associated
     email,
     and a redirect URL.
 
@@ -535,7 +537,7 @@ async def change_email_confirm_token(token: str):
 
 @router.post("/reset-password-send")
 @rate_limited(
-    max_calls=settings.RL_TIMES_EMAIL, 
+    max_calls=settings.RL_TIMES_EMAIL,
     time_frame=settings.RL_TIMES_EMAIL
 )
 async def reset_password(
@@ -548,22 +550,22 @@ async def reset_password(
     """
     Send a password reset email to the user.
 
-    This endpoint triggers the sending of a password reset email to the user, 
+    This endpoint triggers the sending of a password reset email to the user,
     if the provided
-    email exists in the system. If the user does not exist, a 404 error is 
+    email exists in the system. If the user does not exist, a 404 error is
     raised.
 
     Parameters:
-    - body (UserEmail): The email address of the user requesting the password 
+    - body (UserEmail): The email address of the user requesting the password
     reset.
-    - request (Request): The FastAPI Request object, used to construct the base 
+    - request (Request): The FastAPI Request object, used to construct the base
     URL for the reset link.
-    - bt (BackgroundTasks): Used to send the email asynchronously in the 
+    - bt (BackgroundTasks): Used to send the email asynchronously in the
     background.
     - session: Database session dependency for fetching user data.
-    - _ (User): The current user role, ensuring that the request is coming 
+    - _ (User): The current user role, ensuring that the request is coming
     from a valid user.
-    - rate_limiter (RateLimiter): A rate limiter to prevent abuse 
+    - rate_limiter (RateLimiter): A rate limiter to prevent abuse
     (1 request per minute).
 
     Returns:
@@ -571,7 +573,7 @@ async def reset_password(
 
     Example response:
     {
-        "message": "Password change request is being processed. 
+        "message": "Password change request is being processed.
         A confirmation email has been sent."
     }
 
@@ -585,19 +587,20 @@ async def reset_password(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
     bt.add_task(
-        ems.send_password_reset_email, 
+        ems.send_password_reset_email,
         curent_user, str(request.base_url)
     )
     return {
-        "message": ("Password change request is being processed."
-                    "A confirmation email has been sent."
-                )
+        "message": (
+            "Password change request is being processed."
+            "A confirmation email has been sent."
+        )
     }
 
 
 @router.post("/password-forgot")
 @rate_limited(
-    max_calls=settings.RL_TIMES_EMAIL, 
+    max_calls=settings.RL_TIMES_EMAIL,
     time_frame=settings.RL_MINUTES_EMAIL
 )
 async def password_forgot(
@@ -609,19 +612,19 @@ async def password_forgot(
     """
     Send a password reset email when the user has forgotten their password.
 
-    This endpoint triggers the sending of a password reset email to the user. 
+    This endpoint triggers the sending of a password reset email to the user.
     If the provided
     email does not exist in the system, a 404 error is raised.
 
     Parameters:
-    - email (str): The email address of the user who has forgotten their 
+    - email (str): The email address of the user who has forgotten their
     password.
-    - request (Request): The FastAPI Request object, used to construct the base 
+    - request (Request): The FastAPI Request object, used to construct the base
     URL for the reset link.
-    - bt (BackgroundTasks): Used to send the email asynchronously in the 
+    - bt (BackgroundTasks): Used to send the email asynchronously in the
     background.
     - session: Database session dependency for fetching user data.
-    - rate_limiter (RateLimiter): A rate limiter to prevent abuse 
+    - rate_limiter (RateLimiter): A rate limiter to prevent abuse
     (1 request per minute).
 
     Returns:
@@ -629,7 +632,7 @@ async def password_forgot(
 
     Example response:
     {
-        "message": "Password change request is being processed. A 
+        "message": "Password change request is being processed. A
         confirmation email has been sent."
     }
 
@@ -643,25 +646,26 @@ async def password_forgot(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
     bt.add_task(
-        ems.send_password_reset_email, 
+        ems.send_password_reset_email,
         curent_user, str(request.base_url)
     )
     return {
-        "message": ("Password change request is being processed."
-                    " A confirmation email has been sent."
-                )
-    }
+        "message": (
+            "Password change request is being processed."
+            " A confirmation email has been sent."
+            )
+        }
 
 
 @router.get("/reset-password/{token}")
 async def change_password_confirm_token(token: str):
     """
-    Confirm the password reset token. If valid, redirect to the reset 
+    Confirm the password reset token. If valid, redirect to the reset
     password page.
 
-    This endpoint checks the validity of the provided password reset token. 
+    This endpoint checks the validity of the provided password reset token.
     If the token is valid,
-    it returns the user's email and redirects to the password reset page. 
+    it returns the user's email and redirects to the password reset page.
     If the token is invalid or expired,
     a 400 error is raised.
 
@@ -682,7 +686,7 @@ async def change_password_confirm_token(token: str):
 
     Raises:
     - HTTPException: If the token is invalid or expired (400 Bad Request).
-    - HTTPException: If there is an internal server error 
+    - HTTPException: If there is an internal server error
     (500 Internal Server Error).
     """
     try:
@@ -711,7 +715,7 @@ async def change_password_confirm_token(token: str):
 
 @router.post("/change-password")
 @rate_limited(
-    max_calls=settings.RL_TIMES_CHANGE_SET, 
+    max_calls=settings.RL_TIMES_CHANGE_SET,
     time_frame=settings.RL_MINUTES_CHANGE_SET
 )
 async def change_password(
@@ -730,7 +734,7 @@ async def change_password(
     - Contains at least one uppercase letter
     - Maximum 100 characters
 
-    This endpoint verifies the provided token, ensures that the token is valid 
+    This endpoint verifies the provided token, ensures that the token is valid
     and not blacklisted,
     and allows the user to update their password. The new password must be
     different from the old one.
@@ -740,7 +744,8 @@ async def change_password(
     - body (ChangePasswordRequest): The new password provided by the user.
 
     Returns:
-    - dict: A response indicating whether the password was successfully updated.
+    - dict: A response indicating whether the password was successfully
+      updated.
 
     Example response:
     {
@@ -750,7 +755,7 @@ async def change_password(
 
     Raises:
     - HTTPException:
-        - 400 Bad Request if the token is invalid, expired, or the new password 
+        - 400 Bad Request if the token is invalid, expired, or the new password
         is the same as the old password.
         - 404 Not Found if the user is not found.
         - 500 Internal Server Error if an unexpected error occurs.

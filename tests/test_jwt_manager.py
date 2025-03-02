@@ -5,7 +5,9 @@ from app.services.security.secure_token.manager import (
     TokenStrategyFactory,
     TokenManager,
 )
-from app.services.security.secure_token.strategies.base_strategy import ITokenStrategy
+from app.services.security.secure_token.strategies.base_strategy import (
+    ITokenStrategy
+)
 
 
 @pytest.fixture
@@ -16,7 +18,8 @@ def token_manager():
 @pytest.mark.asyncio
 async def test_create_and_decode_access_token(token_manager):
     data = {"user_id": 1}
-    token = await token_manager.create_token(TokenType.ACCESS, data, expire_delta=60)
+    token = await token_manager.create_token(
+        TokenType.ACCESS, data, expire_delta=60)
     decoded = await token_manager.decode_token(TokenType.ACCESS, token)
     assert decoded["user_id"] == 1
     assert decoded["scope"] == TokenType.ACCESS
@@ -25,7 +28,8 @@ async def test_create_and_decode_access_token(token_manager):
 @pytest.mark.asyncio
 async def test_create_and_decode_refresh_token(token_manager):
     data = {"user_id": 1}
-    token = await token_manager.create_token(TokenType.REFRESH, data, expire_delta=1)
+    token = await token_manager.create_token(
+        TokenType.REFRESH, data, expire_delta=1)
     decoded = await token_manager.decode_token(TokenType.REFRESH, token)
     assert decoded["user_id"] == 1
     assert decoded["scope"] == TokenType.REFRESH
@@ -43,7 +47,8 @@ async def test_decode_invalid_token(token_manager):
 @pytest.mark.asyncio
 async def test_decode_token_with_wrong_scope(token_manager):
     data = {"user_id": 1}
-    token = await token_manager.create_token(TokenType.ACCESS, data, expire_delta=60)
+    token = await token_manager.create_token(
+        TokenType.ACCESS, data, expire_delta=60)
     with pytest.raises(HTTPException) as exc_info:
         await token_manager.decode_token(TokenType.REFRESH, token)
     assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED

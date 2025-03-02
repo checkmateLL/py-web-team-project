@@ -89,7 +89,8 @@ async def test_access_for_admin(client, db_session):
     assert response.status_code == status.HTTP_200_OK
     created_user = response.json()
 
-    user_from_db = await crud_users.get_user_by_email(created_user["email"], db_session)
+    user_from_db = await crud_users.get_user_by_email(
+        created_user["email"], db_session)
     assert user_from_db is not None, "User not found in DB"
 
     response = client.put(
