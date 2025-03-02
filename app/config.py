@@ -13,8 +13,8 @@ class Settings(BaseSettings):
     SQLALCHEMY_DATABASE_URL: str = (
         "postgresql+asyncpg://test:000000@localhost:0000/test"
     )
-    SECRET_KEY_JWT: str = "**************************************"
-    ALGORITHM: str = "******"
+    SECRET_KEY_JWT: str = "secretkey"
+    ALGORITHM: str = 'HS384'
 
     CLD_NAME: str = "test"
     CLD_API_KEY: str = "test"
