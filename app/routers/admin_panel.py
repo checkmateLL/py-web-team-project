@@ -300,7 +300,7 @@ async def update_image_description_admin(
 async def get_image_info(
     image_id: int,
     session: AsyncSession = Depends(get_conn_db),
-    _ : User = role_deps.admin_moderator(),
+    _: User = role_deps.admin_moderator(),
 ):
     """
     Get info about image.

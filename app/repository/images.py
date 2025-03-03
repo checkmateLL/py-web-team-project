@@ -372,13 +372,13 @@ class ImageCrud(CrudTags):
 
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
-        
+
     async def update_image_description_admin(
         self,
         image_id,
         description,
         session: AsyncSession,
-        _ : User,
+        _: User,
     ):
         """
         Update the description of an image (available to moderators and
@@ -407,7 +407,7 @@ class ImageCrud(CrudTags):
             return image_obj
 
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))    
+            raise HTTPException(status_code=500, detail=str(e))
 
     async def delete_image(
         self, image_id: int, session: AsyncSession, current_user: User
@@ -460,7 +460,7 @@ class ImageCrud(CrudTags):
             )
 
     async def delete_image_admin(
-        self, image_id: int, session: AsyncSession, _ : User
+        self, image_id: int, session: AsyncSession, _: User
     ):
         """
         Delete an image by its ID (available to administrators).
