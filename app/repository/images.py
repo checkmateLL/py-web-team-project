@@ -1,4 +1,4 @@
-from sqlalchemy import insert, desc, func, update
+from sqlalchemy import delete, insert, desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from fastapi import HTTPException, status
@@ -9,7 +9,8 @@ from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import settings
-from app.database.models import Image, Rating, Transformation, User, Tag
+from app.database.models import (
+    Comment, Image, Rating, Transformation, User, Tag, image_tag_association)
 
 
 class CrudTags:
@@ -431,33 +432,35 @@ class ImageCrud(CrudTags):
               exist or if the current user does not have permission to
                 delete the image.
         """
-        image_obj = await self.get_image_obj(image_id, session)
-
-        if not image_obj:
+        image = await session.execute(
+                select(Image)
+                .options(
+                    selectinload(Image.comments),
+                    selectinload(Image.ratings),
+                    selectinload(Image.transformations),
+                    selectinload(Image.tags))
+                .filter(Image.id == image_id)
+            )
+        image_object = image.scalars().first()
+        if not image_object:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Image not found"
             )
+        public_id = image_object.public_id
         self.check_permission(
-            image_obj=image_obj,
+            image_obj=image_object,
             current_user_id=current_user.id
             )
         try:
-            cloudinary.uploader.destroy(image_obj.public_id)
+            await self._delete_bing_image(image_object, public_id, session)
 
         except Exception:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Error deleting image form Cloudinary",
             )
-        try:
-            await session.delete(image_obj)
-            await session.commit()
-            return True
-        except SQLAlchemyError:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error deleting image from database",
-            )
+
+        return True
 
     async def delete_image_admin(
         self, image_id: int, session: AsyncSession,
@@ -481,15 +484,63 @@ class ImageCrud(CrudTags):
               exist or if the current user is not an administrator.
         """
         try:
+            image = await session.execute(
+                select(Image)
+                .options(
+                    selectinload(Image.comments),
+                    selectinload(Image.ratings),
+                    selectinload(Image.transformations),
+                    selectinload(Image.tags))
+                .filter(Image.id == image_id)
+            )
+            image_object = image.scalars().first()
 
-            image_obj = await self.get_image_obj(image_id, session)
-            
-            cloudinary.uploader.destroy(image_obj.public_id)
+            if not image_object:
+                raise HTTPException(
+                    status_code=404,
+                    detail='Image not found'
+                )
 
-            await session.delete(image_obj)
-            await session.commit()
+            public_id = image_object.public_id
+
+            await self._delete_bing_image(image_object, public_id, session)
             return True
+
         except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    async def _delete_bing_image(self, image_object, public_id, session):
+        try:
+            response = cloudinary.uploader.destroy(public_id)
+            if response.get('result') != 'ok':
+                raise HTTPException(
+                    status_code=500,
+                    setail='Failed to delete image from Cloudinary'
+                )
+
+            await session.execute(
+                delete(Comment).where(Comment.image_id == image_object.id)
+            )
+            await session.execute(
+                delete(Rating).where(Rating.image_id == image_object.id)
+            )
+            await session.execute(
+                delete(Transformation).where(
+                    Transformation.image_id == image_object.id
+                    )
+            )
+            await session.execute(
+                delete(image_tag_association).where(
+                    image_tag_association.c.image_id == image_object.id)
+                )
+            await session.execute(
+                delete(Image).where(Image.id == image_object.id)
+            )
+
+            await session.commit()
+
+        except Exception as e:
+            cloudinary.api.restore(public_id)
             raise HTTPException(status_code=500, detail=str(e))
 
     async def get_image_url(self, image_id: int, session: AsyncSession):
@@ -534,12 +585,6 @@ class ImageCrud(CrudTags):
         image = await session.get(Image, image_id)
         if not image:
             raise HTTPException(status_code=404, detail="Image not found")
-        await session.execute(
-            update(Rating).where(
-                Rating.image_id == image_id
-                ).values(image_id=None)
-        )
-        await session.commit()
         return image
 
     async def get_images_by_user_id(self, user_id: int, session: AsyncSession):
