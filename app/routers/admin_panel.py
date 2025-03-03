@@ -258,7 +258,7 @@ async def get_image_by_id(
     "/update_image_description/{image_id}/",
     response_model=sch.ImageResponseUpdateSchema,
 )
-async def update_image_description(
+async def update_image_description_admin(
     image_id: int,
     description: str,
     session: AsyncSession = Depends(get_conn_db),
@@ -300,7 +300,7 @@ async def update_image_description(
 async def get_image_info(
     image_id: int,
     session: AsyncSession = Depends(get_conn_db),
-    current_user: User = role_deps.admin_moderator(),
+    _ : User = role_deps.admin_moderator(),
 ):
     """
     Get info about image.
@@ -309,9 +309,6 @@ async def get_image_info(
     image_object = await crud_images.get_image_obj(
         image_id=image_id,
         session=session,
-    )
-    crud_images.check_permission(
-        image_obj=image_object, current_user_id=current_user.id
     )
 
     return sch.ImageResponseSchema(

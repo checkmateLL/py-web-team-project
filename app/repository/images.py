@@ -372,6 +372,42 @@ class ImageCrud(CrudTags):
 
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
+        
+    async def update_image_description_admin(
+        self,
+        image_id,
+        description,
+        session: AsyncSession,
+        _ : User,
+    ):
+        """
+        Update the description of an image (available to moderators and
+        administrators).
+
+        Args:
+            image_id (int): The ID of the image to update.
+            description (str): The new description for the image.
+            session (AsyncSession): An asynchronous database session.
+            current_user (User): The current user performing the update.
+
+        Returns:
+            Image: The updated Image object.
+
+        Raises:
+            HTTPException: If the image with the specified ID does not exist
+              or if the current user does not have permission to update
+                the image.
+        """
+        try:
+            image_obj = await self.get_image_obj(image_id, session)
+            image_obj.description = description
+            await session.commit()
+            await session.refresh(image_obj)
+
+            return image_obj
+
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))    
 
     async def delete_image(
         self, image_id: int, session: AsyncSession, current_user: User
@@ -424,7 +460,7 @@ class ImageCrud(CrudTags):
             )
 
     async def delete_image_admin(
-        self, image_id: int, session: AsyncSession, current_user: User
+        self, image_id: int, session: AsyncSession, _ : User
     ):
         """
         Delete an image by its ID (available to administrators).
@@ -447,7 +483,6 @@ class ImageCrud(CrudTags):
         try:
 
             image_obj = await self.get_image_obj(image_id, session)
-
             cloudinary.uploader.destroy(image_obj.public_id)
 
             await session.delete(image_obj)
