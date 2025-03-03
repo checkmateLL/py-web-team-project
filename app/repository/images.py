@@ -460,7 +460,7 @@ class ImageCrud(CrudTags):
             )
 
     async def delete_image_admin(
-        self, image_id: int, session: AsyncSession, _: User
+        self, image_id: int, session: AsyncSession,
     ):
         """
         Delete an image by its ID (available to administrators).

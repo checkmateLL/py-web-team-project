@@ -209,14 +209,14 @@ async def delete_rating(
 async def delete_image_admin(
     image_id: int,
     session: AsyncSession = Depends(get_conn_db),
-    current_user: User = role_deps.admin_moderator(),
+    _: User = role_deps.admin_moderator(),
 ):
     """
     Delete image by ID
     """
     try:
         deleted = await crud_images.delete_image_admin(
-            image_id, session, current_user)
+            image_id, session)
 
         if not deleted:
             raise HTTPException(
@@ -284,7 +284,7 @@ async def update_image_description_admin(
         HTTPException: If the image with the specified ID does not exist or
           if the current user is not a moderator or administrator.
     """
-    update_image_object = await crud_images.update_image_description(
+    update_image_object = await crud_images.update_image_description_admin(
         image_id, description, session, current_user
     )
 
