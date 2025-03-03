@@ -1,4 +1,4 @@
-from sqlalchemy import insert, desc, func
+from sqlalchemy import insert, desc, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from fastapi import HTTPException, status
@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import settings
-from app.database.models import Image, Transformation, User, Tag
+from app.database.models import Image, Rating, Transformation, User, Tag
 
 
 class CrudTags:
@@ -483,6 +483,7 @@ class ImageCrud(CrudTags):
         try:
 
             image_obj = await self.get_image_obj(image_id, session)
+            
             cloudinary.uploader.destroy(image_obj.public_id)
 
             await session.delete(image_obj)
@@ -533,6 +534,12 @@ class ImageCrud(CrudTags):
         image = await session.get(Image, image_id)
         if not image:
             raise HTTPException(status_code=404, detail="Image not found")
+        await session.execute(
+            update(Rating).where(
+                Rating.image_id == image_id
+                ).values(image_id=None)
+        )
+        await session.commit()
         return image
 
     async def get_images_by_user_id(self, user_id: int, session: AsyncSession):
