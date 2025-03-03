@@ -511,7 +511,12 @@ class ImageCrud(CrudTags):
 
     async def _delete_bing_image(self, image_object, public_id, session):
         try:
-            response = cloudinary.uploader.destroy(public_id)
+            response = cloudinary.uploader.destroy(
+                public_id,
+                api_key=settings.CLD_API_KEY,
+                api_secret=settings.CLD_API_SECRET,
+                cloud_name=settings.CLD_NAME
+            )
             if response.get('result') != 'ok':
                 raise HTTPException(
                     status_code=500,
