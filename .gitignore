@@ -176,3 +176,4 @@ cython_debug/
 .vscode/*
 .qodo/
 migrations/versions/
+.DS_Store/*
